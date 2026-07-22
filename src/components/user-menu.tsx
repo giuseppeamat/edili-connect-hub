@@ -11,10 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, User } from "lucide-react";
+import { LogIn, LogOut, User } from "lucide-react";
 
 export function UserMenu() {
-  const [profile, setProfile] = useState<{ nome?: string; cognome?: string; email?: string; org?: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    nome?: string;
+    cognome?: string;
+    email?: string;
+    org?: string;
+    isAnonymous?: boolean;
+  } | null>(null);
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -26,12 +32,13 @@ export function UserMenu() {
         .from("profiles")
         .select("nome, cognome, email, organizations(nome)")
         .eq("id", u.user.id)
-        .single();
+        .maybeSingle();
       setProfile({
         nome: p?.nome ?? undefined,
         cognome: p?.cognome ?? undefined,
         email: p?.email ?? u.user.email ?? undefined,
         org: (p as any)?.organizations?.nome,
+        isAnonymous: !!u.user.is_anonymous,
       });
     })();
   }, []);
@@ -42,6 +49,20 @@ export function UserMenu() {
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   };
+
+  if (profile?.isAnonymous) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="hidden md:inline text-xs text-muted-foreground">
+          Modalità demo
+        </span>
+        <Button size="sm" onClick={() => navigate({ to: "/auth" })} className="gap-2">
+          <LogIn className="h-4 w-4" />
+          Accedi / Registrati
+        </Button>
+      </div>
+    );
+  }
 
   const initials = `${profile?.nome?.[0] ?? ""}${profile?.cognome?.[0] ?? ""}` || "U";
 

@@ -26,8 +26,9 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+    supabase.auth.getUser().then(({ data }) => {
+      // Non reindirizzare gli utenti anonimi (modalità demo): devono poter creare un account reale.
+      if (data.user && !data.user.is_anonymous) navigate({ to: "/" });
     });
   }, [navigate]);
 
@@ -35,6 +36,8 @@ function AuthPage() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setLoading(true);
+    const { data: current } = await supabase.auth.getUser();
+    if (current.user?.is_anonymous) await supabase.auth.signOut();
     const { error } = await supabase.auth.signInWithPassword({
       email: String(form.get("email")),
       password: String(form.get("password")),
@@ -49,6 +52,9 @@ function AuthPage() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setLoading(true);
+    // Esce dalla sessione demo anonima prima di creare un account reale
+    const { data: current } = await supabase.auth.getUser();
+    if (current.user?.is_anonymous) await supabase.auth.signOut();
     const { error } = await supabase.auth.signUp({
       email: String(form.get("email")),
       password: String(form.get("password")),
