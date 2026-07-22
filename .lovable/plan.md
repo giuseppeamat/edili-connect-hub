@@ -1,32 +1,25 @@
-## Obiettivo
-Permetterti di vedere e navigare tutto il software senza dover fare login, mantenendo però la possibilità di riattivare l'autenticazione in futuro.
+## Problema
+Il redirect a `/auth` scatta perché il login anonimo di Supabase fallisce (probabilmente non abilitato sul progetto), quindi il layout `_authenticated` ti sbatte sulla pagina di accesso e non vedi nulla del gestionale.
 
-## Approccio: "Modalità Demo" bypass auth
+## Soluzione
+Rimuovo del tutto il controllo di autenticazione dal layout: entri direttamente nel software e puoi navigare tutte le pagine (Dashboard, Clienti, Fornitori, Preventivi, Commesse, Rapportini, Documenti, Scadenziario, Audit) anche senza login.
 
-Aggiungo un flag `VITE_DEMO_MODE=true` (attivo di default) che:
+### Cosa cambia
+1. **`src/routes/_authenticated/route.tsx`** — tolgo `beforeLoad` e il tentativo di sign-in anonimo. Il layout renderizza sempre `AppShell` + `Outlet`, senza redirect.
+2. **`src/routes/index.tsx`** (nuovo) — reindirizza `/` alla dashboard `/` autenticata... in pratica creo un index che monta direttamente la Dashboard, così aprendo il preview vedi subito il gestionale.
+3. **`src/components/user-menu.tsx`** — siccome non c'è più utente, mostro sempre l'etichetta "Modalità demo" con il bottone **Accedi / Registrati** che porta a `/auth` (rimane disponibile per quando vorrai creare un account vero).
+4. **`src/routes/auth.tsx`** — resta com'è, raggiungibile solo cliccando "Accedi".
 
-1. **Salta il redirect al login** in `src/routes/_authenticated/route.tsx`: se il flag è attivo e non c'è utente, invece di reindirizzare a `/auth` usa un'organizzazione demo fittizia e mostra comunque la UI.
+### Conseguenza sui dati
+Senza utente autenticato, le policy RLS bloccano tutte le query: le pagine si aprono ma le tabelle sono vuote (nessun errore, solo "Nessun risultato"). Questo ti permette comunque di **vedere la struttura, la navigazione e i form** di ogni modulo — che è quello che hai chiesto ("so dove andare a lavorare").
 
-2. **Reindirizza `/` alla dashboard**: al primo caricamento vedi direttamente il gestionale con dati demo, non la schermata di login.
+Per vedere dati veri servirà registrarsi una volta (nome impresa + email + password) e cliccare "Carica dati demo" in Dashboard — ma non è più bloccante per esplorare.
 
-3. **Header aggiornato**: il `UserMenu` mostra "Ospite demo" con un pulsante "Accedi" che porta a `/auth` per chi vuole registrarsi davvero.
+### File modificati
+- `src/routes/_authenticated/route.tsx` (rimozione gate auth)
+- `src/components/user-menu.tsx` (sempre in modalità ospite)
 
-4. **Dati visibili senza login**: siccome le tabelle hanno RLS attivo, un utente non autenticato non vedrebbe nulla. Due opzioni:
-   - **A (consigliata)**: precarico dati mock in memoria (clienti, preventivi, commesse, rapportini finti di "Edilizia Rossi S.r.l.") mostrati solo in demo mode, senza toccare il database. Le operazioni CRUD funzionano in-memory nella sessione.
-   - **B**: creo un'organizzazione demo pubblica nel DB con policy RLS che permette lettura anonima solo per quell'org. Più invasivo e con rischio sicurezza.
-
-Vado con l'opzione A: nessuna modifica al database, nessun rischio, e puoi comunque cliccare "Accedi" per creare un account reale quando vuoi.
-
-## File toccati
-- `src/routes/_authenticated/route.tsx` — bypass del redirect quando demo mode
-- `src/routes/index.tsx` (nuovo) — redirect `/` → `/` autenticato o landing
-- `src/components/user-menu.tsx` — mostra "Ospite" + CTA Accedi in demo mode
-- `src/lib/demo-data.ts` (nuovo) — dataset mock in memoria
-- Ogni pagina CRUD (`clienti`, `fornitori`, `preventivi`, `commesse`, `rapportini`, `documenti`, `scadenziario`, `audit`, `index`) — se demo mode, legge/scrive dal dataset mock invece che da Supabase
-- `.env` — aggiungo `VITE_DEMO_MODE=true`
-
-## Come tornare al comportamento normale
-Basta impostare `VITE_DEMO_MODE=false` (o rimuoverlo): tutto torna a richiedere il login reale, senza altre modifiche.
-
-## Nota
-Per rispondere anche alla prima domanda ("come faccio ad accedere?"): dalla pagina `/auth` clicchi la tab **Registrati**, inserisci nome impresa + i tuoi dati, e vieni loggato automaticamente. Ma con la modalità demo non servirà più per esplorare l'app.
+### Cosa NON tocco
+- Schema DB, RLS, policy di sicurezza
+- Pagina `/auth` (funziona già)
+- Nessuna modifica al backend
