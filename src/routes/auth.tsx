@@ -26,8 +26,9 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+    supabase.auth.getUser().then(({ data }) => {
+      // Non reindirizzare gli utenti anonimi (modalità demo): devono poter creare un account reale.
+      if (data.user && !data.user.is_anonymous) navigate({ to: "/" });
     });
   }, [navigate]);
 
