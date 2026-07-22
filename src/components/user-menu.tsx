@@ -19,7 +19,6 @@ export function UserMenu() {
     cognome?: string;
     email?: string;
     org?: string;
-    isAnonymous?: boolean;
   } | null>(null);
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -27,7 +26,10 @@ export function UserMenu() {
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return;
+      if (!u.user || u.user.is_anonymous) {
+        setProfile(null);
+        return;
+      }
       const { data: p } = await supabase
         .from("profiles")
         .select("nome, cognome, email, organizations(nome)")
@@ -38,7 +40,6 @@ export function UserMenu() {
         cognome: p?.cognome ?? undefined,
         email: p?.email ?? u.user.email ?? undefined,
         org: (p as any)?.organizations?.nome,
-        isAnonymous: !!u.user.is_anonymous,
       });
     })();
   }, []);
@@ -47,10 +48,11 @@ export function UserMenu() {
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
+    setProfile(null);
     navigate({ to: "/auth", replace: true });
   };
 
-  if (profile?.isAnonymous) {
+  if (!profile) {
     return (
       <div className="flex items-center gap-2">
         <span className="hidden md:inline text-xs text-muted-foreground">
@@ -64,7 +66,7 @@ export function UserMenu() {
     );
   }
 
-  const initials = `${profile?.nome?.[0] ?? ""}${profile?.cognome?.[0] ?? ""}` || "U";
+  const initials = `${profile.nome?.[0] ?? ""}${profile.cognome?.[0] ?? ""}` || "U";
 
   return (
     <DropdownMenu>
@@ -73,15 +75,15 @@ export function UserMenu() {
           <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium">
             {initials.toUpperCase()}
           </div>
-          <span className="hidden md:inline text-sm">{profile?.org ?? ""}</span>
+          <span className="hidden md:inline text-sm">{profile.org ?? ""}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="font-medium">
-            {profile?.nome} {profile?.cognome}
+            {profile.nome} {profile.cognome}
           </div>
-          <div className="text-xs text-muted-foreground font-normal">{profile?.email}</div>
+          <div className="text-xs text-muted-foreground font-normal">{profile.email}</div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled>
