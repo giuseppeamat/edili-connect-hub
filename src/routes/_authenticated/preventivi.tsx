@@ -78,7 +78,7 @@ function PreventiviPage() {
       const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", u.user!.id).single();
       const codice = `C${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
       const { error } = await supabase.from("commesse").insert({
-        organization_id: prof!.organization_id,
+        organization_id: prof!.organization_id!,
         cliente_id: p.cliente_id,
         preventivo_id: p.id,
         codice,
