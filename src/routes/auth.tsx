@@ -36,6 +36,8 @@ function AuthPage() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setLoading(true);
+    const { data: current } = await supabase.auth.getUser();
+    if (current.user?.is_anonymous) await supabase.auth.signOut();
     const { error } = await supabase.auth.signInWithPassword({
       email: String(form.get("email")),
       password: String(form.get("password")),
