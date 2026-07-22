@@ -84,10 +84,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "CantiereOS — Gestionale per imprese edili" },
       {
         property: "og:description",
-        content: "Gestisci clienti, cantieri, preventivi e rapportini in un'unica piattaforma.",
+        content: "SaaS multi-tenant per la gestione di clienti, preventivi, commesse, cantieri, rapportini e documenti per imprese edili italiane.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "CantiereOS — Gestionale per imprese edili" },
+      { name: "twitter:description", content: "SaaS multi-tenant per la gestione di clienti, preventivi, commesse, cantieri, rapportini e documenti per imprese edili italiane." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ab6b69c6-0287-48be-891b-1418c6d189ed/id-preview-427933b3--7556ebb7-22ed-4da4-88c2-275490e9403d.lovable.app-1784746020929.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/ab6b69c6-0287-48be-891b-1418c6d189ed/id-preview-427933b3--7556ebb7-22ed-4da4-88c2-275490e9403d.lovable.app-1784746020929.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
