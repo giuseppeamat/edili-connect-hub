@@ -118,11 +118,11 @@ function ProfiloPage() {
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Registrato il</dt>
-                <dd>{dateIT(profile.created_at)}</dd>
+                <dd>{dateIt(profile.created_at)}</dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Ultimo aggiornamento</dt>
-                <dd>{dateIT(profile.updated_at)}</dd>
+                <dd>{dateIt(profile.updated_at)}</dd>
               </div>
             </dl>
           </CardContent>
