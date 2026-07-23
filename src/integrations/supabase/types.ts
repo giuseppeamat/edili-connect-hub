@@ -193,6 +193,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "commesse_cliente_org_fkey"
+            columns: ["cliente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "commesse_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -205,6 +212,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "preventivi"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commesse_preventivo_org_fkey"
+            columns: ["preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -284,6 +298,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documenti_cliente_org_fkey"
+            columns: ["cliente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "documenti_commessa_id_fkey"
             columns: ["commessa_id"]
             isOneToOne: false
@@ -291,11 +312,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "documenti_commessa_org_fkey"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "documenti_fornitore_id_fkey"
             columns: ["fornitore_id"]
             isOneToOne: false
             referencedRelation: "fornitori"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_fornitore_org_fkey"
+            columns: ["fornitore_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id", "organization_id"]
           },
           {
             foreignKeyName: "documenti_organization_id_fkey"
@@ -486,6 +521,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "preventivi_cliente_org_fkey"
+            columns: ["cliente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "preventivi_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -563,6 +605,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "preventivi"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preventivo_voci_preventivo_org_fkey"
+            columns: ["preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -657,6 +706,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commesse"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_commessa_org_fkey"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
           },
           {
             foreignKeyName: "rapportini_organization_id_fkey"
