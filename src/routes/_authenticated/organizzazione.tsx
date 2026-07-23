@@ -369,13 +369,16 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
     onError: (e: any) => toast.error(e.message),
   });
 
+  const allowedRoles = INVITABLE.filter((r) => (isProprietario ? true : r !== "amministratore"));
+  const [newEmail, setNewEmail] = useState("");
+  const [newRole, setNewRole] = useState<AppRole>(allowedRoles[0]);
+
   const onCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email") || "").trim().toLowerCase();
-    const role = String(fd.get("role") || "") as AppRole;
-    if (!email || !role) return;
-    create.mutate({ email, role });
+    const email = newEmail.trim().toLowerCase();
+    if (!email || !newRole) return;
+    create.mutate({ email, role: newRole });
+    setNewEmail("");
   };
 
   const inviteUrl = (token: string) =>
@@ -384,8 +387,6 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
     await navigator.clipboard.writeText(inviteUrl(token));
     toast.success("Link copiato negli appunti");
   };
-
-  const allowedRoles = INVITABLE.filter((r) => (isProprietario ? true : r !== "amministratore"));
 
   return (
     <div className="space-y-4 mt-4">
