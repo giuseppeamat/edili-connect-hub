@@ -840,6 +840,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_member_active: {
+        Args: { _active: boolean; _actor: string; _org: string; _user: string }
+        Returns: undefined
+      }
       current_organization_id: { Args: never; Returns: string }
       has_any_role: {
         Args: {
