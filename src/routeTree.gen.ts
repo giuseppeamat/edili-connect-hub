@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AccettaInvitoRouteImport } from './routes/accetta-invito'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
@@ -31,6 +32,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccettaInvitoRoute = AccettaInvitoRouteImport.update({
+  id: '/accetta-invito',
+  path: '/accetta-invito',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -91,6 +97,7 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
 }
 export interface FileRoutesByTo {
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -120,6 +128,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/audit'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/scadenziario'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/audit'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/_authenticated/audit'
@@ -181,6 +193,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AccettaInvitoRoute: typeof AccettaInvitoRoute
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
@@ -199,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accetta-invito': {
+      id: '/accetta-invito'
+      path: '/accetta-invito'
+      fullPath: '/accetta-invito'
+      preLoaderRoute: typeof AccettaInvitoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -312,6 +332,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AccettaInvitoRoute: AccettaInvitoRoute,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
