@@ -1,0 +1,128 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+export type AppRole = Database["public"]["Enums"]["app_role"];
+
+export type CurrentUserData = {
+  userId: string;
+  email: string | null;
+  profile: {
+    id: string;
+    organization_id: string | null;
+    nome: string | null;
+    cognome: string | null;
+    email: string | null;
+    telefono: string | null;
+    created_at: string;
+    updated_at: string;
+  } | null;
+  organization: { id: string; nome: string | null } | null;
+  roles: AppRole[];
+};
+
+const ROLE_PRIORITY: AppRole[] = [
+  "proprietario",
+  "amministratore",
+  "ufficio_tecnico",
+  "amministrazione",
+  "responsabile_commessa",
+  "capocantiere",
+  "operaio",
+  "cliente",
+  "fornitore",
+];
+
+const INTERNAL: AppRole[] = [
+  "proprietario",
+  "amministratore",
+  "ufficio_tecnico",
+  "amministrazione",
+  "responsabile_commessa",
+  "capocantiere",
+  "operaio",
+];
+
+/**
+ * Centralized loader for current auth user + profile + organization + roles.
+ * Cached under a single query key so pages don't refetch it independently.
+ */
+export function useCurrentUser() {
+  const q = useQuery<CurrentUserData | null>({
+    queryKey: ["current-user"],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+
+      const [{ data: profile }, { data: rolesRows }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, organization_id, nome, cognome, email, telefono, created_at, updated_at, organizations(id, nome)")
+          .eq("id", u.user.id)
+          .maybeSingle(),
+        supabase.from("user_roles").select("role, organization_id").eq("user_id", u.user.id),
+      ]);
+
+      const organization = (profile as any)?.organizations
+        ? { id: (profile as any).organizations.id, nome: (profile as any).organizations.nome }
+        : null;
+
+      return {
+        userId: u.user.id,
+        email: u.user.email ?? null,
+        profile: profile
+          ? {
+              id: profile.id,
+              organization_id: profile.organization_id,
+              nome: profile.nome,
+              cognome: profile.cognome,
+              email: profile.email,
+              telefono: profile.telefono,
+              created_at: profile.created_at,
+              updated_at: profile.updated_at,
+            }
+          : null,
+        organization,
+        roles: ((rolesRows ?? []) as { role: AppRole }[]).map((r) => r.role),
+      };
+    },
+  });
+
+  const data = q.data ?? null;
+  const roles = data?.roles ?? [];
+  const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
+  const has = (...allowed: AppRole[]) => allowed.some((r) => roles.includes(r));
+
+  return {
+    isLoading: q.isLoading,
+    error: q.error as Error | null,
+    data,
+    userId: data?.userId ?? null,
+    profile: data?.profile ?? null,
+    organization: data?.organization ?? null,
+    organizationId: data?.profile?.organization_id ?? null,
+    roles,
+    primaryRole,
+    has,
+    isProprietario: has("proprietario"),
+    isAdmin: has("proprietario", "amministratore"),
+    canManageAnagrafiche: has("proprietario", "amministratore", "ufficio_tecnico", "amministrazione"),
+    canEditPreventivi: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canDeleteBusinessData: has("proprietario", "amministratore"),
+    canReadAudit: has("proprietario", "amministratore", "amministrazione"),
+    isInternal: INTERNAL.some((r) => roles.includes(r)),
+  };
+}
+
+export const ROLE_LABELS: Record<AppRole, string> = {
+  proprietario: "Proprietario",
+  amministratore: "Amministratore",
+  ufficio_tecnico: "Ufficio Tecnico",
+  amministrazione: "Amministrazione",
+  responsabile_commessa: "Responsabile Commessa",
+  capocantiere: "Capocantiere",
+  operaio: "Operaio",
+  cliente: "Cliente",
+  fornitore: "Fornitore",
+};
