@@ -39,30 +39,54 @@ function safeRedirect(value: string | undefined): string | null {
   if (!value) return null;
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   if (value.startsWith("/auth")) return null;
+  if (value.startsWith("/reset-password")) return null;
   return value;
 }
 
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login") || m.includes("invalid credentials"))
+  if (m.includes("invalid login") || m.includes("invalid credentials") || m.includes("invalid_grant"))
     return "Email o password non corretti.";
   if (m.includes("email not confirmed"))
     return "Account non ancora confermato: controlla la tua casella email.";
-  if (m.includes("user already registered") || m.includes("already been registered"))
+  if (m.includes("user already registered") || m.includes("already been registered") || m.includes("already registered"))
     return "Esiste già un account con questa email.";
-  if (m.includes("password") && m.includes("6"))
+  if (m.includes("password") && (m.includes("6") || m.includes("short")))
     return "La password deve contenere almeno 6 caratteri.";
   if (m.includes("rate limit") || m.includes("too many"))
     return "Troppi tentativi: riprova tra qualche minuto.";
-  if (m.includes("network") || m.includes("fetch"))
+  if (m.includes("network") || m.includes("fetch") || m.includes("failed to fetch"))
     return "Errore di connessione: riprova.";
+  if (m.includes("service") && m.includes("unavailable"))
+    return "Servizio temporaneamente non disponibile. Riprova a breve.";
   return "Si è verificato un errore. Riprova.";
+}
+
+function logAuthEvent(op: string, result: "success" | "error", extra?: Record<string, unknown>) {
+  // Non registriamo mai password, token o sessioni.
+  // eslint-disable-next-line no-console
+  console.info(`[auth] ${op} → ${result}`, extra ?? {});
 }
 
 function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const [loading, setLoading] = useState(false);
+
+  // Stati separati per Login, Signup e Reset
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupNome, setSignupNome] = useState("");
+  const [signupCognome, setSignupCognome] = useState("");
+  const [signupOrg, setSignupOrg] = useState("");
+  const [signupLoading, setSignupLoading] = useState(false);
+
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const goAfterAuth = () => {
     const target = safeRedirect(search.redirect) ?? "/";
@@ -71,42 +95,67 @@ function AuthPage() {
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
-    });
-    setLoading(false);
-    if (error) return toast.error(friendlyAuthError(error.message));
+    const email = loginEmail.trim().toLowerCase();
+    const password = loginPassword;
+    if (!email || !password) return;
+    setLoginLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoginLoading(false);
+    if (error) {
+      logAuthEvent("login", "error", { code: (error as any).code, status: (error as any).status });
+      return toast.error(friendlyAuthError(error.message));
+    }
+    logAuthEvent("login", "success", { redirect: safeRedirect(search.redirect) ?? "/" });
     toast.success("Bentornato!");
     goAfterAuth();
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    setLoading(true);
+    const email = signupEmail.trim().toLowerCase();
+    const password = signupPassword;
+    if (!email || !password) return;
+    setSignupLoading(true);
     const { data, error } = await supabase.auth.signUp({
-      email: String(form.get("email")),
-      password: String(form.get("password")),
+      email,
+      password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
-          nome: form.get("nome"),
-          cognome: form.get("cognome"),
-          organization_name: form.get("organization_name"),
+          nome: signupNome.trim(),
+          cognome: signupCognome.trim(),
+          organization_name: signupOrg.trim(),
         },
       },
     });
-    setLoading(false);
-    if (error) return toast.error(friendlyAuthError(error.message));
+    setSignupLoading(false);
+    if (error) {
+      logAuthEvent("signup", "error", { code: (error as any).code, status: (error as any).status });
+      return toast.error(friendlyAuthError(error.message));
+    }
+    logAuthEvent("signup", "success", { hasSession: !!data.session });
     if (data.session) {
       toast.success("Registrazione completata!");
       goAfterAuth();
     } else {
       toast.success("Ti abbiamo inviato un'email di conferma. Controlla la casella per attivare l'account.");
     }
+  };
+
+  const handleReset = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const email = resetEmail.trim().toLowerCase();
+    if (!email) return;
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+    logAuthEvent("reset", error ? "error" : "success", error ? { code: (error as any).code } : undefined);
+    // Messaggio neutro: non riveliamo se l'utente esiste
+    toast.success("Se l'indirizzo è registrato, riceverai un'email con le istruzioni per reimpostare la password.");
+    setResetOpen(false);
+    setResetEmail("");
   };
 
   return (
@@ -124,56 +173,149 @@ function AuthPage() {
             <CardDescription>Il gestionale per la tua impresa edile</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Accedi</TabsTrigger>
-                <TabsTrigger value="signup">Registrati</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4 mt-4">
-                  <div>
-                    <Label htmlFor="l-email">Email</Label>
-                    <Input id="l-email" name="email" type="email" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="l-password">Password</Label>
-                    <Input id="l-password" name="password" type="password" required />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Accesso in corso..." : "Accedi"}
+            {resetOpen ? (
+              <form onSubmit={handleReset} className="space-y-4">
+                <div>
+                  <Label htmlFor="r-email">Email</Label>
+                  <Input
+                    id="r-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Ti invieremo un link per reimpostare la password.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="submit" className="flex-1" disabled={resetLoading}>
+                    {resetLoading ? "Invio..." : "Invia email di recupero"}
                   </Button>
-                </form>
-              </TabsContent>
-              <TabsContent value="signup">
-                <form onSubmit={handleSignup} className="space-y-4 mt-4">
-                  <div>
-                    <Label htmlFor="s-org">Nome impresa</Label>
-                    <Input id="s-org" name="organization_name" required placeholder="Edilizia Rossi S.r.l." />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <Button type="button" variant="ghost" onClick={() => setResetOpen(false)} disabled={resetLoading}>
+                    Annulla
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <Tabs defaultValue="login">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Accedi</TabsTrigger>
+                  <TabsTrigger value="signup">Registrati</TabsTrigger>
+                </TabsList>
+                <TabsContent value="login">
+                  <form onSubmit={handleLogin} className="space-y-4 mt-4" autoComplete="on">
                     <div>
-                      <Label htmlFor="s-nome">Nome</Label>
-                      <Input id="s-nome" name="nome" required />
+                      <Label htmlFor="l-email">Email</Label>
+                      <Input
+                        id="l-email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="s-cognome">Cognome</Label>
-                      <Input id="s-cognome" name="cognome" required />
+                      <Label htmlFor="l-password">Password</Label>
+                      <Input
+                        id="l-password"
+                        name="password"
+                        type="password"
+                        autoComplete="current-password"
+                        required
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                      />
                     </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="s-email">Email</Label>
-                    <Input id="s-email" name="email" type="email" required />
-                  </div>
-                  <div>
-                    <Label htmlFor="s-password">Password</Label>
-                    <Input id="s-password" name="password" type="password" required minLength={6} />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creazione..." : "Crea account"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                    <Button type="submit" className="w-full" disabled={loginLoading}>
+                      {loginLoading ? "Accesso in corso..." : "Accedi"}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetEmail(loginEmail);
+                        setResetOpen(true);
+                      }}
+                      className="text-sm text-primary hover:underline w-full text-center"
+                    >
+                      Password dimenticata?
+                    </button>
+                  </form>
+                </TabsContent>
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignup} className="space-y-4 mt-4" autoComplete="on">
+                    <div>
+                      <Label htmlFor="s-org">Nome impresa</Label>
+                      <Input
+                        id="s-org"
+                        name="organization_name"
+                        autoComplete="organization"
+                        required
+                        placeholder="Edilizia Rossi S.r.l."
+                        value={signupOrg}
+                        onChange={(e) => setSignupOrg(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="s-nome">Nome</Label>
+                        <Input
+                          id="s-nome"
+                          name="nome"
+                          autoComplete="given-name"
+                          required
+                          value={signupNome}
+                          onChange={(e) => setSignupNome(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="s-cognome">Cognome</Label>
+                        <Input
+                          id="s-cognome"
+                          name="cognome"
+                          autoComplete="family-name"
+                          required
+                          value={signupCognome}
+                          onChange={(e) => setSignupCognome(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="s-email">Email</Label>
+                      <Input
+                        id="s-email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        required
+                        value={signupEmail}
+                        onChange={(e) => setSignupEmail(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="s-password">Password</Label>
+                      <Input
+                        id="s-password"
+                        name="password"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        minLength={6}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={signupLoading}>
+                      {signupLoading ? "Creazione..." : "Crea account"}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
       </div>
