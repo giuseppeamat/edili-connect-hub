@@ -75,7 +75,7 @@ function ClienteDetailPage() {
 
   const { data: documenti = [] } = useQuery({
     queryKey: ["cliente", clienteId, "documenti"],
-    queryFn: async () => (await supabase.from("documenti").select("id, tipo, descrizione, data_scadenza, stato, created_at").eq("cliente_id", clienteId).order("created_at", { ascending: false })).data ?? [],
+    queryFn: async () => (await supabase.from("documenti").select("id, nome, categoria, descrizione, data_scadenza, stato, created_at").eq("cliente_id", clienteId).order("created_at", { ascending: false })).data ?? [],
   });
 
   const invalidateAll = () => qc.invalidateQueries({ queryKey: ["cliente", clienteId] });
