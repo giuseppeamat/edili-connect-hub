@@ -1,25 +1,21 @@
-## Problema
-Il redirect a `/auth` scatta perché il login anonimo di Supabase fallisce (probabilmente non abilitato sul progetto), quindi il layout `_authenticated` ti sbatte sulla pagina di accesso e non vedi nulla del gestionale.
+## Obiettivo
 
-## Soluzione
-Rimuovo del tutto il controllo di autenticazione dal layout: entri direttamente nel software e puoi navigare tutte le pagine (Dashboard, Clienti, Fornitori, Preventivi, Commesse, Rapportini, Documenti, Scadenziario, Audit) anche senza login.
+Correggere la generazione del link di invito: oggi usa `window.location.origin`, che nell'anteprima dell'editor produce un URL `id-preview--…lovable.app` (apre l'editor Lovable). Il link deve invece puntare sempre all'app pubblicata `https://edili-connect-hub.lovable.app`.
 
-### Cosa cambia
-1. **`src/routes/_authenticated/route.tsx`** — tolgo `beforeLoad` e il tentativo di sign-in anonimo. Il layout renderizza sempre `AppShell` + `Outlet`, senza redirect.
-2. **`src/routes/index.tsx`** (nuovo) — reindirizza `/` alla dashboard `/` autenticata... in pratica creo un index che monta direttamente la Dashboard, così aprendo il preview vedi subito il gestionale.
-3. **`src/components/user-menu.tsx`** — siccome non c'è più utente, mostro sempre l'etichetta "Modalità demo" con il bottone **Accedi / Registrati** che porta a `/auth` (rimane disponibile per quando vorrai creare un account vero).
-4. **`src/routes/auth.tsx`** — resta com'è, raggiungibile solo cliccando "Accedi".
+L'invio email resta manuale per ora (copia link e condividilo via canale esterno). Nessun invio email verrà attivato in questo intervento.
 
-### Conseguenza sui dati
-Senza utente autenticato, le policy RLS bloccano tutte le query: le pagine si aprono ma le tabelle sono vuote (nessun errore, solo "Nessun risultato"). Questo ti permette comunque di **vedere la struttura, la navigazione e i form** di ogni modulo — che è quello che hai chiesto ("so dove andare a lavorare").
+## Modifiche
 
-Per vedere dati veri servirà registrarsi una volta (nome impresa + email + password) e cliccare "Carica dati demo" in Dashboard — ma non è più bloccante per esplorare.
+1. **`src/lib/app-url.ts` (nuovo)** — piccola utility `getPublicAppUrl()` che restituisce l'URL pubblico di base:
+   - legge `import.meta.env.VITE_PUBLIC_APP_URL` se impostato (per flessibilità futura, es. dominio custom);
+   - altrimenti ritorna la costante `https://edili-connect-hub.lovable.app`.
 
-### File modificati
-- `src/routes/_authenticated/route.tsx` (rimozione gate auth)
-- `src/components/user-menu.tsx` (sempre in modalità ospite)
+2. **`src/routes/_authenticated/organizzazione.tsx`** — sostituire `window.location.origin` con `getPublicAppUrl()` nella riga che compone il link invito. Il link diventerà `https://edili-connect-hub.lovable.app/accetta-invito?token=…`.
 
-### Cosa NON tocco
-- Schema DB, RLS, policy di sicurezza
-- Pagina `/auth` (funziona già)
-- Nessuna modifica al backend
+3. **UI Inviti — piccolo miglioramento di chiarezza**: sotto il link mostrato dopo la creazione, aggiungere una nota breve tipo _"Copia e invia questo link al destinatario (WhatsApp, email, ecc.). L'invio automatico via email non è ancora attivo."_ così l'aspettativa è chiara.
+
+## Note
+
+- Nessuna modifica al database, alle policy o alle Server Functions.
+- La route `/accetta-invito` esiste già e funziona identicamente sull'app pubblicata.
+- Se in futuro colleghi un dominio personalizzato, basterà impostare `VITE_PUBLIC_APP_URL` per farlo puntare lì senza toccare codice.
