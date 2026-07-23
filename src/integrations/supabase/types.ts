@@ -55,67 +55,205 @@ export type Database = {
           },
         ]
       }
-      clienti: {
+      cliente_contatti: {
         Row: {
-          cap: string | null
-          citta: string | null
-          codice_fiscale: string | null
+          archived_at: string | null
+          cellulare: string | null
+          cliente_id: string
+          cognome: string | null
           created_at: string
           email: string | null
           id: string
-          indirizzo: string | null
+          is_primary: boolean
+          nome: string
           note: string | null
           organization_id: string
-          partita_iva: string | null
           pec: string | null
-          provincia: string | null
-          ragione_sociale: string
-          referente: string | null
+          ruolo: string | null
           telefono: string | null
           updated_at: string
         }
         Insert: {
-          cap?: string | null
-          citta?: string | null
-          codice_fiscale?: string | null
+          archived_at?: string | null
+          cellulare?: string | null
+          cliente_id: string
+          cognome?: string | null
           created_at?: string
           email?: string | null
           id?: string
-          indirizzo?: string | null
+          is_primary?: boolean
+          nome: string
           note?: string | null
           organization_id: string
-          partita_iva?: string | null
           pec?: string | null
-          provincia?: string | null
-          ragione_sociale: string
-          referente?: string | null
+          ruolo?: string | null
           telefono?: string | null
           updated_at?: string
         }
         Update: {
-          cap?: string | null
-          citta?: string | null
-          codice_fiscale?: string | null
+          archived_at?: string | null
+          cellulare?: string | null
+          cliente_id?: string
+          cognome?: string | null
           created_at?: string
           email?: string | null
           id?: string
-          indirizzo?: string | null
+          is_primary?: boolean
+          nome?: string
           note?: string | null
           organization_id?: string
-          partita_iva?: string | null
           pec?: string | null
-          provincia?: string | null
-          ragione_sociale?: string
-          referente?: string | null
+          ruolo?: string | null
           telefono?: string | null
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "cliente_contatti_cliente_org_fkey"
+            columns: ["cliente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cliente_contatti_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clienti: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          cap: string | null
+          cellulare: string | null
+          citta: string | null
+          codice_destinatario: string | null
+          codice_fiscale: string | null
+          cognome: string | null
+          created_at: string
+          created_by: string | null
+          denominazione: string
+          email: string | null
+          fonte_acquisizione: string | null
+          id: string
+          indirizzo: string | null
+          nome: string | null
+          note: string | null
+          note_interne: string | null
+          numero_civico: string | null
+          organization_id: string
+          paese: string | null
+          partita_iva: string | null
+          pec: string | null
+          provincia: string | null
+          ragione_sociale: string | null
+          referente: string | null
+          responsabile_id: string | null
+          sito_web: string | null
+          stato_cliente: Database["public"]["Enums"]["cliente_stato"]
+          telefono: string | null
+          tipo: Database["public"]["Enums"]["cliente_tipo"]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cap?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          created_at?: string
+          created_by?: string | null
+          denominazione: string
+          email?: string | null
+          fonte_acquisizione?: string | null
+          id?: string
+          indirizzo?: string | null
+          nome?: string | null
+          note?: string | null
+          note_interne?: string | null
+          numero_civico?: string | null
+          organization_id: string
+          paese?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          referente?: string | null
+          responsabile_id?: string | null
+          sito_web?: string | null
+          stato_cliente?: Database["public"]["Enums"]["cliente_stato"]
+          telefono?: string | null
+          tipo?: Database["public"]["Enums"]["cliente_tipo"]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cap?: string | null
+          cellulare?: string | null
+          citta?: string | null
+          codice_destinatario?: string | null
+          codice_fiscale?: string | null
+          cognome?: string | null
+          created_at?: string
+          created_by?: string | null
+          denominazione?: string
+          email?: string | null
+          fonte_acquisizione?: string | null
+          id?: string
+          indirizzo?: string | null
+          nome?: string | null
+          note?: string | null
+          note_interne?: string | null
+          numero_civico?: string | null
+          organization_id?: string
+          paese?: string | null
+          partita_iva?: string | null
+          pec?: string | null
+          provincia?: string | null
+          ragione_sociale?: string | null
+          referente?: string | null
+          responsabile_id?: string | null
+          sito_web?: string | null
+          stato_cliente?: Database["public"]["Enums"]["cliente_stato"]
+          telefono?: string | null
+          tipo?: Database["public"]["Enums"]["cliente_tipo"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clienti_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clienti_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "clienti_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clienti_responsabile_id_fkey"
+            columns: ["responsabile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -219,6 +357,102 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "preventivi"
             referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      crm_attivita: {
+        Row: {
+          archived_at: string | null
+          assegnata_a: string | null
+          cliente_id: string
+          completata_at: string | null
+          contatto_id: string | null
+          created_at: string
+          created_by: string
+          data_attivita: string
+          descrizione: string | null
+          id: string
+          organization_id: string
+          priorita: Database["public"]["Enums"]["attivita_priorita"]
+          scadenza: string | null
+          stato: Database["public"]["Enums"]["attivita_stato"]
+          tipo: Database["public"]["Enums"]["attivita_tipo"]
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          assegnata_a?: string | null
+          cliente_id: string
+          completata_at?: string | null
+          contatto_id?: string | null
+          created_at?: string
+          created_by: string
+          data_attivita?: string
+          descrizione?: string | null
+          id?: string
+          organization_id: string
+          priorita?: Database["public"]["Enums"]["attivita_priorita"]
+          scadenza?: string | null
+          stato?: Database["public"]["Enums"]["attivita_stato"]
+          tipo?: Database["public"]["Enums"]["attivita_tipo"]
+          titolo: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          assegnata_a?: string | null
+          cliente_id?: string
+          completata_at?: string | null
+          contatto_id?: string | null
+          created_at?: string
+          created_by?: string
+          data_attivita?: string
+          descrizione?: string | null
+          id?: string
+          organization_id?: string
+          priorita?: Database["public"]["Enums"]["attivita_priorita"]
+          scadenza?: string | null
+          stato?: Database["public"]["Enums"]["attivita_stato"]
+          tipo?: Database["public"]["Enums"]["attivita_tipo"]
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_attivita_assegnata_a_fkey"
+            columns: ["assegnata_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_attivita_cliente_org_fkey"
+            columns: ["cliente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "crm_attivita_contatto_org_fkey"
+            columns: ["contatto_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_contatti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "crm_attivita_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_attivita_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -861,6 +1095,10 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      is_valid_responsabile: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
+      }
       mark_expired_invites: { Args: never; Returns: undefined }
     }
     Enums: {
@@ -874,6 +1112,23 @@ export type Database = {
         | "operaio"
         | "cliente"
         | "fornitore"
+      attivita_priorita: "bassa" | "normale" | "alta" | "urgente"
+      attivita_stato: "pianificata" | "completata" | "annullata"
+      attivita_tipo:
+        | "telefonata"
+        | "email"
+        | "incontro"
+        | "sopralluogo"
+        | "nota"
+        | "promemoria"
+        | "altro"
+      cliente_stato: "potenziale" | "attivo" | "inattivo" | "archiviato"
+      cliente_tipo:
+        | "persona_fisica"
+        | "azienda"
+        | "condominio"
+        | "ente"
+        | "altro"
       commessa_stato:
         | "pianificata"
         | "in_corso"
@@ -1026,6 +1281,25 @@ export const Constants = {
         "operaio",
         "cliente",
         "fornitore",
+      ],
+      attivita_priorita: ["bassa", "normale", "alta", "urgente"],
+      attivita_stato: ["pianificata", "completata", "annullata"],
+      attivita_tipo: [
+        "telefonata",
+        "email",
+        "incontro",
+        "sopralluogo",
+        "nota",
+        "promemoria",
+        "altro",
+      ],
+      cliente_stato: ["potenziale", "attivo", "inattivo", "archiviato"],
+      cliente_tipo: [
+        "persona_fisica",
+        "azienda",
+        "condominio",
+        "ente",
+        "altro",
       ],
       commessa_stato: [
         "pianificata",
