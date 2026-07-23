@@ -471,6 +471,7 @@ export type Database = {
           mime_type: string | null
           nome: string
           organization_id: string
+          preventivo_id: string | null
           size_bytes: number | null
           stato: Database["public"]["Enums"]["documento_stato"]
           storage_path: string | null
@@ -493,6 +494,7 @@ export type Database = {
           mime_type?: string | null
           nome: string
           organization_id: string
+          preventivo_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
           storage_path?: string | null
@@ -515,6 +517,7 @@ export type Database = {
           mime_type?: string | null
           nome?: string
           organization_id?: string
+          preventivo_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
           storage_path?: string | null
@@ -572,6 +575,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_preventivo_id_fkey"
+            columns: ["preventivo_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_preventivo_org_fkey"
+            columns: ["preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -761,17 +778,43 @@ export type Database = {
       }
       preventivi: {
         Row: {
+          annullato_at: string | null
           cliente_id: string | null
+          condizioni_generali: string | null
+          condizioni_pagamento: string | null
+          convertito_at: string | null
           created_at: string
+          created_by: string | null
+          data_accettazione: string | null
+          data_invio: string | null
           data_preventivo: string
+          data_rifiuto: string | null
           data_validita: string | null
+          esclusioni: string | null
+          firma_referente: string | null
+          garanzie: string | null
           id: string
+          is_current_version: boolean
+          iva_default_pct: number
+          maggiorazione_globale_pct: number
           margine: number
+          motivo_nuova_versione: string | null
+          motivo_rifiuto: string | null
           note: string | null
           numero: string
           oggetto: string
           organization_id: string
+          parent_version_id: string | null
+          responsabile_id: string | null
+          root_preventivo_id: string | null
+          sconto_globale_pct: number
+          spese_accessorie: number
           stato: Database["public"]["Enums"]["preventivo_stato"]
+          superseded_at: string | null
+          superseded_by: string | null
+          tempi_esecuzione: string | null
+          tipo: Database["public"]["Enums"]["preventivo_tipo"] | null
+          titolo: string | null
           totale: number
           totale_costo: number
           totale_iva: number
@@ -780,17 +823,43 @@ export type Database = {
           versione: number
         }
         Insert: {
+          annullato_at?: string | null
           cliente_id?: string | null
+          condizioni_generali?: string | null
+          condizioni_pagamento?: string | null
+          convertito_at?: string | null
           created_at?: string
+          created_by?: string | null
+          data_accettazione?: string | null
+          data_invio?: string | null
           data_preventivo?: string
+          data_rifiuto?: string | null
           data_validita?: string | null
+          esclusioni?: string | null
+          firma_referente?: string | null
+          garanzie?: string | null
           id?: string
+          is_current_version?: boolean
+          iva_default_pct?: number
+          maggiorazione_globale_pct?: number
           margine?: number
+          motivo_nuova_versione?: string | null
+          motivo_rifiuto?: string | null
           note?: string | null
           numero: string
           oggetto: string
           organization_id: string
+          parent_version_id?: string | null
+          responsabile_id?: string | null
+          root_preventivo_id?: string | null
+          sconto_globale_pct?: number
+          spese_accessorie?: number
           stato?: Database["public"]["Enums"]["preventivo_stato"]
+          superseded_at?: string | null
+          superseded_by?: string | null
+          tempi_esecuzione?: string | null
+          tipo?: Database["public"]["Enums"]["preventivo_tipo"] | null
+          titolo?: string | null
           totale?: number
           totale_costo?: number
           totale_iva?: number
@@ -799,17 +868,43 @@ export type Database = {
           versione?: number
         }
         Update: {
+          annullato_at?: string | null
           cliente_id?: string | null
+          condizioni_generali?: string | null
+          condizioni_pagamento?: string | null
+          convertito_at?: string | null
           created_at?: string
+          created_by?: string | null
+          data_accettazione?: string | null
+          data_invio?: string | null
           data_preventivo?: string
+          data_rifiuto?: string | null
           data_validita?: string | null
+          esclusioni?: string | null
+          firma_referente?: string | null
+          garanzie?: string | null
           id?: string
+          is_current_version?: boolean
+          iva_default_pct?: number
+          maggiorazione_globale_pct?: number
           margine?: number
+          motivo_nuova_versione?: string | null
+          motivo_rifiuto?: string | null
           note?: string | null
           numero?: string
           oggetto?: string
           organization_id?: string
+          parent_version_id?: string | null
+          responsabile_id?: string | null
+          root_preventivo_id?: string | null
+          sconto_globale_pct?: number
+          spese_accessorie?: number
           stato?: Database["public"]["Enums"]["preventivo_stato"]
+          superseded_at?: string | null
+          superseded_by?: string | null
+          tempi_esecuzione?: string | null
+          tipo?: Database["public"]["Enums"]["preventivo_tipo"] | null
+          titolo?: string | null
           totale?: number
           totale_costo?: number
           totale_iva?: number
@@ -839,17 +934,213 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "preventivi_parent_org_fkey"
+            columns: ["parent_version_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "preventivi_root_org_fkey"
+            columns: ["root_preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "preventivi_superseded_by_org_fkey"
+            columns: ["superseded_by", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      preventivo_categorie: {
+        Row: {
+          created_at: string
+          descrizione: string | null
+          id: string
+          organization_id: string
+          posizione: number
+          preventivo_id: string
+          subtotale_costo: number
+          subtotale_ricavo: number
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          organization_id: string
+          posizione?: number
+          preventivo_id: string
+          subtotale_costo?: number
+          subtotale_ricavo?: number
+          titolo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descrizione?: string | null
+          id?: string
+          organization_id?: string
+          posizione?: number
+          preventivo_id?: string
+          subtotale_costo?: number
+          subtotale_ricavo?: number
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preventivo_categorie_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preventivo_categorie_prev_org_fkey"
+            columns: ["preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      preventivo_storico_stati: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          preventivo_id: string
+          stato_nuovo: Database["public"]["Enums"]["preventivo_stato"]
+          stato_precedente:
+            | Database["public"]["Enums"]["preventivo_stato"]
+            | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          preventivo_id: string
+          stato_nuovo: Database["public"]["Enums"]["preventivo_stato"]
+          stato_precedente?:
+            | Database["public"]["Enums"]["preventivo_stato"]
+            | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          preventivo_id?: string
+          stato_nuovo?: Database["public"]["Enums"]["preventivo_stato"]
+          stato_precedente?:
+            | Database["public"]["Enums"]["preventivo_stato"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preventivo_storico_prev_org_fkey"
+            columns: ["preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "preventivo_storico_stati_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preventivo_templates: {
+        Row: {
+          attivo: boolean
+          condizioni_generali: string | null
+          condizioni_pagamento: string | null
+          created_at: string
+          descrizione: string | null
+          esclusioni: string | null
+          garanzie: string | null
+          id: string
+          iva_default_pct: number
+          nome: string
+          organization_id: string
+          tempi_esecuzione: string | null
+          updated_at: string
+        }
+        Insert: {
+          attivo?: boolean
+          condizioni_generali?: string | null
+          condizioni_pagamento?: string | null
+          created_at?: string
+          descrizione?: string | null
+          esclusioni?: string | null
+          garanzie?: string | null
+          id?: string
+          iva_default_pct?: number
+          nome: string
+          organization_id: string
+          tempi_esecuzione?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attivo?: boolean
+          condizioni_generali?: string | null
+          condizioni_pagamento?: string | null
+          created_at?: string
+          descrizione?: string | null
+          esclusioni?: string | null
+          garanzie?: string | null
+          id?: string
+          iva_default_pct?: number
+          nome?: string
+          organization_id?: string
+          tempi_esecuzione?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preventivo_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
       }
       preventivo_voci: {
         Row: {
           capitolo: string | null
           categoria: string | null
+          categoria_id: string | null
+          codice: string | null
+          costo_totale: number
           costo_unitario: number
           created_at: string
           descrizione: string
           id: string
+          importo_netto: number
           iva_pct: number
+          maggiorazione_pct: number
+          margine: number
+          margine_pct: number
+          note: string | null
           ordine: number
           organization_id: string
           preventivo_id: string
@@ -859,15 +1150,24 @@ export type Database = {
           sconto_pct: number
           totale: number
           unita_misura: string | null
+          updated_at: string
         }
         Insert: {
           capitolo?: string | null
           categoria?: string | null
+          categoria_id?: string | null
+          codice?: string | null
+          costo_totale?: number
           costo_unitario?: number
           created_at?: string
           descrizione: string
           id?: string
+          importo_netto?: number
           iva_pct?: number
+          maggiorazione_pct?: number
+          margine?: number
+          margine_pct?: number
+          note?: string | null
           ordine?: number
           organization_id: string
           preventivo_id: string
@@ -877,15 +1177,24 @@ export type Database = {
           sconto_pct?: number
           totale?: number
           unita_misura?: string | null
+          updated_at?: string
         }
         Update: {
           capitolo?: string | null
           categoria?: string | null
+          categoria_id?: string | null
+          codice?: string | null
+          costo_totale?: number
           costo_unitario?: number
           created_at?: string
           descrizione?: string
           id?: string
+          importo_netto?: number
           iva_pct?: number
+          maggiorazione_pct?: number
+          margine?: number
+          margine_pct?: number
+          note?: string | null
           ordine?: number
           organization_id?: string
           preventivo_id?: string
@@ -895,8 +1204,16 @@ export type Database = {
           sconto_pct?: number
           totale?: number
           unita_misura?: string | null
+          updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "preventivo_voci_categoria_org_fkey"
+            columns: ["categoria_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivo_categorie"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "preventivo_voci_organization_id_fkey"
             columns: ["organization_id"]
@@ -1078,6 +1395,10 @@ export type Database = {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
       }
+      assign_preventivo_numero: {
+        Args: { _anno: number; _org: string }
+        Returns: string
+      }
       current_organization_id: { Args: never; Returns: string }
       has_any_role: {
         Args: {
@@ -1144,6 +1465,17 @@ export type Database = {
         | "accettato"
         | "rifiutato"
         | "scaduto"
+        | "in_revisione"
+        | "pronto"
+        | "annullato"
+        | "convertito"
+      preventivo_tipo:
+        | "lavori_edili"
+        | "ristrutturazione"
+        | "manutenzione"
+        | "fornitura_posa"
+        | "consulenza"
+        | "altro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1317,6 +1649,18 @@ export const Constants = {
         "accettato",
         "rifiutato",
         "scaduto",
+        "in_revisione",
+        "pronto",
+        "annullato",
+        "convertito",
+      ],
+      preventivo_tipo: [
+        "lavori_edili",
+        "ristrutturazione",
+        "manutenzione",
+        "fornitura_posa",
+        "consulenza",
+        "altro",
       ],
     },
   },
