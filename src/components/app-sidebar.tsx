@@ -41,7 +41,9 @@ const items: NavItem[] = [
 
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
+  const { roles } = useCurrentUser();
   const isActive = (u: string) => (u === "/" ? currentPath === "/" : currentPath.startsWith(u));
+  const visible = items.filter((it) => !it.hideForRoles?.some((r) => roles.includes(r)));
 
   return (
     <Sidebar collapsible="icon">
