@@ -11,6 +11,7 @@ import {
   setMemberActive,
 } from "@/lib/invites.functions";
 import { useCurrentUser, ROLE_LABELS, type AppRole } from "@/hooks/use-current-user";
+import { getPublicAppUrl } from "@/lib/app-url";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -382,7 +383,7 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
   };
 
   const inviteUrl = (token: string) =>
-    `${window.location.origin}/accetta-invito?token=${encodeURIComponent(token)}`;
+    `${getPublicAppUrl()}/accetta-invito?token=${encodeURIComponent(token)}`;
   const copy = async (token: string) => {
     await navigator.clipboard.writeText(inviteUrl(token));
     toast.success("Link copiato negli appunti");
@@ -433,7 +434,8 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
           <AlertTitle>Link di invito generato</AlertTitle>
           <AlertDescription className="space-y-2">
             <p className="text-xs text-muted-foreground">
-              Questo link viene mostrato una sola volta. Copialo e consegnalo al destinatario.
+              Questo link viene mostrato una sola volta. Copialo e invialo al destinatario
+              (WhatsApp, email, ecc.). L'invio automatico via email non è ancora attivo.
             </p>
             <div className="flex gap-2 items-center">
               <Input readOnly value={inviteUrl(freshToken.token)} className="font-mono text-xs" />
