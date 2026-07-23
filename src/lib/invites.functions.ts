@@ -38,11 +38,8 @@ function generateToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-function tokenPreview(token: string): string {
-  // Solo per audit/log — mostra 4 char iniziali + finali, mai il token intero.
-  if (token.length < 12) return "***";
-  return `${token.slice(0, 4)}…${token.slice(-4)}`;
-}
+// Nota: non registriamo mai alcuna parte del token (nemmeno una preview) nei log/audit.
+
 
 async function assertCallerCanManageInvites(context: any, organizationId: string) {
   const { data, error } = await context.supabase
@@ -165,9 +162,9 @@ export const createInvite = createServerFn({ method: "POST" })
     await logAudit(context, organizationId, "invite.create", "invites", inv.id, {
       email: data.email,
       role: data.role,
-      token_preview: tokenPreview(token),
       expires_at,
     });
+
 
     // Il token è restituito UNA SOLA VOLTA. Non è persistito né loggato.
     return { invite_id: inv.id, token, expires_at: inv.expires_at };
@@ -208,9 +205,9 @@ export const regenerateInvite = createServerFn({ method: "POST" })
 
     await logAudit(context, inv.organization_id, "invite.regenerate", "invites", inv.id, {
       email: inv.email,
-      token_preview: tokenPreview(token),
       expires_at,
     });
+
 
     return { invite_id: inv.id, token, expires_at };
   });
@@ -489,3 +486,104 @@ export const setMemberActive = createServerFn({ method: "POST" })
     );
     return { ok: true };
   });
+
+// ---------------------- ACCEPT AS NEW USER (pubblico) ----------------------
+// Crea l'account Supabase per un invitato che non ha ancora un account.
+// La password è scelta dall'invitato e passata direttamente ad Auth (mai loggata).
+// L'organizzazione e il ruolo derivano ESCLUSIVAMENTE dal record invites validato.
+export const acceptInviteAsNewUser = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        token: z.string().min(20).max(200),
+        password: z.string().min(8).max(200),
+        nome: z.string().trim().min(1).max(80),
+        cognome: z.string().trim().min(1).max(80),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const token_hash = sha256(data.token);
+
+    const { data: inv } = await supabaseAdmin
+      .from("invites")
+      .select("id, organization_id, email, role, status, expires_at")
+      .eq("token_hash", token_hash)
+      .maybeSingle();
+    if (!inv) throw new Error("Invito non valido");
+    if (inv.status !== "pending") throw new Error("Invito non più valido");
+    if (new Date(inv.expires_at).getTime() < Date.now()) {
+      await supabaseAdmin.from("invites").update({ status: "expired" }).eq("id", inv.id);
+      throw new Error("Invito scaduto");
+    }
+
+    // Blocca se esiste già un utente con quella email → deve usare "Ho già un account"
+    // (admin.listUsers non filtra per email direttamente; usiamo profiles come proxy.)
+    const { data: existingProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("email", inv.email)
+      .maybeSingle();
+    if (existingProfile) {
+      throw new Error(
+        "Esiste già un account con questa email. Usa 'Ho già un account' per accedere e accettare l'invito.",
+      );
+    }
+
+    // Crea l'utente in Supabase Auth con email pre-confermata (l'invito prova che l'email è raggiungibile).
+    // I metadati 'invited_org_id' e 'invited_role' sono impostati SOLO qui, lato server, dopo la validazione del token.
+    // Il trigger handle_new_user rileva 'invited_org_id' e NON crea una nuova organizzazione né il ruolo proprietario.
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email: inv.email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        nome: data.nome,
+        cognome: data.cognome,
+        invited_org_id: inv.organization_id,
+        invited_role: inv.role,
+      },
+    });
+    if (createErr || !created.user) {
+      throw new Error(createErr?.message ?? "Impossibile creare l'account");
+    }
+    const newUserId = created.user.id;
+
+    // Assegna il ruolo previsto dall'invito (unico ruolo).
+    const { error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({
+        user_id: newUserId,
+        organization_id: inv.organization_id,
+        role: inv.role,
+      });
+    if (roleErr) {
+      // Rollback best-effort: elimina l'utente creato
+      await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      throw new Error(roleErr.message);
+    }
+
+    // Marca l'invito accettato
+    await supabaseAdmin
+      .from("invites")
+      .update({
+        status: "accepted",
+        accepted_by: newUserId,
+        accepted_at: new Date().toISOString(),
+      })
+      .eq("id", inv.id);
+
+    // Audit: nessuna parte del token viene registrata.
+    await supabaseAdmin.from("audit_log").insert({
+      organization_id: inv.organization_id,
+      user_id: newUserId,
+      action: "invite.accept_signup",
+      entity: "invites",
+      entity_id: inv.id,
+      metadata: { email: inv.email, role: inv.role } as any,
+    });
+
+    return { ok: true, email: inv.email };
+  });
+
