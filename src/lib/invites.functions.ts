@@ -205,9 +205,9 @@ export const regenerateInvite = createServerFn({ method: "POST" })
 
     await logAudit(context, inv.organization_id, "invite.regenerate", "invites", inv.id, {
       email: inv.email,
-      token_preview: tokenPreview(token),
       expires_at,
     });
+
 
     return { invite_id: inv.id, token, expires_at };
   });
