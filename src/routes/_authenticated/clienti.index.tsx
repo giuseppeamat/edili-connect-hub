@@ -17,7 +17,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { archiveCliente, restoreCliente } from "@/lib/crm.functions";
 import { ClienteForm } from "@/components/crm/cliente-form";
 
-export const Route = createFileRoute("/_authenticated/clienti")({
+export const Route = createFileRoute("/_authenticated/clienti/")({
   head: () => ({
     meta: [
       { title: "Clienti — CantiereOS" },
