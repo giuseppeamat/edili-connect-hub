@@ -54,15 +54,10 @@ export function UserMenu() {
 
   if (!profile) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="hidden md:inline text-xs text-muted-foreground">
-          Modalità demo
-        </span>
-        <Button size="sm" onClick={() => navigate({ to: "/auth" })} className="gap-2">
-          <LogIn className="h-4 w-4" />
-          Accedi / Registrati
-        </Button>
-      </div>
+      <Button size="sm" variant="ghost" onClick={() => navigate({ to: "/auth" })} className="gap-2">
+        <LogIn className="h-4 w-4" />
+        Accedi
+      </Button>
     );
   }
 
