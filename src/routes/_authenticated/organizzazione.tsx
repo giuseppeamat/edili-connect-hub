@@ -400,11 +400,18 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
             <form onSubmit={onCreate} className="space-y-3">
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" required autoComplete="off" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  autoComplete="off"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
               </div>
               <div>
-                <Label htmlFor="role">Ruolo</Label>
-                <Select name="role" defaultValue={allowedRoles[0]}>
+                <Label>Ruolo</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {allowedRoles.map((r) => (
@@ -412,7 +419,6 @@ function InvitiTab({ organizationId, isProprietario }: { organizationId: string;
                     ))}
                   </SelectContent>
                 </Select>
-                <input type="hidden" name="role" />
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={create.isPending}>Crea invito</Button>
