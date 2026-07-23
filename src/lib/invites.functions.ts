@@ -162,9 +162,9 @@ export const createInvite = createServerFn({ method: "POST" })
     await logAudit(context, organizationId, "invite.create", "invites", inv.id, {
       email: data.email,
       role: data.role,
-      token_preview: tokenPreview(token),
       expires_at,
     });
+
 
     // Il token è restituito UNA SOLA VOLTA. Non è persistito né loggato.
     return { invite_id: inv.id, token, expires_at: inv.expires_at };
