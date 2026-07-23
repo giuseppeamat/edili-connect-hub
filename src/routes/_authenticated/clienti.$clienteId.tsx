@@ -98,7 +98,7 @@ function ClienteDetailPage() {
     for (const a of attivita) evs.push({ t: "attivita", date: a.data_attivita ?? a.created_at, icon: FileText, title: `${a.tipo}: ${a.titolo}`, sub: a.stato });
     for (const p of preventivi) evs.push({ t: "prev", date: p.data_preventivo ?? "", icon: FileText, title: `Preventivo ${p.numero} — ${p.oggetto}`, sub: `${eur(p.totale)} · ${p.stato}` });
     for (const c of commesse) evs.push({ t: "comm", date: c.data_inizio ?? "", icon: HardHat, title: `Commessa ${c.codice} — ${c.denominazione}`, sub: c.stato });
-    for (const d of documenti) evs.push({ t: "doc", date: d.created_at, icon: FolderOpen, title: d.descrizione ?? d.tipo, sub: d.stato });
+    for (const d of documenti) evs.push({ t: "doc", date: d.created_at, icon: FolderOpen, title: d.descrizione ?? d.nome, sub: `${d.categoria ?? "documento"} · ${d.stato}` });
     return evs.filter((e) => e.date).sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [attivita, preventivi, commesse, documenti]);
 
