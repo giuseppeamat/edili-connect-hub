@@ -1395,8 +1395,36 @@ export type Database = {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
       }
+      assign_commessa_codice: {
+        Args: { _anno: number; _org: string }
+        Returns: string
+      }
       assign_preventivo_numero: {
         Args: { _anno: number; _org: string }
+        Returns: string
+      }
+      change_preventivo_stato: {
+        Args: {
+          _motivo?: string
+          _note?: string
+          _nuovo_stato: Database["public"]["Enums"]["preventivo_stato"]
+          _preventivo_id: string
+        }
+        Returns: undefined
+      }
+      convert_preventivo_to_commessa: {
+        Args: {
+          _data_fine_prevista?: string
+          _data_inizio?: string
+          _indirizzo_cantiere?: string
+          _note?: string
+          _preventivo_id: string
+          _responsabile_id?: string
+        }
+        Returns: string
+      }
+      create_preventivo_nuova_versione: {
+        Args: { _motivo?: string; _preventivo_id: string }
         Returns: string
       }
       current_organization_id: { Args: never; Returns: string }
