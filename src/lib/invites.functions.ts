@@ -93,7 +93,7 @@ async function logAudit(
     action,
     entity,
     entity_id: entityId,
-    metadata,
+    metadata: metadata as any,
   });
 }
 
