@@ -1,5 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
+import { useState } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { HardHat } from "lucide-react";
 
+const searchSchema = z.object({
+  redirect: z.string().optional(),
+});
+
 export const Route = createFileRoute("/auth")({
+  ssr: false,
+  validateSearch: searchSchema,
+  beforeLoad: async ({ search }) => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user && !data.user.is_anonymous) {
+      const target = safeRedirect(search.redirect) ?? "/";
+      throw redirect({ to: target });
+    }
+  },
   head: () => ({
     meta: [
       { title: "Accedi — CantiereOS" },
@@ -21,41 +35,59 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+function safeRedirect(value: string | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  if (value.startsWith("/auth")) return null;
+  return value;
+}
+
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login") || m.includes("invalid credentials"))
+    return "Email o password non corretti.";
+  if (m.includes("email not confirmed"))
+    return "Account non ancora confermato: controlla la tua casella email.";
+  if (m.includes("user already registered") || m.includes("already been registered"))
+    return "Esiste già un account con questa email.";
+  if (m.includes("password") && m.includes("6"))
+    return "La password deve contenere almeno 6 caratteri.";
+  if (m.includes("rate limit") || m.includes("too many"))
+    return "Troppi tentativi: riprova tra qualche minuto.";
+  if (m.includes("network") || m.includes("fetch"))
+    return "Errore di connessione: riprova.";
+  return "Si è verificato un errore. Riprova.";
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      // Non reindirizzare gli utenti anonimi (modalità demo): devono poter creare un account reale.
-      if (data.user && !data.user.is_anonymous) navigate({ to: "/" });
-    });
-  }, [navigate]);
+  const goAfterAuth = () => {
+    const target = safeRedirect(search.redirect) ?? "/";
+    navigate({ to: target, replace: true });
+  };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setLoading(true);
-    const { data: current } = await supabase.auth.getUser();
-    if (current.user?.is_anonymous) await supabase.auth.signOut();
     const { error } = await supabase.auth.signInWithPassword({
       email: String(form.get("email")),
       password: String(form.get("password")),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) return toast.error(friendlyAuthError(error.message));
     toast.success("Bentornato!");
-    navigate({ to: "/" });
+    goAfterAuth();
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     setLoading(true);
-    // Esce dalla sessione demo anonima prima di creare un account reale
-    const { data: current } = await supabase.auth.getUser();
-    if (current.user?.is_anonymous) await supabase.auth.signOut();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: String(form.get("email")),
       password: String(form.get("password")),
       options: {
@@ -68,9 +100,13 @@ function AuthPage() {
       },
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
-    toast.success("Registrazione completata!");
-    navigate({ to: "/" });
+    if (error) return toast.error(friendlyAuthError(error.message));
+    if (data.session) {
+      toast.success("Registrazione completata!");
+      goAfterAuth();
+    } else {
+      toast.success("Ti abbiamo inviato un'email di conferma. Controlla la casella per attivare l'account.");
+    }
   };
 
   return (
