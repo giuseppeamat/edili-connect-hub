@@ -165,7 +165,7 @@ export const updatePreventivoHeader = createServerFn({ method: "POST" })
     if (new Date(cur.updated_at).getTime() !== new Date(data.expected_updated_at).getTime()) {
       const e: any = new Error("Il preventivo è stato modificato da un altro utente. Ricarica la pagina."); e.status = 409; throw e;
     }
-    const { error } = await context.supabase.from("preventivi").update(data.patch).eq("id", data.id);
+    const { error } = await context.supabase.from("preventivi").update(data.patch as any).eq("id", data.id);
     if (error) throw error;
     await logAudit(context, organizationId, "update_header", data.id, {});
     return { ok: true };
