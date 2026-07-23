@@ -761,6 +761,13 @@ export type Database = {
     }
     Functions: {
       current_organization_id: { Args: never; Returns: string }
+      has_any_role: {
+        Args: {
+          _org: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _org: string
