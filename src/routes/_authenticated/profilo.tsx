@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCurrentUser, ROLE_LABELS } from "@/hooks/use-current-user";
 import { friendlyPermissionError } from "@/lib/permission-error";
-import { dateIT } from "@/lib/format";
+import { dateIt } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/profilo")({
   head: () => ({

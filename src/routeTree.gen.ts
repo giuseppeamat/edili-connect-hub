@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
 import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
+import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
 import { Route as AuthenticatedPreventiviRouteImport } from './routes/_authenticated/preventivi'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
@@ -50,6 +51,11 @@ const AuthenticatedScadenziarioRoute =
 const AuthenticatedRapportiniRoute = AuthenticatedRapportiniRouteImport.update({
   id: '/rapportini',
   path: '/rapportini',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfiloRoute = AuthenticatedProfiloRouteImport.update({
+  id: '/profilo',
+  path: '/profilo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPreventiviRoute = AuthenticatedPreventiviRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/preventivi': typeof AuthenticatedPreventiviRoute
+  '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
 }
@@ -105,6 +112,7 @@ export interface FileRoutesByTo {
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/preventivi': typeof AuthenticatedPreventiviRoute
+  '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/': typeof AuthenticatedIndexRoute
@@ -120,6 +128,7 @@ export interface FileRoutesById {
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/preventivi': typeof AuthenticatedPreventiviRoute
+  '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
   '/_authenticated/rapportini': typeof AuthenticatedRapportiniRoute
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/documenti'
     | '/fornitori'
     | '/preventivi'
+    | '/profilo'
     | '/rapportini'
     | '/scadenziario'
   fileRoutesByTo: FileRoutesByTo
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/documenti'
     | '/fornitori'
     | '/preventivi'
+    | '/profilo'
     | '/rapportini'
     | '/scadenziario'
     | '/'
@@ -162,6 +173,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
     | '/_authenticated/preventivi'
+    | '/_authenticated/profilo'
     | '/_authenticated/rapportini'
     | '/_authenticated/scadenziario'
     | '/_authenticated/'
@@ -217,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRapportiniRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profilo': {
+      id: '/_authenticated/profilo'
+      path: '/profilo'
+      fullPath: '/profilo'
+      preLoaderRoute: typeof AuthenticatedProfiloRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/preventivi': {
       id: '/_authenticated/preventivi'
       path: '/preventivi'
@@ -269,6 +288,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedPreventiviRoute: typeof AuthenticatedPreventiviRoute
+  AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
   AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRoute
   AuthenticatedScadenziarioRoute: typeof AuthenticatedScadenziarioRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -281,6 +301,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedPreventiviRoute: AuthenticatedPreventiviRoute,
+  AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
   AuthenticatedRapportiniRoute: AuthenticatedRapportiniRoute,
   AuthenticatedScadenziarioRoute: AuthenticatedScadenziarioRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

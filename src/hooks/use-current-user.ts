@@ -99,6 +99,7 @@ export function useCurrentUser() {
     error: q.error as Error | null,
     data,
     userId: data?.userId ?? null,
+    email: data?.email ?? null,
     profile: data?.profile ?? null,
     organization: data?.organization ?? null,
     organizationId: data?.profile?.organization_id ?? null,
