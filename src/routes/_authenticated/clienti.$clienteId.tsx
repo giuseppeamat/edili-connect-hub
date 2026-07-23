@@ -262,7 +262,7 @@ function ClienteDetailPage() {
           <Card><div className="divide-y">
             {documenti.map((d: any) => (
               <div key={d.id} className="p-3 flex justify-between text-sm">
-                <div><div className="font-medium">{d.descrizione || d.tipo}</div><div className="text-xs text-muted-foreground">{d.tipo} · scad. {dateIt(d.data_scadenza)}</div></div>
+                <div><div className="font-medium">{d.descrizione || d.nome}</div><div className="text-xs text-muted-foreground">{d.categoria ?? "documento"} · scad. {dateIt(d.data_scadenza)}</div></div>
                 <Badge variant="outline">{d.stato}</Badge>
               </div>
             ))}
