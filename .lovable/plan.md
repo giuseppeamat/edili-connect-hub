@@ -1,89 +1,112 @@
 
-# Sprint 2 — CRM Clienti, Contatti, Attività
+# Sprint 3 — Preventivi: Audit e Piano
 
-## FASE 1 — Audit (risultato)
+## FASE 1 — Audit (stato attuale)
 
-### Tabella `clienti` esistente
-Colonne: `id`, `organization_id`, `ragione_sociale` (NOT NULL), `partita_iva`, `codice_fiscale`, `indirizzo`, `citta`, `cap`, `provincia`, `telefono`, `email`, `pec`, `referente`, `note`, `created_at`, `updated_at`.
+### `preventivi` (17 colonne)
+- Chiavi: `id`, `organization_id` (NOT NULL, FK CASCADE), `cliente_id` (FK RESTRICT + composite anti-cross-tenant).
+- Numerazione: `numero TEXT NOT NULL`, `versione INT NOT NULL DEFAULT 1`. Unique `(org, numero, versione)`. Nessuna generazione server-side: la pagina attuale la fa scrivere dal client.
+- Stato: enum `preventivo_stato` = `bozza | inviato | accettato | rifiutato | scaduto`. **Mancano**: `in_revisione`, `pronto`, `annullato`, `convertito`.
+- Economici: `totale_costo`, `totale_ricavo`, `totale_iva`, `totale`, `margine` (numeric(14,2)). Ricalcolati dal trigger `tg_recalc_preventivo` a partire dalle voci.
+- Testi: solo `oggetto` e `note`. **Mancano**: titolo separato, tipo, responsabile, condizioni pagamento, tempi, esclusioni, garanzie, aliquota IVA default, sconto/maggiorazione/spese globali.
+- Versionamento: nessun campo `root_preventivo_id`, `parent_version_id`, `is_current_version`, `superseded_at/by`.
+- Storico stati: assente. Audit generico presente (`audit_log`).
+- Trigger: `tg_set_updated_at`.
+- RLS: select (proprietario/amministratore/ufficio_tecnico/amministrazione/responsabile_commessa); insert/update (proprietario/amministratore/ufficio_tecnico); delete (proprietario/amministratore). Operaio/capocantiere/cliente/fornitore esclusi. Nessuna ricorsione.
+- Nessun campo `data_invio`, `data_accettazione`, `motivo_rifiuto`, `annullato_at`, `convertito_at`, `commessa_id` (inverso presente).
 
-Indici: PK, UNIQUE composite `(id, organization_id)`, btree `organization_id`.
-FK composite anti cross-tenant già in uso verso `commesse`, `preventivi`, `documenti`.
-Trigger `updated_at` presente.
+### `preventivo_voci` (16 colonne)
+- Struttura piatta con `capitolo` e `categoria` come TEXT: **non c'è tabella `preventivo_categorie`**. Le categorie sono stringhe libere denormalizzate.
+- Campi: `ordine`, `descrizione`, `unita_misura`, `quantita(14,3)`, `costo_unitario(14,4)`, `ricarico_pct`, `prezzo_unitario(14,4)`, `sconto_pct`, `iva_pct` (default 22), `totale`.
+- Trigger `tg_calc_voce` (BEFORE): se prezzo=0 e costo>0 → deriva prezzo da ricarico; imponibile = `prezzo × quantità × (1 - sconto%)`. **Nessuna maggiorazione**. `totale` è imponibile, non IVA compresa.
+- Trigger `tg_recalc_preventivo` (AFTER): aggrega su preventivo.
+- Manca `updated_at`, `margine`, `note`, `codice`, `categoria_id` FK.
 
-Policy RLS attive (per ruolo, via `has_any_role`):
-- SELECT: tutti i ruoli interni (inclusi operaio, capocantiere, responsabile_commessa).
-- INSERT/UPDATE: proprietario, amministratore, ufficio_tecnico, amministrazione.
-- DELETE: proprietario, amministratore (cancellazione fisica ancora possibile).
+### `commesse`
+- Ha già `preventivo_id` FK (SET NULL) + composite. **Nessun UNIQUE su `preventivo_id`**: teoricamente ammette conversioni multiple.
+- La conversione attuale in `preventivi.tsx` è **non atomica** (2 query dal client) e non blocca doppie conversioni.
 
-### UI Clienti (`src/routes/_authenticated/clienti.tsx`)
-CRUD base con Dialog inline, senza scheda dettaglio, senza contatti/attività/timeline, senza filtri, senza archiviazione. `DELETE` fisica esposta. Query dirette a `profiles` per `organization_id` (non usa `useCurrentUser`).
+### Anomalie dati
+- 7 preventivi (3 bozza, 2 inviato, 2 accettato), 8 voci, 2 commesse con `preventivo_id`. Nessun duplicato numero/versione. Dati compatibili con nuovo enum.
 
-### Mancanti
-Nessuna tabella `cliente_contatti`, `crm_attivita`. Nessun enum `cliente_tipo`, `cliente_stato`, `attivita_tipo/stato/priorita`. Nessun campo `tipo`, `nome/cognome`, `stato_cliente`, `fonte_acquisizione`, `responsabile_id`, `created_by`, `archived_at/by`, `cellulare`, `sito_web`, `codice_destinatario`, `numero_civico`, `paese`, `note_interne`.
+### Codice
+- `src/routes/_authenticated/preventivi.tsx`: lista + form create + "toCommessa" client-side non atomico. Nessuna scheda dettaglio `/preventivi/$id`.
+- `src/lib/crm.functions.ts` e `invites.functions.ts` sono i pattern di riferimento (createServerFn + requireSupabaseAuth).
+- `useCurrentUser`/`useCurrentRole` centralizzano organizzazione e ruoli.
+- Nessuna generazione PDF esistente; bucket `documenti` privato disponibile e riutilizzabile.
 
-### Duplicati
-Nessuno rilevato nei dati attuali (base fresh).
+### Sintesi gap
+1. Enum stati incompleto; nessuno storico stati; nessuna transizione validata.
+2. Numerazione client-side (non concorrente-safe).
+3. Nessun versionamento (root/parent/is_current).
+4. Categorie come stringa (no tabella dedicata).
+5. Formule calcolate solo su imponibile; mancano maggiorazione, totali globali con sconto/spese, margine per voce.
+6. Nessun campo per condizioni, tipo, responsabile, IVA default, sconto/spese globali.
+7. Conversione in commessa non atomica, senza vincolo di unicità.
+8. Nessuna scheda dettaglio, nessun PDF, nessun template, nessun allegato collegato al preventivo.
+9. Server functions per preventivi assenti: tutto passa dal client.
 
 ---
 
-## Piano di intervento
+## FASE 2 — Piano di implementazione (a blocchi)
 
-### Step 1 — Migration DB (unica migration versionata)
+Eseguo un blocco per turno, chiedendo conferma prima del successivo.
 
-1. **Enum**
-   - `cliente_tipo`: `persona_fisica`, `azienda`, `condominio`, `ente`, `altro`.
-   - `cliente_stato`: `potenziale`, `attivo`, `inattivo`, `archiviato`.
-   - `attivita_tipo`: `telefonata`, `email`, `incontro`, `sopralluogo`, `nota`, `promemoria`, `altro`.
-   - `attivita_stato`: `pianificata`, `completata`, `annullata`.
-   - `attivita_priorita`: `bassa`, `normale`, `alta`, `urgente`.
+### Blocco A — Schema, enum, categorie, numerazione, calcoli server-side
+Migrations:
+1. Estendere enum `preventivo_stato` aggiungendo `in_revisione, pronto, annullato, convertito` (senza rimuovere valori esistenti).
+2. `preventivi` — nuove colonne (nullable/default sicuri): `titolo`, `tipo` (nuovo enum `preventivo_tipo`), `responsabile_id` (FK profiles), `data_invio`, `data_accettazione`, `data_rifiuto`, `motivo_rifiuto`, `annullato_at`, `convertito_at`, `commessa_id` (FK + composite), `sconto_globale_pct`, `maggiorazione_globale_pct`, `spese_accessorie`, `iva_default_pct` (default 22), `condizioni_pagamento`, `tempi_esecuzione`, `esclusioni`, `garanzie`, `condizioni_generali`, `firma_referente`, `root_preventivo_id`, `parent_version_id`, `is_current_version` (bool default true), `superseded_at`, `superseded_by`, `version` (counter per optimistic locking), `created_by`. Indici richiesti.
+3. Nuova tabella `preventivo_categorie` (org, preventivo, titolo, descrizione, posizione, timestamps) + GRANT + RLS ereditata dal preventivo padre + composite FK anti-cross-tenant.
+4. `preventivo_voci` — nuove colonne: `categoria_id` (FK + composite), `codice`, `maggiorazione_pct`, `importo_netto`, `costo_totale`, `margine`, `margine_pct`, `note`, `updated_at`. Migrazione dati: per ogni preventivo esistente creare una categoria "Voci" e associare le voci; ricalcolare economici col nuovo trigger.
+5. Nuova tabella `preventivo_storico_stati` (immutabile: policy solo INSERT tramite SECURITY DEFINER, no UPDATE/DELETE).
+6. Nuova tabella `preventivo_templates` (nome, testi default, iva default, attivo, scoped per org).
+7. Aggiornare trigger `tg_calc_voce` con nuova formula completa (lordo → sconto → maggiorazione → netto → costo → margine) e `tg_recalc_preventivo` per includere sconto globale/maggiorazione/spese.
+8. Funzione SQL `assign_preventivo_numero(org, anno)` con advisory lock per numerazione atomica `PREV-YYYY-NNNN`.
+9. UNIQUE parziale su `commesse.preventivo_id WHERE preventivo_id IS NOT NULL` per impedire doppia conversione.
+10. `documenti.preventivo_id` (verificare/aggiungere) + composite FK.
 
-2. **`ALTER TABLE clienti`** — aggiungere: `tipo` (default `azienda`, backfill), `denominazione` (backfill = `ragione_sociale`), `nome`, `cognome`, `codice_destinatario`, `cellulare`, `sito_web`, `numero_civico`, `paese` (default `IT`), `note_interne`, `fonte_acquisizione` (text controllato), `stato_cliente` (default `attivo`), `responsabile_id` (FK `profiles`), `created_by` (FK `profiles`), `archived_at`, `archived_by`. `ragione_sociale` diventa nullable (retro-compat: mantenuto per aziende).
+### Blocco B — Server functions
+Nuovo `src/lib/preventivi.functions.ts` con `createServerFn` + `requireSupabaseAuth`:
+- `createPreventivo` (assegna numero, versione=1, is_current=true, root=id)
+- `updatePreventivoHeader` (con `expected_updated_at` per optimistic lock)
+- `upsertCategoria`, `deleteCategoria`, `moveCategoria`
+- `upsertVoce`, `deleteVoce`, `moveVoce`, `duplicateVoce`
+- `changeStato` (valida transizioni, scrive `preventivo_storico_stati`)
+- `createNuovaVersione` (copia intestazione/categorie/voci, marca precedente `is_current_version=false, superseded_at/by`)
+- `duplicatePreventivo` (nuovo numero, nuovo root)
+- `markInviato` / `markAccettato` / `markRifiutato` / `markScaduto` / `annulla`
+- `convertToCommessa` — transazione via RPC SQL SECURITY DEFINER: verifica stato/org/role/no-commessa-esistente, crea commessa, aggiorna preventivo a `convertito`, storico, audit, rollback su errore.
+- `generatePreventivoPdf` — genera PDF con pdf-lib (Worker-safe), watermark `BOZZA`/`VERSIONE SUPERATA`/`ANNULLATO`, salva in bucket `documenti` (privato), inserisce record in `documenti` collegato.
 
-3. **`cliente_contatti`** (nuova): campi come da spec + FK composite `(cliente_id, organization_id)` → `clienti(id, organization_id)`. Indice unico parziale per `is_primary` attivo per cliente.
+### Blocco C — UI
+- Rifare `src/routes/_authenticated/preventivi.tsx` come lista: KPI (bozze/inviati/accettati/scaduti/valore aperto/accettato/margine), filtri (stato/cliente/tipo/anno/responsabile/convertito), ricerca, paginazione, empty state.
+- Nuova rotta `src/routes/_authenticated/preventivi.$preventivoId.tsx` con tab: Riepilogo, Voci, Condizioni, Allegati, Versioni, Storico. Azioni contestuali in base allo stato e ai ruoli (via `useCurrentRole`).
+- Wizard/form di creazione a sezioni (Cliente → Info → Voci → Condizioni → Riepilogo).
+- Editor categorie/voci con "Sposta su/giù", duplicazione, subtotali, alert margine basso.
+- Rinominare esistente `preventivi.tsx` → `preventivi.index.tsx` (come già fatto per clienti).
+- Aggiornare scheda cliente: tab Preventivi già in lettura, verificare che filtri per `cliente_id` funzioni con nuovo schema.
 
-4. **`crm_attivita`** (nuova): campi come da spec + FK composite verso `clienti` e `cliente_contatti`. Trigger che valorizza `completata_at` quando `stato=completata`.
+### Blocco D — Test, regressione, cleanup
+- Test funzionali su tutti i 48 casi elencati (quelli automatizzabili via psql/curl).
+- `tsgo` typecheck.
+- Report finale.
 
-5. **Indici**: come da spec (evitando duplicati con quelli esistenti).
+## Dettagli tecnici chiave
+- **PDF**: uso `pdf-lib` (puro JS, Worker-compatible). Font Helvetica standard; per accentate italiane uso Latin-1 (pdf-lib gestisce correttamente).
+- **Numerazione**: `pg_advisory_xact_lock(hashtext(org::text || anno::text))` + SELECT MAX per anno + INSERT nello stesso statement transazionale.
+- **Conversione**: implementata come funzione `plpgsql SECURITY DEFINER` chiamata da server function, garantisce atomicità.
+- **Storico stati**: RLS solo SELECT per lettori del preventivo; INSERT solo tramite `SECURITY DEFINER` (revoke insert dagli utenti).
+- **Optimistic locking**: colonna `updated_at` confrontata; se diversa → errore 409.
+- **Compatibilità dati**: tutti i default sono retroattivamente sicuri; migrazione voci→categoria "Generale" per non perdere dati.
 
-6. **RLS + GRANT** per le due nuove tabelle. Aggiornamento policy `clienti`:
-   - SELECT: escludere `operaio`, `cliente`, `fornitore`.
-   - DELETE: **rimossa dalla UI** — restringere a `proprietario` soltanto (o rimuovere del tutto e usare solo archiviazione).
-   - UPDATE: mantenuto set attuale.
-   - Nuova regola: archived_at è modificabile solo tramite server function.
+## Cosa NON viene fatto in questo sprint
+Computo metrico avanzato, prezzari, SAL, contabilità, firma digitale, email automatiche, portale cliente, fatturazione, AI, import PriMus/DCF, drag-and-drop complesso, autosave.
 
-7. **Nessun policy ricorsiva**, uso di `has_any_role` e `is_org_member`.
+## Ordine di esecuzione proposto
+1. Approvazione piano.
+2. Blocco A (migration unica versionata).
+3. Blocco B (server functions).
+4. Blocco C (UI lista + scheda).
+5. Blocco D (test + report).
 
-### Step 2 — Server functions (`src/lib/crm.functions.ts`)
-Tutte con `requireSupabaseAuth`, derivano `organization_id` dal profilo del chiamante:
-- `createCliente` — normalizza P.IVA/CF/email/telefono; controllo duplicati (blocco P.IVA/CF identici non archiviati; avviso email/tel/denominazione simile ritornato come `warnings`).
-- `updateCliente` — protegge `organization_id`, `created_by`, `archived_*`.
-- `archiveCliente` / `restoreCliente`.
-- `setResponsabile`.
-- `createContatto` / `updateContatto` / `archiveContatto` / `setContattoPrimary`.
-- `createAttivita` / `updateAttivita` / `completeAttivita` / `cancelAttivita`.
-- Ogni operazione scrive in `audit_log` via server (INSERT client-side su audit_log resta vietato).
-
-### Step 3 — UI
-
-- **`/clienti`** (lista): KPI (attivi/potenziali/archiviati/attività in scadenza), ricerca full-text lato client su set paginato (limit 100 + "carica altri"), filtri tipo/stato/responsabile/fonte/città, ordinamento, azioni per riga.
-- **`/clienti/$clienteId`** (nuova): header + tab Panoramica / Contatti / Attività / Preventivi / Commesse / Documenti / Storico (timeline aggregata).
-- **Form cliente**: dinamico per tipo, validazione zod, dialogo "Possibili duplicati" prima del salvataggio, azione "Archivia" al posto di "Elimina".
-- **Componenti nuovi**: `ClienteForm`, `ContattoForm`, `AttivitaForm`, `ClienteTimeline`, `DuplicatiDialog`.
-- Sidebar: nessun cambiamento (Clienti già presente). Operaio: la voce viene nascosta.
-
-### Step 4 — Integrazioni
-- **Preventivi**: link "Nuovo preventivo" dalla scheda cliente precompila `cliente_id`.
-- **Commesse / Documenti**: sola lettura nella scheda (link a modulo esistente).
-
-### Step 5 — Verifiche
-- `tsgo` per typecheck.
-- Test manuali chiave (creazione, duplicati P.IVA, archiviazione, RLS cross-tenant via query psql).
-- Regressione: login, profilo, organizzazione, dashboard, altri moduli invariati.
-
-## Note & limiti dichiarati
-- L'invio reale di email/telefonate non è implementato (solo registrazione attività), come da spec.
-- I test end-to-end automatici non sono disponibili; test eseguiti manualmente + psql.
-- Seed demo non toccato.
-- Nessun accesso operaio al CRM (voce nascosta + RLS SELECT ristretta).
-
-Confermi il piano? Procedo con la migration in un secondo passaggio.
+Confermi di procedere in questo ordine, o preferisci restringere il primo blocco (es. senza `preventivo_templates` e senza `documenti.preventivo_id`) per accelerare?
