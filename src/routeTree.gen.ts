@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AccettaInvitoRouteImport } from './routes/accetta-invito'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
 import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
 import { Route as AuthenticatedPreventiviRouteImport } from './routes/_authenticated/preventivi'
+import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
 import { Route as AuthenticatedCommesseRouteImport } from './routes/_authenticated/commesse'
@@ -31,6 +33,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccettaInvitoRoute = AccettaInvitoRouteImport.update({
+  id: '/accetta-invito',
+  path: '/accetta-invito',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -63,6 +70,12 @@ const AuthenticatedPreventiviRoute = AuthenticatedPreventiviRouteImport.update({
   path: '/preventivi',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrganizzazioneRoute =
+  AuthenticatedOrganizzazioneRouteImport.update({
+    id: '/organizzazione',
+    path: '/organizzazione',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedFornitoriRoute = AuthenticatedFornitoriRouteImport.update({
   id: '/fornitori',
   path: '/fornitori',
@@ -91,6 +104,7 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -98,12 +112,14 @@ export interface FileRoutesByFullPath {
   '/commesse': typeof AuthenticatedCommesseRoute
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/preventivi': typeof AuthenticatedPreventiviRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
 }
 export interface FileRoutesByTo {
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
@@ -111,6 +127,7 @@ export interface FileRoutesByTo {
   '/commesse': typeof AuthenticatedCommesseRoute
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/preventivi': typeof AuthenticatedPreventiviRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
@@ -120,6 +137,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/accetta-invito': typeof AccettaInvitoRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
@@ -127,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/commesse': typeof AuthenticatedCommesseRoute
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
+  '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/_authenticated/preventivi': typeof AuthenticatedPreventiviRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
   '/_authenticated/rapportini': typeof AuthenticatedRapportiniRoute
@@ -137,6 +156,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/audit'
@@ -144,12 +164,14 @@ export interface FileRouteTypes {
     | '/commesse'
     | '/documenti'
     | '/fornitori'
+    | '/organizzazione'
     | '/preventivi'
     | '/profilo'
     | '/rapportini'
     | '/scadenziario'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/audit'
@@ -157,6 +179,7 @@ export interface FileRouteTypes {
     | '/commesse'
     | '/documenti'
     | '/fornitori'
+    | '/organizzazione'
     | '/preventivi'
     | '/profilo'
     | '/rapportini'
@@ -165,6 +188,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authenticated'
+    | '/accetta-invito'
     | '/auth'
     | '/reset-password'
     | '/_authenticated/audit'
@@ -172,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/commesse'
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
+    | '/_authenticated/organizzazione'
     | '/_authenticated/preventivi'
     | '/_authenticated/profilo'
     | '/_authenticated/rapportini'
@@ -181,6 +206,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AccettaInvitoRoute: typeof AccettaInvitoRoute
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
@@ -199,6 +225,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accetta-invito': {
+      id: '/accetta-invito'
+      path: '/accetta-invito'
+      fullPath: '/accetta-invito'
+      preLoaderRoute: typeof AccettaInvitoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -241,6 +274,13 @@ declare module '@tanstack/react-router' {
       path: '/preventivi'
       fullPath: '/preventivi'
       preLoaderRoute: typeof AuthenticatedPreventiviRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/organizzazione': {
+      id: '/_authenticated/organizzazione'
+      path: '/organizzazione'
+      fullPath: '/organizzazione'
+      preLoaderRoute: typeof AuthenticatedOrganizzazioneRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/fornitori': {
@@ -287,6 +327,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCommesseRoute: typeof AuthenticatedCommesseRoute
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
+  AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
   AuthenticatedPreventiviRoute: typeof AuthenticatedPreventiviRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
   AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRoute
@@ -300,6 +341,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCommesseRoute: AuthenticatedCommesseRoute,
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
+  AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
   AuthenticatedPreventiviRoute: AuthenticatedPreventiviRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
   AuthenticatedRapportiniRoute: AuthenticatedRapportiniRoute,
@@ -312,6 +354,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AccettaInvitoRoute: AccettaInvitoRoute,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
 }
