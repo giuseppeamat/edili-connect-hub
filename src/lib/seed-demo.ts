@@ -14,7 +14,7 @@ export async function seedDemoData() {
     { ragione_sociale: "Comune di Bergamo", codice_fiscale: "80000000163", citta: "Bergamo", provincia: "BG", cap: "24121", email: "llpp@comune.bergamo.it", referente: "Arch. Colombo" },
     { ragione_sociale: "Famiglia Ferrari", codice_fiscale: "FRRLRC80A01F205X", citta: "Como", provincia: "CO", cap: "22100", telefono: "031 987654", referente: "Sig. Ferrari" },
     { ragione_sociale: "Hotel Belvedere S.p.A.", partita_iva: "03456789012", citta: "Bellagio", provincia: "CO", cap: "22021", email: "direzione@belvedere.it", telefono: "031 950123" },
-  ].map((c) => ({ ...c, organization_id: org }));
+  ].map((c) => ({ ...c, organization_id: org, denominazione: c.ragione_sociale }));
   const { data: cli } = await supabase.from("clienti").insert(clienti).select("id, ragione_sociale");
 
   // Fornitori
