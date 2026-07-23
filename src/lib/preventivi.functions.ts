@@ -352,7 +352,7 @@ export const duplicateVoce = createServerFn({ method: "POST" })
     const { data: v } = await context.supabase.from("preventivo_voci").select("*").eq("id", data.id).maybeSingle();
     if (!v || v.organization_id !== organizationId) throw new Error("Voce non trovata");
     const { data: maxRow } = await context.supabase
-      .from("preventivo_voci").select("ordine").eq("categoria_id", v.categoria_id)
+      .from("preventivo_voci").select("ordine").eq("categoria_id", v.categoria_id as string)
       .order("ordine", { ascending: false }).limit(1).maybeSingle();
     const ordine = ((maxRow?.ordine as number | undefined) ?? -1) + 1;
     const { id: _, created_at: __, updated_at: ___, importo_netto, costo_totale, margine, margine_pct, totale, ...rest } = v as any;
