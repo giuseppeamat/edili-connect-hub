@@ -474,12 +474,12 @@ export const convertToCommessa = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: commessaId, error } = await context.supabase.rpc("convert_preventivo_to_commessa", {
       _preventivo_id: data.id,
-      _data_inizio: data.data_inizio ?? null,
-      _data_fine_prevista: data.data_fine_prevista ?? null,
-      _indirizzo_cantiere: data.indirizzo_cantiere ?? null,
-      _responsabile_id: data.responsabile_id ?? null,
-      _note: data.note ?? null,
-    });
+      _data_inizio: data.data_inizio ?? undefined,
+      _data_fine_prevista: data.data_fine_prevista ?? undefined,
+      _indirizzo_cantiere: data.indirizzo_cantiere ?? undefined,
+      _responsabile_id: data.responsabile_id ?? undefined,
+      _note: data.note ?? undefined,
+    } as any);
     if (error) throw error;
     return { commessa_id: commessaId as string };
   });
