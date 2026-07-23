@@ -38,11 +38,8 @@ function generateToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
-function tokenPreview(token: string): string {
-  // Solo per audit/log — mostra 4 char iniziali + finali, mai il token intero.
-  if (token.length < 12) return "***";
-  return `${token.slice(0, 4)}…${token.slice(-4)}`;
-}
+// Nota: non registriamo mai alcuna parte del token (nemmeno una preview) nei log/audit.
+
 
 async function assertCallerCanManageInvites(context: any, organizationId: string) {
   const { data, error } = await context.supabase
