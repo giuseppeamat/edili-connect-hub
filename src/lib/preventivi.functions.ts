@@ -334,7 +334,7 @@ export const moveVoce = createServerFn({ method: "POST" })
     const order = data.direction === "up" ? { ascending: false } : { ascending: true };
     const { data: other } = await context.supabase
       .from("preventivo_voci").select("*")
-      .eq("categoria_id", v.categoria_id)[cmp]("ordine", v.ordine)
+      .eq("categoria_id", v.categoria_id as string)[cmp]("ordine", v.ordine)
       .order("ordine", order).limit(1).maybeSingle();
     if (!other) return { ok: true };
     await context.supabase.from("preventivo_voci").update({ ordine: other.ordine }).eq("id", v.id);
