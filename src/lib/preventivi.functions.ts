@@ -391,8 +391,8 @@ export const createNuovaVersione = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.string().uuid(), motivo: z.string().max(500).nullable().optional() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: newId, error } = await context.supabase.rpc("create_preventivo_nuova_versione", {
-      _preventivo_id: data.id, _motivo: data.motivo ?? null,
-    });
+      _preventivo_id: data.id, _motivo: data.motivo ?? undefined,
+    } as any);
     if (error) throw error;
     return { id: newId as string };
   });
