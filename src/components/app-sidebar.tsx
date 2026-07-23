@@ -22,12 +22,15 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import { useCurrentUser, type AppRole } from "@/hooks/use-current-user";
 
-const items = [
+type NavItem = { title: string; url: string; icon: any; hideForRoles?: AppRole[] };
+
+const items: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Clienti", url: "/clienti", icon: Users },
-  { title: "Fornitori", url: "/fornitori", icon: Truck },
-  { title: "Preventivi", url: "/preventivi", icon: FileText },
+  { title: "Clienti", url: "/clienti", icon: Users, hideForRoles: ["operaio", "cliente", "fornitore"] },
+  { title: "Fornitori", url: "/fornitori", icon: Truck, hideForRoles: ["operaio", "cliente", "fornitore"] },
+  { title: "Preventivi", url: "/preventivi", icon: FileText, hideForRoles: ["operaio", "cliente", "fornitore"] },
   { title: "Commesse", url: "/commesse", icon: HardHat },
   { title: "Rapportini", url: "/rapportini", icon: ClipboardList },
   { title: "Documenti", url: "/documenti", icon: FolderOpen },
@@ -38,7 +41,9 @@ const items = [
 
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
+  const { roles } = useCurrentUser();
   const isActive = (u: string) => (u === "/" ? currentPath === "/" : currentPath.startsWith(u));
+  const visible = items.filter((it) => !it.hideForRoles?.some((r) => roles.includes(r)));
 
   return (
     <Sidebar collapsible="icon">
@@ -57,7 +62,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Gestione</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {visible.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url} className="flex items-center gap-2">
