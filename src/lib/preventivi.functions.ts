@@ -378,8 +378,8 @@ export const changeStato = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.rpc("change_preventivo_stato", {
       _preventivo_id: data.id, _nuovo_stato: data.nuovo_stato,
-      _note: data.note ?? null, _motivo: data.motivo ?? null,
-    });
+      _note: data.note ?? undefined, _motivo: data.motivo ?? undefined,
+    } as any);
     if (error) throw error;
     return { ok: true };
   });
