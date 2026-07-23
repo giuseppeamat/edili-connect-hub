@@ -544,7 +544,7 @@ export const generatePreventivoPdfFn = createServerFn({ method: "POST" })
       cliente_id: (p as any).cliente_id,
       preventivo_id: data.id,
       uploaded_by: context.userId,
-      visibilita: "interna",
+      visibilita: "organizzazione",
       data_documento: new Date().toISOString().slice(0, 10),
     }).select("id").single();
     if (docErr) throw docErr;
