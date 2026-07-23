@@ -409,6 +409,65 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          created_by: string
+          email: string
+          expires_at: string
+          id: string
+          organization_id: string
+          revoked_at: string | null
+          revoked_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["invite_status"]
+          token_hash: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by: string
+          email: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["invite_status"]
+          token_hash: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["invite_status"]
+          token_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           cap: string | null
@@ -419,8 +478,12 @@ export type Database = {
           id: string
           indirizzo: string | null
           nome: string
+          nome_commerciale: string | null
+          paese: string | null
           partita_iva: string | null
+          pec: string | null
           provincia: string | null
+          sito_web: string | null
           telefono: string | null
           updated_at: string
         }
@@ -433,8 +496,12 @@ export type Database = {
           id?: string
           indirizzo?: string | null
           nome: string
+          nome_commerciale?: string | null
+          paese?: string | null
           partita_iva?: string | null
+          pec?: string | null
           provincia?: string | null
+          sito_web?: string | null
           telefono?: string | null
           updated_at?: string
         }
@@ -447,8 +514,12 @@ export type Database = {
           id?: string
           indirizzo?: string | null
           nome?: string
+          nome_commerciale?: string | null
+          paese?: string | null
           partita_iva?: string | null
+          pec?: string | null
           provincia?: string | null
+          sito_web?: string | null
           telefono?: string | null
           updated_at?: string
         }
@@ -619,8 +690,11 @@ export type Database = {
         Row: {
           cognome: string | null
           created_at: string
+          disattivato_at: string | null
+          disattivato_da: string | null
           email: string | null
           id: string
+          is_active: boolean
           nome: string | null
           organization_id: string | null
           telefono: string | null
@@ -629,8 +703,11 @@ export type Database = {
         Insert: {
           cognome?: string | null
           created_at?: string
+          disattivato_at?: string | null
+          disattivato_da?: string | null
           email?: string | null
           id: string
+          is_active?: boolean
           nome?: string | null
           organization_id?: string | null
           telefono?: string | null
@@ -639,8 +716,11 @@ export type Database = {
         Update: {
           cognome?: string | null
           created_at?: string
+          disattivato_at?: string | null
+          disattivato_da?: string | null
           email?: string | null
           id?: string
+          is_active?: boolean
           nome?: string | null
           organization_id?: string | null
           telefono?: string | null
@@ -777,6 +857,7 @@ export type Database = {
         Returns: boolean
       }
       is_org_member: { Args: { _org: string }; Returns: boolean }
+      mark_expired_invites: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -797,6 +878,7 @@ export type Database = {
         | "annullata"
       documento_stato: "valido" | "in_scadenza" | "scaduto" | "archiviato"
       documento_visibilita: "privato" | "organizzazione" | "pubblico"
+      invite_status: "pending" | "accepted" | "revoked" | "expired"
       preventivo_stato:
         | "bozza"
         | "inviato"
@@ -950,6 +1032,7 @@ export const Constants = {
       ],
       documento_stato: ["valido", "in_scadenza", "scaduto", "archiviato"],
       documento_visibilita: ["privato", "organizzazione", "pubblico"],
+      invite_status: ["pending", "accepted", "revoked", "expired"],
       preventivo_stato: [
         "bozza",
         "inviato",
