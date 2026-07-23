@@ -9,6 +9,7 @@ import {
   FolderOpen,
   CalendarClock,
   Shield,
+  Building2,
 } from "lucide-react";
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const items = [
   { title: "Rapportini", url: "/rapportini", icon: ClipboardList },
   { title: "Documenti", url: "/documenti", icon: FolderOpen },
   { title: "Scadenziario", url: "/scadenziario", icon: CalendarClock },
+  { title: "Organizzazione", url: "/organizzazione", icon: Building2 },
   { title: "Audit", url: "/audit", icon: Shield },
 ];
 
