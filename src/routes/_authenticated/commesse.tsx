@@ -97,12 +97,20 @@ function CommessePage() {
     queryKey: ["commesse", showArchived],
     queryFn: async () => {
       let q = supabase.from("commesse")
-        .select("*, clienti!commesse_cliente_id_fkey(ragione_sociale), responsabile:profiles!commesse_responsabile_id_fkey(id, nome, cognome, email)")
+        .select("*, clienti!commesse_cliente_id_fkey(ragione_sociale)")
         .order("data_inizio_prevista", { ascending: false, nullsFirst: false });
       if (!showArchived) q = q.is("archived_at", null);
       const { data, error } = await q;
       if (error) throw error;
-      return data as any[];
+      const rows = (data ?? []) as any[];
+      const respIds = Array.from(new Set(rows.map((r) => r.responsabile_id).filter(Boolean)));
+      let respMap = new Map<string, any>();
+      if (respIds.length) {
+        const { data: profs } = await supabase.from("profiles")
+          .select("id, nome, cognome, email").in("id", respIds);
+        for (const p of profs ?? []) respMap.set(p.id, p);
+      }
+      return rows.map((r) => ({ ...r, responsabile: r.responsabile_id ? respMap.get(r.responsabile_id) ?? null : null }));
     },
   });
 
