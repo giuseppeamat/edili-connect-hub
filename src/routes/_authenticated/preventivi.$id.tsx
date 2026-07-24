@@ -325,16 +325,16 @@ function CategoriaCard({ cat, voci, preventivoId, readOnly, defaultIva, onChange
         </div>
       </CardHeader>
       <CardContent>
-        <Table className="min-w-[980px] table-fixed">
+        <Table className="min-w-[720px] table-fixed">
           <colgroup>
-            <col className="w-[34%]" />
+            <col className="w-[30%]" />
+            <col className="w-[7%]" />
             <col className="w-[8%]" />
-            <col className="w-[9%]" />
             <col className="w-[10%]" />
             <col className="w-[10%]" />
-            <col className="w-[8%]" />
-            <col className="w-[9%]" />
-            <col className="w-[12%]" />
+            <col className="w-[7%]" />
+            <col className="w-[10%]" />
+            <col className="w-[18%]" />
           </colgroup>
           <TableHeader>
             <TableRow>
