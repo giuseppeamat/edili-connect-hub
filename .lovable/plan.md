@@ -1,25 +1,14 @@
+## Problema
+La lista `/commesse` è vuota perché la query fallisce con HTTP 300 (`PGRST201`): la relazione tra `commesse` e `clienti` è ambigua — esistono due foreign key (`commesse_cliente_id_fkey` e la composite `commesse_cliente_org_fkey` introdotta nello Sprint 0 per l'isolamento tenant).
 
-## Interventi
+## Fix
+In `src/routes/_authenticated/commesse.tsx`, disambiguare il join specificando il vincolo:
 
-### 1) KPI della Dashboard cliccabili
-- In `src/routes/_authenticated/index.tsx`, estendere `KpiCard` con una prop opzionale `to` (rotta TanStack) + eventuali `search` per pre-filtrare la pagina destinazione.
-- Quando `to` è presente, il contenuto viene renderizzato dentro un `<Link>` (con hover ring + `aria-label`) mantenendo lo stesso layout visivo.
-- Mappa destinazioni:
-  - Preventivi aperti → `/preventivi`
-  - Valore commesse / Cantieri attivi / Costi sostenuti / Margine previsto / SAL da emettere → `/commesse`
-  - Documenti in scadenza (30gg) → `/scadenziario`
-  - Ore lavorate (mese) → `/rapportini`
+```
+.select("*, clienti!commesse_cliente_id_fkey(ragione_sociale)")
+```
 
-### 2) Errore `column reference "codice" is ambiguous` in "Converti in commessa"
-Causa: nella SQL function `public.assign_commessa_codice` la variabile locale `codice TEXT` collide con la colonna `commesse.codice` usata nella subquery (`CASE WHEN codice ~ ...`).
-- Migrazione: `CREATE OR REPLACE FUNCTION public.assign_commessa_codice` rinominando la variabile in `v_codice` e qualificando la colonna come `c.codice` con alias tabella.
-- Nessuna modifica di firma o comportamento.
+Stesso pattern già usato in `preventivi.index.tsx` e nel dettaglio preventivo.
 
-## File toccati
-
-- `src/routes/_authenticated/index.tsx` — KPI cliccabili.
-- Migrazione DB: fix ambiguità in `assign_commessa_codice`.
-
-## Fuori scope
-
-- Ridisegno della Dashboard o nuovi KPI.
+## Verifica
+Ricaricare `/commesse`: la commessa appena creata dalla conversione deve comparire in lista con il nome del cliente.
