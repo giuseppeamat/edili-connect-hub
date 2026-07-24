@@ -228,7 +228,8 @@ const updateSchema = z.object({
   ricavi_previsti: z.number().min(0).nullable().optional(),
   costi_previsti: z.number().min(0).nullable().optional(),
   costi_impegnati: z.number().min(0).nullable().optional(),
-  avanzamento_pct: z.number().min(0).max(100).optional(),
+  // avanzamento_pct RIMOSSO da updateCommessa: usare updateManualCommessaProgress (RPC).
+  // avanzamento_modalita RIMOSSO da updateCommessa: usare setCommessaAvanzamentoModalita (RPC).
   note_interne: z.string().max(4000).nullable().optional(),
 });
 
