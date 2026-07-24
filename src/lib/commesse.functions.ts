@@ -248,21 +248,15 @@ export const updateCommessa = createServerFn({ method: "POST" })
       throw new Error("Questa commessa è stata modificata da un altro utente. Ricarica la pagina prima di salvare.");
     }
 
-    // Responsabile-only: NON può cambiare cliente, responsabile
+    // Responsabile-only: NON può cambiare cliente
     if (!isAdmin && !isTecnico) {
       if (data.cliente_id !== undefined && data.cliente_id !== current.cliente_id) {
         throw new Error("Non puoi modificare il cliente");
-      }
-      if (data.responsabile_id !== undefined && data.responsabile_id !== current.responsabile_id) {
-        throw new Error("Non puoi modificare il responsabile");
       }
     }
 
     if (data.cliente_id && data.cliente_id !== current.cliente_id) {
       await validateCliente(context, organizationId, data.cliente_id);
-    }
-    if (data.responsabile_id !== undefined && data.responsabile_id !== current.responsabile_id) {
-      await validateResponsabile(context, organizationId, data.responsabile_id);
     }
 
     if (data.data_inizio_prevista && data.data_fine_prevista &&
@@ -280,7 +274,6 @@ export const updateCommessa = createServerFn({ method: "POST" })
     setIf("tipologia");
     setIf("priorita");
     setIf("cliente_id");
-    setIf("responsabile_id");
     setIf("indirizzo_cantiere");
     setIf("data_apertura");
     setIf("data_inizio_prevista");
@@ -303,9 +296,6 @@ export const updateCommessa = createServerFn({ method: "POST" })
     }
     if (data.costi_impegnati !== undefined) patch.costi_impegnati = data.costi_impegnati;
 
-    const responsabileChanged = data.responsabile_id !== undefined &&
-      data.responsabile_id !== current.responsabile_id;
-
     const ricavi = (patch.ricavi_previsti ?? current.ricavi_previsti) as number | null;
     const cp = (patch.costi_previsti ?? current.costi_previsti) as number | null;
     const ci = (patch.costi_impegnati ?? current.costi_impegnati) as number | null;
@@ -319,12 +309,6 @@ export const updateCommessa = createServerFn({ method: "POST" })
     await logAudit(context, organizationId, "commessa.updated", data.id, {
       campi: Object.keys(patch),
     });
-    if (responsabileChanged) {
-      await logAudit(context, organizationId, "commessa.responsabile_changed", data.id, {
-        responsabile_precedente: current.responsabile_id,
-        responsabile_nuovo: data.responsabile_id,
-      });
-    }
     return { ok: true };
   });
 
