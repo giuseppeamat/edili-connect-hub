@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -353,7 +353,11 @@ function CommessePage() {
                 <div className="flex justify-between items-start gap-2">
                   <div className="min-w-0">
                     <div className="text-xs text-muted-foreground font-mono">{c.codice}</div>
-                    <div className="font-semibold truncate">{titolo}</div>
+                    <Link
+                      to="/commesse/$commessaId"
+                      params={{ commessaId: c.id }}
+                      className="font-semibold truncate block hover:underline"
+                    >{titolo}</Link>
                     <div className="text-xs text-muted-foreground truncate">{c.clienti?.ragione_sociale}</div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
