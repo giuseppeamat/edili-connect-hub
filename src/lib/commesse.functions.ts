@@ -402,6 +402,38 @@ export const restoreCommessa = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ============= AVANZAMENTO MANUALE COMMESSA (RPC-only) =============
+import { mapServerError } from "@/lib/server-error-mapper";
+const manualProgressSchema = z.object({
+  commessaId: z.string().uuid(),
+  avanzamentoPercentuale: z.number().min(0).max(100),
+  expectedUpdatedAt: z.string().min(1),
+  motivazione: z.string().trim().max(500).optional().nullable(),
+});
+export const updateManualCommessaProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => manualProgressSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("update_manual_commessa_progress", {
+        _commessa_id: data.commessaId,
+        _nuovo_avanzamento: data.avanzamentoPercentuale,
+        _expected_updated_at: data.expectedUpdatedAt,
+        _motivazione: data.motivazione ?? null,
+      });
+      if (error) throw error;
+      return {
+        id: data.commessaId,
+        updated_at: newUpd as unknown as string,
+        avanzamento: data.avanzamentoPercentuale,
+      };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+
+
 // ============= CLOSE / REOPEN =============
 const closeSchema = z.object({
   id: z.string().uuid(),
