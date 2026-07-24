@@ -41,7 +41,7 @@ function CommessePage() {
   const { data: items = [] } = useQuery({
     queryKey: ["commesse"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("commesse").select("*, clienti(ragione_sociale)").order("data_inizio", { ascending: false });
+      const { data, error } = await supabase.from("commesse").select("*, clienti!commesse_cliente_id_fkey(ragione_sociale)").order("data_inizio", { ascending: false });
       if (error) throw error;
       return data as any[];
     },
