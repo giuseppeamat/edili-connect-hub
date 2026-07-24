@@ -372,6 +372,100 @@ export type Database = {
           },
         ]
       }
+      commessa_fasi: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          avanzamento_percentuale: number
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data_fine_effettiva: string | null
+          data_fine_prevista: string | null
+          data_inizio_effettiva: string | null
+          data_inizio_prevista: string | null
+          descrizione: string | null
+          id: string
+          note: string | null
+          organization_id: string
+          peso_percentuale: number
+          posizione: number
+          responsabile_id: string | null
+          stato: string
+          titolo: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          avanzamento_percentuale?: number
+          cantiere_id?: string | null
+          commessa_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine_effettiva?: string | null
+          data_fine_prevista?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
+          descrizione?: string | null
+          id?: string
+          note?: string | null
+          organization_id: string
+          peso_percentuale?: number
+          posizione?: number
+          responsabile_id?: string | null
+          stato?: string
+          titolo: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          avanzamento_percentuale?: number
+          cantiere_id?: string | null
+          commessa_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine_effettiva?: string | null
+          data_fine_prevista?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
+          descrizione?: string | null
+          id?: string
+          note?: string | null
+          organization_id?: string
+          peso_percentuale?: number
+          posizione?: number
+          responsabile_id?: string | null
+          stato?: string
+          titolo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commessa_fasi_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_fasi_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_fasi_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commessa_membri: {
         Row: {
           archived_at: string | null
@@ -449,6 +543,8 @@ export type Database = {
         Row: {
           archived_at: string | null
           archived_by: string | null
+          avanzamento_calcolato_at: string | null
+          avanzamento_modalita: string
           avanzamento_pct: number
           budget_costi: number
           cliente_id: string | null
@@ -490,6 +586,8 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
+          avanzamento_calcolato_at?: string | null
+          avanzamento_modalita?: string
           avanzamento_pct?: number
           budget_costi?: number
           cliente_id?: string | null
@@ -531,6 +629,8 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_by?: string | null
+          avanzamento_calcolato_at?: string | null
+          avanzamento_modalita?: string
           avanzamento_pct?: number
           budget_costi?: number
           cliente_id?: string | null
@@ -1730,6 +1830,10 @@ export type Database = {
         Returns: boolean
       }
       mark_expired_invites: { Args: never; Returns: undefined }
+      recalculate_commessa_avanzamento: {
+        Args: { _commessa_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role:
