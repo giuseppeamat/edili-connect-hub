@@ -372,6 +372,149 @@ export type Database = {
           },
         ]
       }
+      commessa_budget_voci: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          cantiere_id: string | null
+          categoria: string
+          codice: string | null
+          commessa_id: string
+          costo_residuo_stimato: number
+          created_at: string
+          created_by: string | null
+          descrizione: string
+          fase_id: string | null
+          fonte: string
+          fornitore_id: string | null
+          id: string
+          importo_impegnato: number
+          importo_previsto: number
+          importo_sostenuto: number
+          is_locked: boolean
+          note: string | null
+          organization_id: string
+          posizione: number
+          preventivo_voce_id: string | null
+          prezzo_unitario: number | null
+          quantita: number | null
+          sottocategoria: string | null
+          tipo: string
+          unita_misura: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cantiere_id?: string | null
+          categoria: string
+          codice?: string | null
+          commessa_id: string
+          costo_residuo_stimato?: number
+          created_at?: string
+          created_by?: string | null
+          descrizione: string
+          fase_id?: string | null
+          fonte?: string
+          fornitore_id?: string | null
+          id?: string
+          importo_impegnato?: number
+          importo_previsto?: number
+          importo_sostenuto?: number
+          is_locked?: boolean
+          note?: string | null
+          organization_id: string
+          posizione?: number
+          preventivo_voce_id?: string | null
+          prezzo_unitario?: number | null
+          quantita?: number | null
+          sottocategoria?: string | null
+          tipo: string
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cantiere_id?: string | null
+          categoria?: string
+          codice?: string | null
+          commessa_id?: string
+          costo_residuo_stimato?: number
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string
+          fase_id?: string | null
+          fonte?: string
+          fornitore_id?: string | null
+          id?: string
+          importo_impegnato?: number
+          importo_previsto?: number
+          importo_sostenuto?: number
+          is_locked?: boolean
+          note?: string | null
+          organization_id?: string
+          posizione?: number
+          preventivo_voce_id?: string | null
+          prezzo_unitario?: number | null
+          quantita?: number | null
+          sottocategoria?: string | null
+          tipo?: string
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cbv_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cbv_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cbv_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cbv_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi_ritardi"
+            referencedColumns: ["fase_id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cbv_fornitore_fk"
+            columns: ["fornitore_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cbv_preventivo_voce_fk"
+            columns: ["preventivo_voce_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivo_voci"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_budget_voci_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commessa_fasi: {
         Row: {
           archived_at: string | null
@@ -546,14 +689,24 @@ export type Database = {
           avanzamento_calcolato_at: string | null
           avanzamento_modalita: string
           avanzamento_pct: number
+          baseline_costi: number | null
+          baseline_created_at: string | null
+          baseline_created_by: string | null
+          baseline_margine: number | null
+          baseline_preventivo_id: string | null
+          baseline_ricavi: number | null
+          budget_calcolato_at: string | null
           budget_costi: number
+          budget_modalita: string
           cliente_id: string | null
           closed_at: string | null
           closed_by: string | null
           codice: string
           costi_impegnati: number
           costi_previsti: number | null
+          costi_residui_stimati: number
           costi_sostenuti: number
+          costo_aggiornato: number | null
           created_at: string
           created_by: string | null
           data_apertura: string | null
@@ -564,12 +717,15 @@ export type Database = {
           data_inizio_prevista: string | null
           denominazione: string
           descrizione: string | null
+          extra_approvati: number
+          extra_non_approvati: number
           id: string
           importo: number
           importo_contratto: number | null
           indirizzo_cantiere: string | null
           margine_aggiornato: number | null
           margine_percentuale: number | null
+          margine_percentuale_aggiornato: number | null
           margine_previsto: number | null
           note: string | null
           note_interne: string | null
@@ -577,7 +733,12 @@ export type Database = {
           preventivo_id: string | null
           priorita: string | null
           responsabile_id: string | null
+          ricavi_acquisiti: number | null
+          ricavi_aggiornati: number | null
           ricavi_previsti: number | null
+          scostamento_costi: number | null
+          scostamento_margine: number | null
+          scostamento_ricavi: number | null
           stato: Database["public"]["Enums"]["commessa_stato"]
           tipologia: string | null
           titolo: string | null
@@ -589,14 +750,24 @@ export type Database = {
           avanzamento_calcolato_at?: string | null
           avanzamento_modalita?: string
           avanzamento_pct?: number
+          baseline_costi?: number | null
+          baseline_created_at?: string | null
+          baseline_created_by?: string | null
+          baseline_margine?: number | null
+          baseline_preventivo_id?: string | null
+          baseline_ricavi?: number | null
+          budget_calcolato_at?: string | null
           budget_costi?: number
+          budget_modalita?: string
           cliente_id?: string | null
           closed_at?: string | null
           closed_by?: string | null
           codice: string
           costi_impegnati?: number
           costi_previsti?: number | null
+          costi_residui_stimati?: number
           costi_sostenuti?: number
+          costo_aggiornato?: number | null
           created_at?: string
           created_by?: string | null
           data_apertura?: string | null
@@ -607,12 +778,15 @@ export type Database = {
           data_inizio_prevista?: string | null
           denominazione: string
           descrizione?: string | null
+          extra_approvati?: number
+          extra_non_approvati?: number
           id?: string
           importo?: number
           importo_contratto?: number | null
           indirizzo_cantiere?: string | null
           margine_aggiornato?: number | null
           margine_percentuale?: number | null
+          margine_percentuale_aggiornato?: number | null
           margine_previsto?: number | null
           note?: string | null
           note_interne?: string | null
@@ -620,7 +794,12 @@ export type Database = {
           preventivo_id?: string | null
           priorita?: string | null
           responsabile_id?: string | null
+          ricavi_acquisiti?: number | null
+          ricavi_aggiornati?: number | null
           ricavi_previsti?: number | null
+          scostamento_costi?: number | null
+          scostamento_margine?: number | null
+          scostamento_ricavi?: number | null
           stato?: Database["public"]["Enums"]["commessa_stato"]
           tipologia?: string | null
           titolo?: string | null
@@ -632,14 +811,24 @@ export type Database = {
           avanzamento_calcolato_at?: string | null
           avanzamento_modalita?: string
           avanzamento_pct?: number
+          baseline_costi?: number | null
+          baseline_created_at?: string | null
+          baseline_created_by?: string | null
+          baseline_margine?: number | null
+          baseline_preventivo_id?: string | null
+          baseline_ricavi?: number | null
+          budget_calcolato_at?: string | null
           budget_costi?: number
+          budget_modalita?: string
           cliente_id?: string | null
           closed_at?: string | null
           closed_by?: string | null
           codice?: string
           costi_impegnati?: number
           costi_previsti?: number | null
+          costi_residui_stimati?: number
           costi_sostenuti?: number
+          costo_aggiornato?: number | null
           created_at?: string
           created_by?: string | null
           data_apertura?: string | null
@@ -650,12 +839,15 @@ export type Database = {
           data_inizio_prevista?: string | null
           denominazione?: string
           descrizione?: string | null
+          extra_approvati?: number
+          extra_non_approvati?: number
           id?: string
           importo?: number
           importo_contratto?: number | null
           indirizzo_cantiere?: string | null
           margine_aggiornato?: number | null
           margine_percentuale?: number | null
+          margine_percentuale_aggiornato?: number | null
           margine_previsto?: number | null
           note?: string | null
           note_interne?: string | null
@@ -663,13 +855,25 @@ export type Database = {
           preventivo_id?: string | null
           priorita?: string | null
           responsabile_id?: string | null
+          ricavi_acquisiti?: number | null
+          ricavi_aggiornati?: number | null
           ricavi_previsti?: number | null
+          scostamento_costi?: number | null
+          scostamento_margine?: number | null
+          scostamento_ricavi?: number | null
           stato?: Database["public"]["Enums"]["commessa_stato"]
           tipologia?: string | null
           titolo?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "commesse_baseline_preventivo_fk"
+            columns: ["baseline_preventivo_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "commesse_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -1807,14 +2011,24 @@ export type Database = {
           avanzamento_calcolato_at: string | null
           avanzamento_modalita: string
           avanzamento_pct: number
+          baseline_costi: number | null
+          baseline_created_at: string | null
+          baseline_created_by: string | null
+          baseline_margine: number | null
+          baseline_preventivo_id: string | null
+          baseline_ricavi: number | null
+          budget_calcolato_at: string | null
           budget_costi: number
+          budget_modalita: string
           cliente_id: string | null
           closed_at: string | null
           closed_by: string | null
           codice: string
           costi_impegnati: number
           costi_previsti: number | null
+          costi_residui_stimati: number
           costi_sostenuti: number
+          costo_aggiornato: number | null
           created_at: string
           created_by: string | null
           data_apertura: string | null
@@ -1825,12 +2039,15 @@ export type Database = {
           data_inizio_prevista: string | null
           denominazione: string
           descrizione: string | null
+          extra_approvati: number
+          extra_non_approvati: number
           id: string
           importo: number
           importo_contratto: number | null
           indirizzo_cantiere: string | null
           margine_aggiornato: number | null
           margine_percentuale: number | null
+          margine_percentuale_aggiornato: number | null
           margine_previsto: number | null
           note: string | null
           note_interne: string | null
@@ -1838,7 +2055,12 @@ export type Database = {
           preventivo_id: string | null
           priorita: string | null
           responsabile_id: string | null
+          ricavi_acquisiti: number | null
+          ricavi_aggiornati: number | null
           ricavi_previsti: number | null
+          scostamento_costi: number | null
+          scostamento_margine: number | null
+          scostamento_ricavi: number | null
           stato: Database["public"]["Enums"]["commessa_stato"]
           tipologia: string | null
           titolo: string | null
@@ -1850,6 +2072,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      _cbv_audit: {
+        Args: { _action: string; _entity_id: string; _meta: Json; _org: string }
+        Returns: undefined
       }
       _log_audit: {
         Args: {
@@ -1864,6 +2090,49 @@ export type Database = {
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
+      }
+      archive_commessa_budget_voce: {
+        Args: {
+          _expected_updated_at: string
+          _motivazione?: string
+          _voce_id: string
+        }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          cantiere_id: string | null
+          categoria: string
+          codice: string | null
+          commessa_id: string
+          costo_residuo_stimato: number
+          created_at: string
+          created_by: string | null
+          descrizione: string
+          fase_id: string | null
+          fonte: string
+          fornitore_id: string | null
+          id: string
+          importo_impegnato: number
+          importo_previsto: number
+          importo_sostenuto: number
+          is_locked: boolean
+          note: string | null
+          organization_id: string
+          posizione: number
+          preventivo_voce_id: string | null
+          prezzo_unitario: number | null
+          quantita: number | null
+          sottocategoria: string | null
+          tipo: string
+          unita_misura: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commessa_budget_voci"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       archive_commessa_fase: {
         Args: {
@@ -1883,6 +2152,10 @@ export type Database = {
       }
       can_access_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
       can_access_commessa: { Args: { _commessa_id: string }; Returns: boolean }
+      can_manage_commessa_budget: {
+        Args: { _commessa_id: string; _operation: string }
+        Returns: boolean
+      }
       change_commessa_stato: {
         Args: {
           _commessa_id: string
@@ -1920,6 +2193,64 @@ export type Database = {
           _responsabile_id?: string
         }
         Returns: string
+      }
+      create_commessa_budget_voce: {
+        Args: {
+          _cantiere_id?: string
+          _categoria: string
+          _codice?: string
+          _commessa_id: string
+          _costo_residuo?: number
+          _descrizione: string
+          _expected_updated_at: string
+          _fase_id?: string
+          _fornitore_id?: string
+          _importo_impegnato?: number
+          _importo_previsto?: number
+          _importo_sostenuto?: number
+          _note?: string
+          _prezzo_unitario?: number
+          _quantita?: number
+          _sottocategoria?: string
+          _tipo: string
+          _unita?: string
+        }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          cantiere_id: string | null
+          categoria: string
+          codice: string | null
+          commessa_id: string
+          costo_residuo_stimato: number
+          created_at: string
+          created_by: string | null
+          descrizione: string
+          fase_id: string | null
+          fonte: string
+          fornitore_id: string | null
+          id: string
+          importo_impegnato: number
+          importo_previsto: number
+          importo_sostenuto: number
+          is_locked: boolean
+          note: string | null
+          organization_id: string
+          posizione: number
+          preventivo_voce_id: string | null
+          prezzo_unitario: number | null
+          quantita: number | null
+          sottocategoria: string | null
+          tipo: string
+          unita_misura: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commessa_budget_voci"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       create_commessa_fase: {
         Args: {
@@ -1962,6 +2293,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      import_budget_from_preventivo: {
+        Args: {
+          _commessa_id: string
+          _expected_updated_at: string
+          _strategy: string
+        }
+        Returns: Json
+      }
       is_capocantiere_di: { Args: { _cantiere_id: string }; Returns: boolean }
       is_membro_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
       is_membro_commessa: { Args: { _commessa_id: string }; Returns: boolean }
@@ -1984,12 +2323,82 @@ export type Database = {
         Args: { _commessa_id: string }
         Returns: number
       }
+      recalculate_commessa_budget: {
+        Args: { _commessa_id: string }
+        Returns: undefined
+      }
+      reorder_commessa_budget_voci: {
+        Args: {
+          _commessa_id: string
+          _expected_updated_at: string
+          _ordered_ids: string[]
+        }
+        Returns: undefined
+      }
       reorder_commessa_fasi: {
         Args: { _commessa_id: string; _ordered_ids: string[] }
         Returns: undefined
       }
+      restore_commessa_budget_voce: {
+        Args: { _expected_updated_at: string; _voce_id: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          cantiere_id: string | null
+          categoria: string
+          codice: string | null
+          commessa_id: string
+          costo_residuo_stimato: number
+          created_at: string
+          created_by: string | null
+          descrizione: string
+          fase_id: string | null
+          fonte: string
+          fornitore_id: string | null
+          id: string
+          importo_impegnato: number
+          importo_previsto: number
+          importo_sostenuto: number
+          is_locked: boolean
+          note: string | null
+          organization_id: string
+          posizione: number
+          preventivo_voce_id: string | null
+          prezzo_unitario: number | null
+          quantita: number | null
+          sottocategoria: string | null
+          tipo: string
+          unita_misura: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commessa_budget_voci"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       restore_commessa_fase: {
         Args: { _expected_updated_at: string; _id: string }
+        Returns: string
+      }
+      set_commessa_baseline: {
+        Args: {
+          _commessa_id: string
+          _expected_updated_at: string
+          _motivazione?: string
+          _replace?: boolean
+        }
+        Returns: string
+      }
+      set_commessa_budget_mode: {
+        Args: {
+          _commessa_id: string
+          _confirm_empty?: boolean
+          _expected_updated_at: string
+          _mode: string
+          _motivazione?: string
+        }
         Returns: string
       }
       set_commessa_progress_mode: {
@@ -2001,6 +2410,63 @@ export type Database = {
           _motivazione?: string
         }
         Returns: string
+      }
+      update_commessa_budget_voce: {
+        Args: {
+          _cantiere_id?: string
+          _categoria: string
+          _codice?: string
+          _costo_residuo?: number
+          _descrizione: string
+          _expected_updated_at: string
+          _fase_id?: string
+          _fornitore_id?: string
+          _importo_impegnato?: number
+          _importo_previsto?: number
+          _importo_sostenuto?: number
+          _note?: string
+          _prezzo_unitario?: number
+          _quantita?: number
+          _sottocategoria?: string
+          _unita?: string
+          _voce_id: string
+        }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          cantiere_id: string | null
+          categoria: string
+          codice: string | null
+          commessa_id: string
+          costo_residuo_stimato: number
+          created_at: string
+          created_by: string | null
+          descrizione: string
+          fase_id: string | null
+          fonte: string
+          fornitore_id: string | null
+          id: string
+          importo_impegnato: number
+          importo_previsto: number
+          importo_sostenuto: number
+          is_locked: boolean
+          note: string | null
+          organization_id: string
+          posizione: number
+          preventivo_voce_id: string | null
+          prezzo_unitario: number | null
+          quantita: number | null
+          sottocategoria: string | null
+          tipo: string
+          unita_misura: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commessa_budget_voci"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       update_commessa_fase: {
         Args: {
@@ -2028,6 +2494,22 @@ export type Database = {
           _fase_id: string
           _motivazione?: string
           _nuovo_avanzamento: number
+        }
+        Returns: string
+      }
+      update_manual_commessa_budget: {
+        Args: {
+          _commessa_id: string
+          _costi_impegnati: number
+          _costi_previsti: number
+          _costi_residui_stimati: number
+          _costi_sostenuti: number
+          _expected_updated_at: string
+          _extra_approvati: number
+          _extra_non_approvati: number
+          _motivazione?: string
+          _ricavi_acquisiti: number
+          _ricavi_previsti: number
         }
         Returns: string
       }
