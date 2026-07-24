@@ -215,7 +215,7 @@ function PreventivoEditor() {
               defaultIva={Number(preventivo.iva_default_pct ?? 22)}
               onChanged={invalidateAll}
               onDeleteCat={() => confirm("Eliminare la categoria e tutte le sue voci?") && deleteCatFn({ data: { id: cat.id } }).then(() => { toast.success("Categoria eliminata"); invalidateAll(); }).catch((e: any) => toast.error(e?.message))}
-              onMoveCat={(dir) => moveCatFn({ data: { id: cat.id, direction: dir } }).then(invalidateAll)}
+              onMoveCat={(dir: "up" | "down") => moveCatFn({ data: { id: cat.id, direction: dir } }).then(invalidateAll)}
               upsertCatFn={upsertCatFn}
               upsertVoceFn={upsertVoceFn}
               deleteVoceFn={deleteVoceFn}
@@ -341,13 +341,13 @@ function CategoriaCard({ cat, voci, preventivoId, readOnly, defaultIva, onChange
             {voci.map((v: any) => (
               <VoceRow
                 key={v.id} v={v} readOnly={readOnly}
-                onSave={(patch) => upsertVoceFn({ data: { id: v.id, preventivo_id: preventivoId, categoria_id: cat.id, ...patch } }).then(() => { toast.success("Voce aggiornata"); onChanged(); }).catch((e: any) => toast.error(e?.message))}
+                onSave={(patch: any) => upsertVoceFn({ data: { id: v.id, preventivo_id: preventivoId, categoria_id: cat.id, ...patch } }).then(() => { toast.success("Voce aggiornata"); onChanged(); }).catch((e: any) => toast.error(e?.message))}
                 onDelete={() => confirm("Eliminare la voce?") && deleteVoceFn({ data: { id: v.id } }).then(() => { toast.success("Eliminata"); onChanged(); })}
-                onMove={(dir) => moveVoceFn({ data: { id: v.id, direction: dir } }).then(onChanged)}
+                onMove={(dir: "up" | "down") => moveVoceFn({ data: { id: v.id, direction: dir } }).then(onChanged)}
                 onDuplicate={() => duplicateVoceFn({ data: { id: v.id } }).then(() => { toast.success("Duplicata"); onChanged(); })}
               />
             ))}
-            {!readOnly && <NewVoceRow defaultIva={defaultIva} onAdd={(patch) => upsertVoceFn({ data: { preventivo_id: preventivoId, categoria_id: cat.id, ...patch } }).then(() => { toast.success("Voce aggiunta"); onChanged(); }).catch((e: any) => toast.error(e?.message))} />}
+            {!readOnly && <NewVoceRow defaultIva={defaultIva} onAdd={(patch: any) => upsertVoceFn({ data: { preventivo_id: preventivoId, categoria_id: cat.id, ...patch } }).then(() => { toast.success("Voce aggiunta"); onChanged(); }).catch((e: any) => toast.error(e?.message))} />}
             {voci.length === 0 && readOnly && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">Nessuna voce</TableCell></TableRow>}
           </TableBody>
         </Table>
