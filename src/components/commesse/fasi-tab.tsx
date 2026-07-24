@@ -42,11 +42,12 @@ const TRANSIZIONI: Record<string, { value: string; label: string; needsMotivo?: 
 type FaseRow = any;
 
 export function FasiTab({
-  commessaId, canManage, avanzamentoModalita,
+  commessaId, canManage, avanzamentoModalita, commessaUpdatedAt,
 }: {
   commessaId: string;
   canManage: boolean;
   avanzamentoModalita: string;
+  commessaUpdatedAt: string;
 }) {
   const qc = useQueryClient();
   const [includeArchived, setIncludeArchived] = useState(false);
