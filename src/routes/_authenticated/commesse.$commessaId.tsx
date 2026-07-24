@@ -173,6 +173,11 @@ function CommessaDetailPage() {
         <TabsContent value="documenti">
           <DocumentiTab commessaId={c.id} />
         </TabsContent>
+        {user.canViewCommessaBudget && (
+          <TabsContent value="budget">
+            <BudgetTab commessaId={c.id} isClosed={!!c.closed_at} isArchived={!!c.archived_at} />
+          </TabsContent>
+        )}
         <TabsContent value="storico">
           <StoricoTab commessaId={c.id} />
         </TabsContent>
