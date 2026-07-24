@@ -233,7 +233,7 @@ export const updateCommessa = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
-      .from("commesse").update(patch).eq("id", data.id).eq("organization_id", organizationId);
+      .from("commesse").update(patch as any).eq("id", data.id).eq("organization_id", organizationId);
     if (error) throw error;
 
     await logAudit(context, organizationId, "commessa.updated", data.id, {
