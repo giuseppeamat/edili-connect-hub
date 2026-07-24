@@ -549,6 +549,10 @@ export const generatePreventivoPdfFn = createServerFn({ method: "POST" })
     }).select("id").single();
     if (docErr) throw docErr;
 
+    const { data: signed, error: signErr } = await supabaseAdmin.storage
+      .from("documenti").createSignedUrl(path, 300);
+    if (signErr) throw signErr;
+
     await logAudit(context, organizationId, "generate_pdf", data.id, { documento_id: doc.id, path });
-    return { documento_id: doc.id, storage_path: path, filename };
+    return { documento_id: doc.id, storage_path: path, filename, signed_url: signed.signedUrl };
   });

@@ -169,10 +169,10 @@ function PreventivoEditor() {
                 {STATI.map(s => <SelectItem key={s} value={s}>{statoLabel[s]}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={() => generatePdfFn({ data: { id } }).then(() => toast.success("PDF generato in Documenti")).catch((e: any) => toast.error(e?.message ?? "Errore PDF"))}>
+            <Button variant="outline" size="sm" onClick={() => generatePdfFn({ data: { id } }).then((r: any) => { toast.success("PDF pronto"); if (r?.signed_url) window.open(r.signed_url, "_blank", "noopener,noreferrer"); }).catch((e: any) => toast.error(e?.message ?? "Errore PDF"))}>
               <FileText className="h-4 w-4 mr-1" />PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => newVersioneFn({ data: { id } }).then((r: any) => { toast.success("Nuova versione creata"); navigate({ to: "/preventivi/$id", params: { id: r.id } }); }).catch((e: any) => toast.error(e?.message))}>
+            <Button variant="outline" size="sm" onClick={() => newVersioneFn({ data: { id } }).then((r: any) => { toast.success("Nuova versione creata"); qc.invalidateQueries({ queryKey: ["preventivi"] }); qc.invalidateQueries({ queryKey: ["preventivo", id] }); navigate({ to: "/preventivi/$id", params: { id: r.id } }); }).catch((e: any) => toast.error(e?.message))}>
               <GitBranch className="h-4 w-4 mr-1" />Nuova versione
             </Button>
             <Button variant="outline" size="sm" onClick={() => duplicatePrevFn({ data: { id } }).then((r: any) => { toast.success("Duplicato"); navigate({ to: "/preventivi/$id", params: { id: r.id } }); }).catch((e: any) => toast.error(e?.message))}>
