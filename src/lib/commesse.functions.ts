@@ -345,7 +345,7 @@ export const changeCommessaStato = createServerFn({ method: "POST" })
       _commessa_id: data.id,
       _nuovo_stato: data.nuovo_stato,
       _expected_updated_at: data.expected_updated_at,
-      _motivazione: data.motivazione ?? null,
+      _motivazione: data.motivazione ?? undefined,
     });
     if (error) throw new Error(error.message);
     // supabaseAdmin non necessario, ma teniamolo importato per audit fallback futuri
