@@ -190,6 +190,18 @@ export const createCommessa = createServerFn({ method: "POST" })
     }).select("id").single();
     if (error) throw error;
 
+    // Sync commessa_membri per il responsabile iniziale
+    if (data.responsabile_id) {
+      await supabaseAdmin.from("commessa_membri").insert({
+        organization_id: organizationId,
+        commessa_id: inserted.id,
+        user_id: data.responsabile_id,
+        ruolo_operativo: "responsabile_commessa",
+        is_active: true,
+        created_by: context.userId,
+      });
+    }
+
     await logAudit(context, organizationId, "commessa.created", inserted.id, {
       codice, titolo: data.titolo, cliente_id: data.cliente_id, responsabile_id: data.responsabile_id ?? null,
     });
