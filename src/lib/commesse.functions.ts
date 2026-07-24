@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { mapServerError } from "@/lib/server-error-mapper";
 
 type AppRole =
   | "proprietario" | "amministratore" | "ufficio_tecnico" | "amministrazione"
@@ -228,7 +229,8 @@ const updateSchema = z.object({
   ricavi_previsti: z.number().min(0).nullable().optional(),
   costi_previsti: z.number().min(0).nullable().optional(),
   costi_impegnati: z.number().min(0).nullable().optional(),
-  avanzamento_pct: z.number().min(0).max(100).optional(),
+  // avanzamento_pct RIMOSSO da updateCommessa: usare updateManualCommessaProgress (RPC).
+  // avanzamento_modalita RIMOSSO da updateCommessa: usare setCommessaAvanzamentoModalita (RPC).
   note_interne: z.string().max(4000).nullable().optional(),
 });
 
@@ -293,7 +295,7 @@ export const updateCommessa = createServerFn({ method: "POST" })
     setIf("data_inizio_effettiva");
     setIf("data_fine_prevista");
     setIf("data_fine_effettiva");
-    setIf("avanzamento_pct");
+    // avanzamento_pct non è più aggiornabile qui — usare updateManualCommessaProgress (RPC).
     setIf("note_interne");
 
     if (data.importo_contratto !== undefined) {
@@ -400,6 +402,37 @@ export const restoreCommessa = createServerFn({ method: "POST" })
     await logAudit(context, organizationId, "commessa.restored", data.id, {});
     return { ok: true };
   });
+
+// ============= AVANZAMENTO MANUALE COMMESSA (RPC-only) =============
+const manualProgressSchema = z.object({
+  commessaId: z.string().uuid(),
+  avanzamentoPercentuale: z.number().min(0).max(100),
+  expectedUpdatedAt: z.string().min(1),
+  motivazione: z.string().trim().max(500).optional().nullable(),
+});
+export const updateManualCommessaProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => manualProgressSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("update_manual_commessa_progress", {
+        _commessa_id: data.commessaId,
+        _nuovo_avanzamento: data.avanzamentoPercentuale,
+        _expected_updated_at: data.expectedUpdatedAt,
+        _motivazione: data.motivazione ?? null,
+      });
+      if (error) throw error;
+      return {
+        id: data.commessaId,
+        updated_at: newUpd as unknown as string,
+        avanzamento: data.avanzamentoPercentuale,
+      };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+
 
 // ============= CLOSE / REOPEN =============
 const closeSchema = z.object({

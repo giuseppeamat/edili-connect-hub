@@ -1799,6 +1799,58 @@ export type Database = {
       }
     }
     Functions: {
+      _assert_commessa_fase_editabile: {
+        Args: { _commessa_id: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          avanzamento_calcolato_at: string | null
+          avanzamento_modalita: string
+          avanzamento_pct: number
+          budget_costi: number
+          cliente_id: string | null
+          closed_at: string | null
+          closed_by: string | null
+          codice: string
+          costi_impegnati: number
+          costi_previsti: number | null
+          costi_sostenuti: number
+          created_at: string
+          created_by: string | null
+          data_apertura: string | null
+          data_fine_effettiva: string | null
+          data_fine_prevista: string | null
+          data_inizio: string | null
+          data_inizio_effettiva: string | null
+          data_inizio_prevista: string | null
+          denominazione: string
+          descrizione: string | null
+          id: string
+          importo: number
+          importo_contratto: number | null
+          indirizzo_cantiere: string | null
+          margine_aggiornato: number | null
+          margine_percentuale: number | null
+          margine_previsto: number | null
+          note: string | null
+          note_interne: string | null
+          organization_id: string
+          preventivo_id: string | null
+          priorita: string | null
+          responsabile_id: string | null
+          ricavi_previsti: number | null
+          stato: Database["public"]["Enums"]["commessa_stato"]
+          tipologia: string | null
+          titolo: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "commesse"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       _log_audit: {
         Args: {
           _action: string
@@ -1812,6 +1864,14 @@ export type Database = {
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
+      }
+      archive_commessa_fase: {
+        Args: {
+          _expected_updated_at: string
+          _id: string
+          _motivazione?: string
+        }
+        Returns: string
       }
       assign_commessa_codice: {
         Args: { _anno: number; _org: string }
@@ -1860,6 +1920,23 @@ export type Database = {
           _responsabile_id?: string
         }
         Returns: string
+      }
+      create_commessa_fase: {
+        Args: {
+          _cantiere_id?: string
+          _commessa_id: string
+          _data_fine_prevista?: string
+          _data_inizio_prevista?: string
+          _descrizione?: string
+          _note?: string
+          _peso_percentuale?: number
+          _responsabile_id?: string
+          _titolo: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
       }
       create_preventivo_nuova_versione: {
         Args: { _motivo?: string; _preventivo_id: string }
@@ -1911,6 +1988,10 @@ export type Database = {
         Args: { _commessa_id: string; _ordered_ids: string[] }
         Returns: undefined
       }
+      restore_commessa_fase: {
+        Args: { _expected_updated_at: string; _id: string }
+        Returns: string
+      }
       set_commessa_progress_mode: {
         Args: {
           _commessa_id: string
@@ -1918,6 +1999,26 @@ export type Database = {
           _expected_updated_at: string
           _modalita: string
           _motivazione?: string
+        }
+        Returns: string
+      }
+      update_commessa_fase: {
+        Args: {
+          _cantiere_id?: string
+          _clear_cantiere?: boolean
+          _clear_data_fine_prevista?: boolean
+          _clear_data_inizio_prevista?: boolean
+          _clear_note?: boolean
+          _clear_responsabile?: boolean
+          _data_fine_prevista?: string
+          _data_inizio_prevista?: string
+          _descrizione?: string
+          _expected_updated_at: string
+          _id: string
+          _note?: string
+          _peso_percentuale?: number
+          _responsabile_id?: string
+          _titolo?: string
         }
         Returns: string
       }

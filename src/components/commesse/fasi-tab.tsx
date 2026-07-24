@@ -42,11 +42,12 @@ const TRANSIZIONI: Record<string, { value: string; label: string; needsMotivo?: 
 type FaseRow = any;
 
 export function FasiTab({
-  commessaId, canManage, avanzamentoModalita,
+  commessaId, canManage, avanzamentoModalita, commessaUpdatedAt,
 }: {
   commessaId: string;
   canManage: boolean;
   avanzamentoModalita: string;
+  commessaUpdatedAt: string;
 }) {
   const qc = useQueryClient();
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -75,7 +76,8 @@ export function FasiTab({
     onError: (e: any) => toast.error(e.message),
   });
   const setModalitaMut = useMutation({
-    mutationFn: (m: "manuale" | "fasi") => setModalitaFn({ data: { commessa_id: commessaId, modalita: m } }),
+    mutationFn: (args: { modalita: "manuale" | "fasi"; expected_updated_at: string; motivazione?: string | null }) =>
+      setModalitaFn({ data: { commessa_id: commessaId, ...args } }),
     onSuccess: () => { toast.success("Modalità avanzamento aggiornata"); invalidate(); },
     onError: (e: any) => toast.error(e.message),
   });
@@ -96,7 +98,7 @@ export function FasiTab({
             <Label className="text-sm">Modalità avanzamento:</Label>
             <Select
               value={avanzamentoModalita}
-              onValueChange={(v) => setModalitaMut.mutate(v as any)}
+              onValueChange={(v) => setModalitaMut.mutate({ modalita: v as any, expected_updated_at: commessaUpdatedAt })}
               disabled={!canManage || setModalitaMut.isPending}
             >
               <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
@@ -221,7 +223,7 @@ function FaseRowCard({ fase, canManage, onEdit, onProgress, onState, onArchive, 
           )}
           {canManage && fase.archived_at && (
             <Button size="sm" variant="ghost" onClick={async () => {
-              try { await restoreFn({ data: { id: fase.id } }); toast.success("Ripristinata"); onRestore(); }
+              try { await restoreFn({ data: { id: fase.id, expected_updated_at: fase.updated_at } }); toast.success("Ripristinata"); onRestore(); }
               catch (e: any) { toast.error(e.message); }
             }}>
               <RotateCcw className="h-4 w-4 mr-1" />Ripristina
@@ -256,7 +258,7 @@ function FaseFormDialog({ fase, commessaId, onClose, onDone }: { fase?: FaseRow;
         data_fine_prevista: dfp || null,
         note: note || null,
       };
-      if (isEdit) await updateFn({ data: { id: fase!.id, ...payload } });
+      if (isEdit) await updateFn({ data: { id: fase!.id, expected_updated_at: fase!.updated_at, ...payload } });
       else await createFn({ data: { commessa_id: commessaId, ...payload } });
       toast.success(isEdit ? "Fase aggiornata" : "Fase creata");
       onDone(); onClose();
@@ -299,7 +301,7 @@ function ProgressDialog({ fase, onClose, onDone }: { fase: FaseRow; onClose: () 
     e.preventDefault();
     setPending(true);
     try {
-      await fn({ data: { id: fase.id, avanzamento_percentuale: Number(val), note: note || null } });
+      await fn({ data: { id: fase.id, expected_updated_at: fase.updated_at, avanzamento_percentuale: Number(val), motivazione: note || null } });
       toast.success("Avanzamento aggiornato"); onDone(); onClose();
     } catch (e: any) { toast.error(e.message); }
     finally { setPending(false); }
@@ -340,7 +342,7 @@ function StateChangeDialog({ data, onClose, onDone }: {
       onConfirm={async ({ motivazione }) => {
         setPending(true);
         try {
-          await fn({ data: { id: data.fase.id, stato: data.nuovo as any, motivazione: motivazione ?? null } });
+          await fn({ data: { id: data.fase.id, expected_updated_at: data.fase.updated_at, stato: data.nuovo as any, motivazione: motivazione ?? null } });
           toast.success("Stato aggiornato"); onDone(); onClose();
         } finally { setPending(false); }
       }}
@@ -356,10 +358,12 @@ function ArchiveDialog({ fase, onClose, onDone }: { fase: FaseRow; onClose: () =
       open onOpenChange={(v) => !v && onClose()}
       title="Archivia fase" description={`La fase "${fase.titolo}" sarà nascosta dagli elenchi principali.`}
       destructive confirmLabel="Archivia" isPending={pending}
-      onConfirm={async () => {
+      requireMotivazione={fase.stato === "in_corso" || fase.stato === "completata"}
+      motivazionePlaceholder="Motivo dell'archiviazione…"
+      onConfirm={async ({ motivazione }) => {
         setPending(true);
         try {
-          await fn({ data: { id: fase.id } });
+          await fn({ data: { id: fase.id, expected_updated_at: fase.updated_at, motivazione: motivazione ?? null } });
           toast.success("Fase archiviata"); onDone(); onClose();
         } finally { setPending(false); }
       }}
