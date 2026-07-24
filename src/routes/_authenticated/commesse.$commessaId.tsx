@@ -153,6 +153,8 @@ function CommessaDetailPage() {
             canManage={canEditCommesse || (user.has("responsabile_commessa") && c.responsabile_id === user.userId)}
             avanzamentoModalita={(c as any).avanzamento_modalita ?? "manuale"}
             commessaUpdatedAt={c.updated_at}
+            commessaClosed={!!c.closed_at}
+            commessaArchived={!!c.archived_at}
           />
         </TabsContent>
         <TabsContent value="cantieri">
