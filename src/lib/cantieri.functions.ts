@@ -64,7 +64,7 @@ async function assertCapocantiereValid(context: any, orgId: string, userId: stri
   const { data: r } = await context.supabase.from("user_roles")
     .select("role").eq("user_id", userId).eq("organization_id", orgId);
   const rolesU = (r ?? []).map((x: any) => x.role as AppRole);
-  if (!rolesU.some((rr) => CAPOCANTIERE_ROLES.includes(rr))) {
+  if (!rolesU.some((rr: AppRole) => CAPOCANTIERE_ROLES.includes(rr))) {
     throw new Error("Ruolo utente non compatibile con capocantiere");
   }
 }
