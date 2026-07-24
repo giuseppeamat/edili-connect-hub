@@ -301,7 +301,7 @@ function ProgressDialog({ fase, onClose, onDone }: { fase: FaseRow; onClose: () 
     e.preventDefault();
     setPending(true);
     try {
-      await fn({ data: { id: fase.id, avanzamento_percentuale: Number(val), note: note || null } });
+      await fn({ data: { id: fase.id, expected_updated_at: fase.updated_at, avanzamento_percentuale: Number(val), motivazione: note || null } });
       toast.success("Avanzamento aggiornato"); onDone(); onClose();
     } catch (e: any) { toast.error(e.message); }
     finally { setPending(false); }
