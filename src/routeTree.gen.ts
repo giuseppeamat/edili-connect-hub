@@ -17,13 +17,14 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
 import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
-import { Route as AuthenticatedPreventiviRouteImport } from './routes/_authenticated/preventivi'
 import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
 import { Route as AuthenticatedCommesseRouteImport } from './routes/_authenticated/commesse'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
+import { Route as AuthenticatedPreventiviIdRouteImport } from './routes/_authenticated/preventivi.$id'
 import { Route as AuthenticatedClientiClienteIdRouteImport } from './routes/_authenticated/clienti.$clienteId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -66,11 +67,6 @@ const AuthenticatedProfiloRoute = AuthenticatedProfiloRouteImport.update({
   path: '/profilo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPreventiviRoute = AuthenticatedPreventiviRouteImport.update({
-  id: '/preventivi',
-  path: '/preventivi',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedOrganizzazioneRoute =
   AuthenticatedOrganizzazioneRouteImport.update({
     id: '/organizzazione',
@@ -97,10 +93,22 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPreventiviIndexRoute =
+  AuthenticatedPreventiviIndexRouteImport.update({
+    id: '/preventivi/',
+    path: '/preventivi/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientiIndexRoute =
   AuthenticatedClientiIndexRouteImport.update({
     id: '/clienti/',
     path: '/clienti/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPreventiviIdRoute =
+  AuthenticatedPreventiviIdRouteImport.update({
+    id: '/preventivi/$id',
+    path: '/preventivi/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedClientiClienteIdRoute =
@@ -120,12 +128,13 @@ export interface FileRoutesByFullPath {
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
-  '/preventivi': typeof AuthenticatedPreventiviRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti/': typeof AuthenticatedClientiIndexRoute
+  '/preventivi/': typeof AuthenticatedPreventiviIndexRoute
 }
 export interface FileRoutesByTo {
   '/accetta-invito': typeof AccettaInvitoRoute
@@ -136,13 +145,14 @@ export interface FileRoutesByTo {
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
-  '/preventivi': typeof AuthenticatedPreventiviRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti': typeof AuthenticatedClientiIndexRoute
+  '/preventivi': typeof AuthenticatedPreventiviIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -155,13 +165,14 @@ export interface FileRoutesById {
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
-  '/_authenticated/preventivi': typeof AuthenticatedPreventiviRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
   '/_authenticated/rapportini': typeof AuthenticatedRapportiniRoute
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/_authenticated/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
+  '/_authenticated/preventivi/': typeof AuthenticatedPreventiviIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -175,12 +186,13 @@ export interface FileRouteTypes {
     | '/documenti'
     | '/fornitori'
     | '/organizzazione'
-    | '/preventivi'
     | '/profilo'
     | '/rapportini'
     | '/scadenziario'
     | '/clienti/$clienteId'
+    | '/preventivi/$id'
     | '/clienti/'
+    | '/preventivi/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/accetta-invito'
@@ -191,13 +203,14 @@ export interface FileRouteTypes {
     | '/documenti'
     | '/fornitori'
     | '/organizzazione'
-    | '/preventivi'
     | '/profilo'
     | '/rapportini'
     | '/scadenziario'
     | '/'
     | '/clienti/$clienteId'
+    | '/preventivi/$id'
     | '/clienti'
+    | '/preventivi'
   id:
     | '__root__'
     | '/_authenticated'
@@ -209,13 +222,14 @@ export interface FileRouteTypes {
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
     | '/_authenticated/organizzazione'
-    | '/_authenticated/preventivi'
     | '/_authenticated/profilo'
     | '/_authenticated/rapportini'
     | '/_authenticated/scadenziario'
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
+    | '/_authenticated/preventivi/$id'
     | '/_authenticated/clienti/'
+    | '/_authenticated/preventivi/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -283,13 +297,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfiloRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/preventivi': {
-      id: '/_authenticated/preventivi'
-      path: '/preventivi'
-      fullPath: '/preventivi'
-      preLoaderRoute: typeof AuthenticatedPreventiviRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/organizzazione': {
       id: '/_authenticated/organizzazione'
       path: '/organizzazione'
@@ -325,11 +332,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preventivi/': {
+      id: '/_authenticated/preventivi/'
+      path: '/preventivi'
+      fullPath: '/preventivi/'
+      preLoaderRoute: typeof AuthenticatedPreventiviIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clienti/': {
       id: '/_authenticated/clienti/'
       path: '/clienti'
       fullPath: '/clienti/'
       preLoaderRoute: typeof AuthenticatedClientiIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/preventivi/$id': {
+      id: '/_authenticated/preventivi/$id'
+      path: '/preventivi/$id'
+      fullPath: '/preventivi/$id'
+      preLoaderRoute: typeof AuthenticatedPreventiviIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clienti/$clienteId': {
@@ -348,13 +369,14 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
-  AuthenticatedPreventiviRoute: typeof AuthenticatedPreventiviRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
   AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRoute
   AuthenticatedScadenziarioRoute: typeof AuthenticatedScadenziarioRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedClientiClienteIdRoute: typeof AuthenticatedClientiClienteIdRoute
+  AuthenticatedPreventiviIdRoute: typeof AuthenticatedPreventiviIdRoute
   AuthenticatedClientiIndexRoute: typeof AuthenticatedClientiIndexRoute
+  AuthenticatedPreventiviIndexRoute: typeof AuthenticatedPreventiviIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -363,13 +385,14 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
-  AuthenticatedPreventiviRoute: AuthenticatedPreventiviRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
   AuthenticatedRapportiniRoute: AuthenticatedRapportiniRoute,
   AuthenticatedScadenziarioRoute: AuthenticatedScadenziarioRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedClientiClienteIdRoute: AuthenticatedClientiClienteIdRoute,
+  AuthenticatedPreventiviIdRoute: AuthenticatedPreventiviIdRoute,
   AuthenticatedClientiIndexRoute: AuthenticatedClientiIndexRoute,
+  AuthenticatedPreventiviIndexRoute: AuthenticatedPreventiviIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

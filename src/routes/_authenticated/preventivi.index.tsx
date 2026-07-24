@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { createPreventivo } from "@/lib/preventivi.functions";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +13,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, HardHat } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 import { eur, dateIt } from "@/lib/format";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/preventivi")({
+export const Route = createFileRoute("/_authenticated/preventivi/")({
   head: () => ({
     meta: [
       { title: "Preventivi — CantiereOS" },
@@ -27,29 +29,39 @@ export const Route = createFileRoute("/_authenticated/preventivi")({
 
 const statoLabel: Record<string, string> = {
   bozza: "Bozza",
+  in_revisione: "In revisione",
+  pronto: "Pronto",
   inviato: "Inviato",
   accettato: "Accettato",
   rifiutato: "Rifiutato",
   scaduto: "Scaduto",
+  convertito: "Convertito",
+  annullato: "Annullato",
 };
 const statoVariant: Record<string, any> = {
   bozza: "secondary",
+  in_revisione: "outline",
+  pronto: "outline",
   inviato: "default",
   accettato: "default",
   rifiutato: "destructive",
   scaduto: "outline",
+  convertito: "default",
+  annullato: "destructive",
 };
 
 function PreventiviPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const createFn = useServerFn(createPreventivo);
 
   const { data: items = [] } = useQuery({
     queryKey: ["preventivi"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("preventivi")
-        .select("*, clienti(ragione_sociale)")
+        .select("id, numero, versione, oggetto, titolo, data_preventivo, totale, margine, stato, is_current_version, cliente_id, clienti(ragione_sociale, denominazione)")
         .order("data_preventivo", { ascending: false });
       if (error) throw error;
       return data as any[];
@@ -58,48 +70,30 @@ function PreventiviPage() {
 
   const { data: clienti = [] } = useQuery({
     queryKey: ["clienti-lite"],
-    queryFn: async () => (await supabase.from("clienti").select("id, ragione_sociale").order("ragione_sociale")).data ?? [],
+    queryFn: async () => (await supabase.from("clienti").select("id, denominazione, ragione_sociale").order("denominazione")).data ?? [],
   });
 
   const create = useMutation({
-    mutationFn: async (payload: any) => {
-      const { data: u } = await supabase.auth.getUser();
-      const { data: p } = await supabase.from("profiles").select("organization_id").eq("id", u.user!.id).single();
-      const { error } = await supabase.from("preventivi").insert({ ...payload, organization_id: p!.organization_id });
-      if (error) throw error;
+    mutationFn: async (payload: any) => createFn({ data: payload }),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ["preventivi"] });
+      setOpen(false);
+      toast.success(`Preventivo ${res.numero} creato`);
+      navigate({ to: "/preventivi/$id", params: { id: res.id } });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["preventivi"] }); setOpen(false); toast.success("Preventivo creato"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const toCommessa = useMutation({
-    mutationFn: async (p: any) => {
-      const { data: u } = await supabase.auth.getUser();
-      const { data: prof } = await supabase.from("profiles").select("organization_id").eq("id", u.user!.id).single();
-      const codice = `C${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
-      const { error } = await supabase.from("commesse").insert({
-        organization_id: prof!.organization_id!,
-        cliente_id: p.cliente_id,
-        preventivo_id: p.id,
-        codice,
-        denominazione: p.oggetto,
-        importo: p.totale_ricavo ?? p.totale,
-        budget_costi: p.totale_costo,
-        data_inizio: new Date().toISOString().slice(0, 10),
-        stato: "pianificata" as const,
-      });
-      if (error) throw error;
-      await supabase.from("preventivi").update({ stato: "accettato" }).eq("id", p.id);
-    },
-    onSuccess: () => { qc.invalidateQueries(); toast.success("Commessa creata dal preventivo"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(e?.message ?? "Errore in creazione"),
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const payload: any = {};
-    fd.forEach((v, k) => (payload[k] = v || null));
+    const payload: any = {
+      oggetto: String(fd.get("oggetto") || "").trim(),
+      titolo: (fd.get("titolo") as string) || null,
+      cliente_id: (fd.get("cliente_id") as string) || null,
+      data_preventivo: (fd.get("data_preventivo") as string) || undefined,
+    };
+    if (!payload.oggetto) { toast.error("Oggetto obbligatorio"); return; }
     create.mutate(payload);
   };
 
@@ -114,16 +108,22 @@ function PreventiviPage() {
             <DialogContent>
               <DialogHeader><DialogTitle>Nuovo preventivo</DialogTitle></DialogHeader>
               <form onSubmit={onSubmit} className="space-y-3">
-                <div><Label>Numero *</Label><Input name="numero" required placeholder={`${new Date().getFullYear()}/001`} /></div>
-                <div><Label>Oggetto *</Label><Input name="oggetto" required /></div>
+                <div><Label>Oggetto *</Label><Input name="oggetto" required placeholder="Es. Ristrutturazione appartamento" /></div>
+                <div><Label>Titolo</Label><Input name="titolo" placeholder="Titolo interno (opzionale)" /></div>
                 <div>
                   <Label>Cliente</Label>
-                  <Select name="cliente_id"><SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
-                    <SelectContent>{clienti.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.ragione_sociale}</SelectItem>)}</SelectContent>
+                  <Select name="cliente_id">
+                    <SelectTrigger><SelectValue placeholder="Seleziona..." /></SelectTrigger>
+                    <SelectContent>
+                      {clienti.map((c: any) => (
+                        <SelectItem key={c.id} value={c.id}>{c.denominazione || c.ragione_sociale}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div><Label>Data</Label><Input name="data_preventivo" type="date" defaultValue={new Date().toISOString().slice(0, 10)} /></div>
-                <DialogFooter><Button type="submit" disabled={create.isPending}>Crea</Button></DialogFooter>
+                <p className="text-xs text-muted-foreground">Il numero preventivo viene assegnato automaticamente.</p>
+                <DialogFooter><Button type="submit" disabled={create.isPending}>Crea e apri</Button></DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
@@ -146,19 +146,23 @@ function PreventiviPage() {
           <TableBody>
             {items.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="font-mono text-sm">{p.numero} <span className="text-muted-foreground text-xs">v{p.versione}</span></TableCell>
-                <TableCell className="max-w-xs truncate">{p.oggetto}</TableCell>
-                <TableCell className="hidden md:table-cell">{p.clienti?.ragione_sociale}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {p.numero} <span className="text-muted-foreground text-xs">v{p.versione}</span>
+                </TableCell>
+                <TableCell className="max-w-xs truncate">{p.titolo || p.oggetto}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {p.clienti?.denominazione || p.clienti?.ragione_sociale || "—"}
+                </TableCell>
                 <TableCell className="hidden md:table-cell">{dateIt(p.data_preventivo)}</TableCell>
                 <TableCell className="text-right font-medium">{eur(p.totale)}</TableCell>
                 <TableCell className="text-right hidden lg:table-cell">{eur(p.margine)}</TableCell>
-                <TableCell><Badge variant={statoVariant[p.stato]}>{statoLabel[p.stato]}</Badge></TableCell>
+                <TableCell><Badge variant={statoVariant[p.stato] ?? "secondary"}>{statoLabel[p.stato] ?? p.stato}</Badge></TableCell>
                 <TableCell className="text-right">
-                  {p.stato !== "accettato" && (
-                    <Button size="sm" variant="ghost" onClick={() => confirm("Trasforma in commessa?") && toCommessa.mutate(p)}>
-                      <HardHat className="h-4 w-4 mr-1" />Commessa
-                    </Button>
-                  )}
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to="/preventivi/$id" params={{ id: p.id }}>
+                      <Pencil className="h-4 w-4 mr-1" />Apri
+                    </Link>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
