@@ -61,7 +61,7 @@ function PreventiviPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("preventivi")
-        .select("id, numero, versione, oggetto, titolo, data_preventivo, totale, margine, stato, is_current_version, cliente_id, clienti(ragione_sociale, denominazione)")
+        .select("id, numero, versione, oggetto, titolo, data_preventivo, totale, margine, stato, is_current_version, cliente_id, clienti!preventivi_cliente_id_fkey(ragione_sociale, denominazione)")
         .order("data_preventivo", { ascending: false });
       if (error) throw error;
       return data as any[];
