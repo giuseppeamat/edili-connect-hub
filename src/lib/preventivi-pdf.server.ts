@@ -1,5 +1,5 @@
-// Server-only PDF generator for preventivi. Uses pdf-lib (pure JS, Worker-safe).
-import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib";
+// Server-only PDF generator for preventivi. Uses pdf-lib's bundled ESM build to avoid Worker/CJS helper issues.
+import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib/dist/pdf-lib.esm.js";
 
 type Voce = {
   ordine: number;

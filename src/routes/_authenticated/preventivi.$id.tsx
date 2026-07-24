@@ -130,7 +130,8 @@ function PreventivoEditor() {
         condizioni_generali: header.condizioni_generali ?? null,
         note: header.note ?? null,
       };
-      return updateHeaderFn({ data: { id, expected_updated_at: preventivo!.updated_at, patch } });
+      if (!preventivo?.updated_at) throw new Error("Preventivo non caricato");
+      return updateHeaderFn({ data: { id, expected_updated_at: preventivo.updated_at, patch } });
     },
     onSuccess: () => { toast.success("Salvato"); invalidateAll(); },
     onError: (e: any) => toast.error(e?.message ?? "Errore salvataggio"),
@@ -324,7 +325,17 @@ function CategoriaCard({ cat, voci, preventivoId, readOnly, defaultIva, onChange
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
+        <Table className="min-w-[980px] table-fixed">
+          <colgroup>
+            <col className="w-[34%]" />
+            <col className="w-[8%]" />
+            <col className="w-[9%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[8%]" />
+            <col className="w-[9%]" />
+            <col className="w-[12%]" />
+          </colgroup>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[35%]">Descrizione</TableHead>
@@ -388,11 +399,11 @@ function VoceRow({ v, readOnly, onSave, onDelete, onMove, onDuplicate }: any) {
   return (
     <TableRow>
       <TableCell><Textarea rows={2} value={f.descrizione ?? ""} onChange={e => setF({ ...f, descrizione: e.target.value })} /></TableCell>
-      <TableCell><Input value={f.unita_misura ?? ""} onChange={e => setF({ ...f, unita_misura: e.target.value })} className="w-16" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.quantita ?? 0} onChange={e => setF({ ...f, quantita: e.target.value })} className="w-20 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.costo_unitario ?? 0} onChange={e => setF({ ...f, costo_unitario: e.target.value })} className="w-24 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.prezzo_unitario ?? 0} onChange={e => setF({ ...f, prezzo_unitario: e.target.value })} className="w-24 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.sconto_pct ?? 0} onChange={e => setF({ ...f, sconto_pct: e.target.value })} className="w-16 text-right" /></TableCell>
+      <TableCell><Input value={f.unita_misura ?? ""} onChange={e => setF({ ...f, unita_misura: e.target.value })} className="w-full text-center" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.quantita ?? 0} onChange={e => setF({ ...f, quantita: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.costo_unitario ?? 0} onChange={e => setF({ ...f, costo_unitario: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.prezzo_unitario ?? 0} onChange={e => setF({ ...f, prezzo_unitario: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.sconto_pct ?? 0} onChange={e => setF({ ...f, sconto_pct: e.target.value })} className="w-full text-right" /></TableCell>
       <TableCell className="text-right text-muted-foreground text-xs">auto</TableCell>
       <TableCell className="text-right">
         <div className="flex gap-1 justify-end">
@@ -424,11 +435,11 @@ function NewVoceRow({ defaultIva, onAdd }: any) {
   return (
     <TableRow className="bg-muted/30">
       <TableCell><Input value={f.descrizione} placeholder="Nuova voce…" onChange={e => setF({ ...f, descrizione: e.target.value })} /></TableCell>
-      <TableCell><Input value={f.unita_misura} placeholder="mq" onChange={e => setF({ ...f, unita_misura: e.target.value })} className="w-16" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.quantita} onChange={e => setF({ ...f, quantita: e.target.value })} className="w-20 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.costo_unitario} onChange={e => setF({ ...f, costo_unitario: e.target.value })} className="w-24 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.prezzo_unitario} onChange={e => setF({ ...f, prezzo_unitario: e.target.value })} className="w-24 text-right" /></TableCell>
-      <TableCell><Input type="number" step="0.01" value={f.sconto_pct} onChange={e => setF({ ...f, sconto_pct: e.target.value })} className="w-16 text-right" /></TableCell>
+      <TableCell><Input value={f.unita_misura} placeholder="mq" onChange={e => setF({ ...f, unita_misura: e.target.value })} className="w-full text-center" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.quantita} onChange={e => setF({ ...f, quantita: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.costo_unitario} onChange={e => setF({ ...f, costo_unitario: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.prezzo_unitario} onChange={e => setF({ ...f, prezzo_unitario: e.target.value })} className="w-full text-right" /></TableCell>
+      <TableCell><Input type="number" step="0.01" value={f.sconto_pct} onChange={e => setF({ ...f, sconto_pct: e.target.value })} className="w-full text-right" /></TableCell>
       <TableCell></TableCell>
       <TableCell className="text-right"><Button size="sm" onClick={submit}><Plus className="h-4 w-4 mr-1" />Aggiungi</Button></TableCell>
     </TableRow>
