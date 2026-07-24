@@ -75,7 +75,8 @@ export function FasiTab({
     onError: (e: any) => toast.error(e.message),
   });
   const setModalitaMut = useMutation({
-    mutationFn: (m: "manuale" | "fasi") => setModalitaFn({ data: { commessa_id: commessaId, modalita: m } }),
+    mutationFn: (args: { modalita: "manuale" | "fasi"; expected_updated_at: string; motivazione?: string | null }) =>
+      setModalitaFn({ data: { commessa_id: commessaId, ...args } }),
     onSuccess: () => { toast.success("Modalità avanzamento aggiornata"); invalidate(); },
     onError: (e: any) => toast.error(e.message),
   });
