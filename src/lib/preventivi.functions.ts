@@ -494,7 +494,7 @@ export const generatePreventivoPdfFn = createServerFn({ method: "POST" })
     assertRole(roles, VIEW_ROLES);
 
     const [{ data: p }, { data: cats }, { data: voci }, { data: org }] = await Promise.all([
-      context.supabase.from("preventivi").select("*, clienti(*)").eq("id", data.id).maybeSingle(),
+      context.supabase.from("preventivi").select("*, clienti!preventivi_cliente_id_fkey(*)").eq("id", data.id).maybeSingle(),
       context.supabase.from("preventivo_categorie").select("*").eq("preventivo_id", data.id).order("posizione"),
       context.supabase.from("preventivo_voci").select("*").eq("preventivo_id", data.id).order("ordine"),
       context.supabase.from("organizations").select("*").eq("id", organizationId).maybeSingle(),
