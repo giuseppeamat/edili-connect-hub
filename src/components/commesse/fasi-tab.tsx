@@ -98,7 +98,7 @@ export function FasiTab({
             <Label className="text-sm">Modalità avanzamento:</Label>
             <Select
               value={avanzamentoModalita}
-              onValueChange={(v) => setModalitaMut.mutate(v as any)}
+              onValueChange={(v) => setModalitaMut.mutate({ modalita: v as any, expected_updated_at: commessaUpdatedAt })}
               disabled={!canManage || setModalitaMut.isPending}
             >
               <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
