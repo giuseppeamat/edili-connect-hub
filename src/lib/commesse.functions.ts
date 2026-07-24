@@ -8,12 +8,16 @@ type AppRole =
 
 const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "ufficio_tecnico"];
 const ADMIN_ROLES: AppRole[] = ["proprietario", "amministratore"];
+const RESPONSABILE_ROLES: AppRole[] = [
+  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa",
+];
 
 const TIPOLOGIE = [
   "ristrutturazione", "nuova_costruzione", "manutenzione", "impiantistica",
   "riqualificazione", "demolizione", "fornitura_posa", "altro",
 ] as const;
 const PRIORITA = ["bassa", "normale", "alta", "urgente"] as const;
+const STATI = ["bozza", "pianificata", "in_corso", "sospesa", "completata", "annullata"] as const;
 
 async function ctx(context: any): Promise<{ organizationId: string; roles: AppRole[]; isActive: boolean }> {
   const [{ data: prof }, { data: rows }] = await Promise.all([
@@ -29,8 +33,11 @@ async function ctx(context: any): Promise<{ organizationId: string; roles: AppRo
   };
 }
 
+function hasAny(roles: AppRole[], allowed: AppRole[]) {
+  return allowed.some((r) => roles.includes(r));
+}
 function assertRole(roles: AppRole[], allowed: AppRole[], msg = "Non autorizzato") {
-  if (!allowed.some((r) => roles.includes(r))) throw new Error(msg);
+  if (!hasAny(roles, allowed)) throw new Error(msg);
 }
 
 async function logAudit(
@@ -68,12 +75,11 @@ async function fetchCommessaOrThrow(context: any, id: string, orgId: string) {
 }
 
 async function validateResponsabile(context: any, orgId: string, userId: string | null | undefined) {
-  if (!userId) return;
-  const { data } = await context.supabase
-    .from("profiles").select("id, organization_id, is_active")
-    .eq("id", userId).maybeSingle();
-  if (!data || data.organization_id !== orgId) throw new Error("Responsabile non valido");
-  if (data.is_active === false) throw new Error("Responsabile disattivato");
+  if (!userId) return true;
+  const { data: valid } = await context.supabase
+    .rpc("is_valid_responsabile", { _user: userId, _org: orgId });
+  if (!valid) throw new Error("Responsabile non valido (utente disattivato, fuori organizzazione o ruolo non compatibile)");
+  return true;
 }
 
 async function validateCliente(context: any, orgId: string, clienteId: string) {
@@ -81,6 +87,29 @@ async function validateCliente(context: any, orgId: string, clienteId: string) {
     .from("clienti").select("id, organization_id").eq("id", clienteId).maybeSingle();
   if (!data || data.organization_id !== orgId) throw new Error("Cliente non valido per questa organizzazione");
 }
+
+// ============= LIST RESPONSABILI =============
+export const listResponsabiliCandidati = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { organizationId } = await ctx(context);
+    const { data, error } = await context.supabase
+      .from("profiles")
+      .select("id, nome, cognome, email, is_active, user_roles!inner(role, organization_id)")
+      .eq("organization_id", organizationId)
+      .eq("is_active", true)
+      .eq("user_roles.organization_id", organizationId)
+      .in("user_roles.role", RESPONSABILE_ROLES);
+    if (error) throw error;
+    const uniq = new Map<string, any>();
+    for (const p of (data ?? []) as any[]) {
+      if (!uniq.has(p.id)) uniq.set(p.id, {
+        id: p.id,
+        nome: p.nome, cognome: p.cognome, email: p.email,
+      });
+    }
+    return Array.from(uniq.values());
+  });
 
 // ============= CREATE =============
 const createSchema = z.object({
@@ -95,7 +124,9 @@ const createSchema = z.object({
   data_inizio_prevista: z.string().nullable().optional(),
   data_fine_prevista: z.string().nullable().optional(),
   importo_contratto: z.number().min(0).nullable().optional(),
+  ricavi_previsti: z.number().min(0).nullable().optional(),
   costi_previsti: z.number().min(0).nullable().optional(),
+  costi_impegnati: z.number().min(0).nullable().optional(),
   note_interne: z.string().max(4000).nullable().optional(),
 });
 
@@ -109,22 +140,32 @@ export const createCommessa = createServerFn({ method: "POST" })
     await validateCliente(context, organizationId, data.cliente_id);
     await validateResponsabile(context, organizationId, data.responsabile_id ?? null);
 
+    // Date coerenza
+    if (data.data_inizio_prevista && data.data_fine_prevista &&
+        data.data_fine_prevista < data.data_inizio_prevista) {
+      throw new Error("La data di fine prevista non può essere antecedente alla data di inizio prevista");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const anno = new Date(data.data_apertura || Date.now()).getFullYear();
+    // L'anno di numerazione è determinato da data_apertura (o data_inizio_prevista come fallback, o oggi)
+    const annoDate = data.data_apertura || data.data_inizio_prevista || new Date().toISOString().slice(0, 10);
+    const anno = new Date(annoDate).getFullYear();
     const { data: codice, error: codErr } = await supabaseAdmin
       .rpc("assign_commessa_codice", { _org: organizationId, _anno: anno });
     if (codErr) throw codErr;
 
     const importoContratto = data.importo_contratto ?? 0;
+    const ricaviPrev = data.ricavi_previsti ?? importoContratto;
     const costiPrev = data.costi_previsti ?? 0;
-    const margini = calcMargini(importoContratto, costiPrev, 0, 0);
+    const costiImp = data.costi_impegnati ?? 0;
+    const margini = calcMargini(ricaviPrev, costiPrev, 0, costiImp);
 
     const { data: inserted, error } = await supabaseAdmin.from("commesse").insert({
       organization_id: organizationId,
       cliente_id: data.cliente_id,
       responsabile_id: data.responsabile_id ?? null,
       codice: codice as string,
-      denominazione: data.titolo, // legacy retrocompat
+      denominazione: data.titolo, // legacy
       titolo: data.titolo,
       descrizione: data.descrizione ?? null,
       tipologia: data.tipologia ?? null,
@@ -136,24 +177,24 @@ export const createCommessa = createServerFn({ method: "POST" })
       data_fine_prevista: data.data_fine_prevista || null,
       importo: importoContratto, // legacy
       importo_contratto: importoContratto,
-      ricavi_previsti: importoContratto,
+      ricavi_previsti: ricaviPrev,
       budget_costi: costiPrev, // legacy
       costi_previsti: costiPrev,
-      costi_impegnati: 0,
+      costi_impegnati: costiImp,
       ...margini,
       note_interne: data.note_interne ?? null,
-      stato: "pianificata",
+      stato: "bozza",
       created_by: context.userId,
     }).select("id").single();
     if (error) throw error;
 
     await logAudit(context, organizationId, "commessa.created", inserted.id, {
-      codice, titolo: data.titolo, cliente_id: data.cliente_id,
+      codice, titolo: data.titolo, cliente_id: data.cliente_id, responsabile_id: data.responsabile_id ?? null,
     });
     return { id: inserted.id, codice };
   });
 
-// ============= UPDATE =============
+// ============= UPDATE (senza stato) =============
 const updateSchema = z.object({
   id: z.string().uuid(),
   expected_updated_at: z.string(),
@@ -170,9 +211,10 @@ const updateSchema = z.object({
   data_fine_prevista: z.string().nullable().optional(),
   data_fine_effettiva: z.string().nullable().optional(),
   importo_contratto: z.number().min(0).nullable().optional(),
+  ricavi_previsti: z.number().min(0).nullable().optional(),
   costi_previsti: z.number().min(0).nullable().optional(),
+  costi_impegnati: z.number().min(0).nullable().optional(),
   avanzamento_pct: z.number().min(0).max(100).optional(),
-  stato: z.enum(["pianificata", "in_corso", "sospesa", "completata", "annullata"]).optional(),
   note_interne: z.string().max(4000).nullable().optional(),
 });
 
@@ -181,11 +223,37 @@ export const updateCommessa = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { organizationId, roles } = await ctx(context);
-    assertRole(roles, MANAGE_ROLES);
+    const isAdmin = hasAny(roles, ADMIN_ROLES);
+    const isTecnico = hasAny(roles, ["ufficio_tecnico"]);
+    const isRespRole = hasAny(roles, ["responsabile_commessa"]);
+    if (!(isAdmin || isTecnico || isRespRole)) throw new Error("Non autorizzato");
+
     const current = await fetchCommessaOrThrow(context, data.id, organizationId);
+
+    // Responsabile-only può modificare solo le proprie commesse
+    if (!isAdmin && !isTecnico && isRespRole && current.responsabile_id !== context.userId) {
+      throw new Error("Non autorizzato: puoi modificare solo le commesse di cui sei responsabile");
+    }
+
+    if (current.closed_at) {
+      throw new Error("La commessa è chiusa e non può essere modificata senza essere riaperta.");
+    }
+    if (current.archived_at) {
+      throw new Error("Commessa archiviata: ripristinala prima di modificarla.");
+    }
 
     if (new Date(current.updated_at).getTime() !== new Date(data.expected_updated_at).getTime()) {
       throw new Error("Questa commessa è stata modificata da un altro utente. Ricarica la pagina prima di salvare.");
+    }
+
+    // Responsabile-only: NON può cambiare cliente, responsabile
+    if (!isAdmin && !isTecnico) {
+      if (data.cliente_id !== undefined && data.cliente_id !== current.cliente_id) {
+        throw new Error("Non puoi modificare il cliente");
+      }
+      if (data.responsabile_id !== undefined && data.responsabile_id !== current.responsabile_id) {
+        throw new Error("Non puoi modificare il responsabile");
+      }
     }
 
     if (data.cliente_id && data.cliente_id !== current.cliente_id) {
@@ -195,12 +263,17 @@ export const updateCommessa = createServerFn({ method: "POST" })
       await validateResponsabile(context, organizationId, data.responsabile_id);
     }
 
+    if (data.data_inizio_prevista && data.data_fine_prevista &&
+        data.data_fine_prevista < data.data_inizio_prevista) {
+      throw new Error("La data di fine prevista non può essere antecedente alla data di inizio prevista");
+    }
+
     const patch: Record<string, unknown> = {};
     const setIf = (k: keyof typeof data, col?: string) => {
       if (data[k] !== undefined) patch[col ?? (k as string)] = data[k];
     };
     setIf("titolo");
-    if (data.titolo !== undefined) patch.denominazione = data.titolo; // legacy sync
+    if (data.titolo !== undefined) patch.denominazione = data.titolo; // legacy
     setIf("descrizione");
     setIf("tipologia");
     setIf("priorita");
@@ -214,22 +287,27 @@ export const updateCommessa = createServerFn({ method: "POST" })
     setIf("data_fine_prevista");
     setIf("data_fine_effettiva");
     setIf("avanzamento_pct");
-    setIf("stato");
     setIf("note_interne");
 
     if (data.importo_contratto !== undefined) {
       patch.importo_contratto = data.importo_contratto;
       patch.importo = data.importo_contratto ?? 0; // legacy
-      patch.ricavi_previsti = data.importo_contratto;
+      if (data.ricavi_previsti === undefined) patch.ricavi_previsti = data.importo_contratto;
     }
+    if (data.ricavi_previsti !== undefined) patch.ricavi_previsti = data.ricavi_previsti;
     if (data.costi_previsti !== undefined) {
       patch.costi_previsti = data.costi_previsti;
       patch.budget_costi = data.costi_previsti ?? 0; // legacy
     }
+    if (data.costi_impegnati !== undefined) patch.costi_impegnati = data.costi_impegnati;
+
+    const responsabileChanged = data.responsabile_id !== undefined &&
+      data.responsabile_id !== current.responsabile_id;
 
     const ricavi = (patch.ricavi_previsti ?? current.ricavi_previsti) as number | null;
     const cp = (patch.costi_previsti ?? current.costi_previsti) as number | null;
-    Object.assign(patch, calcMargini(ricavi, cp, current.costi_sostenuti, current.costi_impegnati));
+    const ci = (patch.costi_impegnati ?? current.costi_impegnati) as number | null;
+    Object.assign(patch, calcMargini(ricavi, cp, current.costi_sostenuti, ci));
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -238,15 +316,50 @@ export const updateCommessa = createServerFn({ method: "POST" })
 
     await logAudit(context, organizationId, "commessa.updated", data.id, {
       campi: Object.keys(patch),
-      stato_prev: current.stato,
-      stato_next: patch.stato ?? current.stato,
     });
+    if (responsabileChanged) {
+      await logAudit(context, organizationId, "commessa.responsabile_changed", data.id, {
+        responsabile_precedente: current.responsabile_id,
+        responsabile_nuovo: data.responsabile_id,
+      });
+    }
+    return { ok: true };
+  });
+
+// ============= CHANGE STATE =============
+const stateSchema = z.object({
+  id: z.string().uuid(),
+  nuovo_stato: z.enum(STATI),
+  expected_updated_at: z.string(),
+  motivazione: z.string().trim().max(500).optional(),
+});
+
+export const changeCommessaStato = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => stateSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Chiamiamo l'RPC come utente autenticato per far applicare la logica di autorizzazione
+    // basata su auth.uid() (has_any_role usa la sessione).
+    const { error } = await context.supabase.rpc("change_commessa_stato", {
+      _commessa_id: data.id,
+      _nuovo_stato: data.nuovo_stato,
+      _expected_updated_at: data.expected_updated_at,
+      _motivazione: data.motivazione ?? null,
+    });
+    if (error) throw new Error(error.message);
+    // supabaseAdmin non necessario, ma teniamolo importato per audit fallback futuri
+    void supabaseAdmin;
     return { ok: true };
   });
 
 // ============= ARCHIVE / RESTORE =============
 const idSchema = z.object({ id: z.string().uuid() });
-const idMotivoSchema = z.object({ id: z.string().uuid(), motivazione: z.string().trim().min(1).max(500) });
+const idMotivoSchema = z.object({
+  id: z.string().uuid(),
+  motivazione: z.string().trim().min(1).max(500),
+  override: z.boolean().optional(),
+});
 
 export const archiveCommessa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -257,12 +370,19 @@ export const archiveCommessa = createServerFn({ method: "POST" })
     const current = await fetchCommessaOrThrow(context, data.id, organizationId);
     if (current.archived_at) return { ok: true };
 
+    const isClosed = !!current.closed_at || current.stato === "completata" || current.stato === "annullata";
+    if (!isClosed && !data.override) {
+      throw new Error("Prima di archiviare la commessa, completala o chiudila.");
+    }
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("commesse")
       .update({ archived_at: new Date().toISOString(), archived_by: context.userId })
       .eq("id", data.id).eq("organization_id", organizationId);
     if (error) throw error;
-    await logAudit(context, organizationId, "commessa.archived", data.id, { motivazione: data.motivazione });
+    await logAudit(context, organizationId, "commessa.archived", data.id, {
+      motivazione: data.motivazione, override: !!data.override,
+    });
     return { ok: true };
   });
 
@@ -274,6 +394,7 @@ export const restoreCommessa = createServerFn({ method: "POST" })
     assertRole(roles, ADMIN_ROLES);
     await fetchCommessaOrThrow(context, data.id, organizationId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Ripristino: azzera SOLO archived_*. NON riapre closed_*.
     const { error } = await supabaseAdmin.from("commesse")
       .update({ archived_at: null, archived_by: null })
       .eq("id", data.id).eq("organization_id", organizationId);
@@ -285,8 +406,10 @@ export const restoreCommessa = createServerFn({ method: "POST" })
 // ============= CLOSE / REOPEN =============
 const closeSchema = z.object({
   id: z.string().uuid(),
+  expected_updated_at: z.string(),
   data_fine_effettiva: z.string().min(1),
-  note_chiusura: z.string().max(1000).nullable().optional(),
+  motivazione: z.string().trim().min(1).max(500),
+  override: z.boolean().optional(),
 });
 
 export const closeCommessa = createServerFn({ method: "POST" })
@@ -297,39 +420,61 @@ export const closeCommessa = createServerFn({ method: "POST" })
     assertRole(roles, ADMIN_ROLES);
     const current = await fetchCommessaOrThrow(context, data.id, organizationId);
 
+    if (current.archived_at) throw new Error("Commessa archiviata: ripristinala prima di chiuderla.");
+    if (current.closed_at) return { ok: true };
+    if (new Date(current.updated_at).getTime() !== new Date(data.expected_updated_at).getTime()) {
+      throw new Error("Questa commessa è stata modificata da un altro utente. Ricarica la pagina prima di salvare.");
+    }
+
+    if (current.stato !== "completata" && !data.override) {
+      throw new Error("La commessa può essere chiusa solo se completata (override richiesto).");
+    }
     if (current.data_inizio_effettiva && data.data_fine_effettiva < current.data_inizio_effettiva) {
       throw new Error("La data di fine effettiva non può essere antecedente alla data di inizio effettiva");
     }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("commesse").update({
+    const patch: Record<string, unknown> = {
       closed_at: new Date().toISOString(),
       closed_by: context.userId,
       data_fine_effettiva: data.data_fine_effettiva,
-      stato: "completata",
-    }).eq("id", data.id).eq("organization_id", organizationId);
+    };
+    if (current.stato !== "completata") patch.stato = "completata";
+
+    const { error } = await supabaseAdmin.from("commesse").update(patch)
+      .eq("id", data.id).eq("organization_id", organizationId);
     if (error) throw error;
     await logAudit(context, organizationId, "commessa.closed", data.id, {
       data_fine_effettiva: data.data_fine_effettiva,
-      note: data.note_chiusura ?? null,
-      stato_prev: current.stato,
+      motivazione: data.motivazione, override: !!data.override,
+      stato_precedente: current.stato,
     });
     return { ok: true };
   });
 
+const reopenSchema = z.object({
+  id: z.string().uuid(),
+  motivazione: z.string().trim().min(1).max(500),
+  nuovo_stato: z.enum(["in_corso", "completata"]).default("in_corso"),
+});
+
 export const reopenCommessa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => idMotivoSchema.parse(d))
+  .inputValidator((d: unknown) => reopenSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { organizationId, roles } = await ctx(context);
     assertRole(roles, ADMIN_ROLES);
     const current = await fetchCommessaOrThrow(context, data.id, organizationId);
+    if (!current.closed_at) return { ok: true };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("commesse").update({
-      closed_at: null, closed_by: null,
-      stato: current.stato === "completata" ? "in_corso" : current.stato,
+      closed_at: null, closed_by: null, stato: data.nuovo_stato,
     }).eq("id", data.id).eq("organization_id", organizationId);
     if (error) throw error;
-    await logAudit(context, organizationId, "commessa.reopened", data.id, { motivazione: data.motivazione });
+    await logAudit(context, organizationId, "commessa.reopened", data.id, {
+      motivazione: data.motivazione,
+      stato_precedente: current.stato,
+      stato_nuovo: data.nuovo_stato,
+    });
     return { ok: true };
   });
