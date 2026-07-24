@@ -25,6 +25,7 @@ import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
 import { Route as AuthenticatedPreventiviIdRouteImport } from './routes/_authenticated/preventivi.$id'
+import { Route as AuthenticatedCommesseCommessaIdRouteImport } from './routes/_authenticated/commesse.$commessaId'
 import { Route as AuthenticatedClientiClienteIdRouteImport } from './routes/_authenticated/clienti.$clienteId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -111,6 +112,12 @@ const AuthenticatedPreventiviIdRoute =
     path: '/preventivi/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCommesseCommessaIdRoute =
+  AuthenticatedCommesseCommessaIdRouteImport.update({
+    id: '/$commessaId',
+    path: '/$commessaId',
+    getParentRoute: () => AuthenticatedCommesseRoute,
+  } as any)
 const AuthenticatedClientiClienteIdRoute =
   AuthenticatedClientiClienteIdRouteImport.update({
     id: '/clienti/$clienteId',
@@ -124,7 +131,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
-  '/commesse': typeof AuthenticatedCommesseRoute
+  '/commesse': typeof AuthenticatedCommesseRouteWithChildren
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
   '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti/': typeof AuthenticatedClientiIndexRoute
   '/preventivi/': typeof AuthenticatedPreventiviIndexRoute
@@ -141,7 +149,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
-  '/commesse': typeof AuthenticatedCommesseRoute
+  '/commesse': typeof AuthenticatedCommesseRouteWithChildren
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -150,6 +158,7 @@ export interface FileRoutesByTo {
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
   '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti': typeof AuthenticatedClientiIndexRoute
   '/preventivi': typeof AuthenticatedPreventiviIndexRoute
@@ -161,7 +170,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
-  '/_authenticated/commesse': typeof AuthenticatedCommesseRoute
+  '/_authenticated/commesse': typeof AuthenticatedCommesseRouteWithChildren
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -170,6 +179,7 @@ export interface FileRoutesById {
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/_authenticated/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
   '/_authenticated/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
   '/_authenticated/preventivi/': typeof AuthenticatedPreventiviIndexRoute
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/rapportini'
     | '/scadenziario'
     | '/clienti/$clienteId'
+    | '/commesse/$commessaId'
     | '/preventivi/$id'
     | '/clienti/'
     | '/preventivi/'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/scadenziario'
     | '/'
     | '/clienti/$clienteId'
+    | '/commesse/$commessaId'
     | '/preventivi/$id'
     | '/clienti'
     | '/preventivi'
@@ -227,6 +239,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scadenziario'
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
+    | '/_authenticated/commesse/$commessaId'
     | '/_authenticated/preventivi/$id'
     | '/_authenticated/clienti/'
     | '/_authenticated/preventivi/'
@@ -353,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPreventiviIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/commesse/$commessaId': {
+      id: '/_authenticated/commesse/$commessaId'
+      path: '/$commessaId'
+      fullPath: '/commesse/$commessaId'
+      preLoaderRoute: typeof AuthenticatedCommesseCommessaIdRouteImport
+      parentRoute: typeof AuthenticatedCommesseRoute
+    }
     '/_authenticated/clienti/$clienteId': {
       id: '/_authenticated/clienti/$clienteId'
       path: '/clienti/$clienteId'
@@ -363,9 +383,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedCommesseRouteChildren {
+  AuthenticatedCommesseCommessaIdRoute: typeof AuthenticatedCommesseCommessaIdRoute
+}
+
+const AuthenticatedCommesseRouteChildren: AuthenticatedCommesseRouteChildren = {
+  AuthenticatedCommesseCommessaIdRoute: AuthenticatedCommesseCommessaIdRoute,
+}
+
+const AuthenticatedCommesseRouteWithChildren =
+  AuthenticatedCommesseRoute._addFileChildren(
+    AuthenticatedCommesseRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
-  AuthenticatedCommesseRoute: typeof AuthenticatedCommesseRoute
+  AuthenticatedCommesseRoute: typeof AuthenticatedCommesseRouteWithChildren
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
@@ -381,7 +414,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
-  AuthenticatedCommesseRoute: AuthenticatedCommesseRoute,
+  AuthenticatedCommesseRoute: AuthenticatedCommesseRouteWithChildren,
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
