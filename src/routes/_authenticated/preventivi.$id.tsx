@@ -74,7 +74,7 @@ function PreventivoEditor() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("preventivi")
-        .select("*, clienti(id, denominazione, ragione_sociale)")
+        .select("*, clienti!preventivi_cliente_id_fkey(id, denominazione, ragione_sociale)")
         .eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
