@@ -1,0 +1,1 @@
+ALTER VIEW public.commessa_fasi_ritardi SET (security_invoker = true);
