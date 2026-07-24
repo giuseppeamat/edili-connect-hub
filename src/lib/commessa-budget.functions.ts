@@ -140,7 +140,7 @@ export const getCommessaBudgetSummary = createServerFn({ method: "POST" })
       const numero_voci_archiviate = rows.filter((r: any) => r.archived_at).length;
       const numero_voci_locked = rows.filter((r: any) => r.is_locked && !r.archived_at).length;
 
-      return { ...c, numero_voci_attive, numero_voci_archiviate, numero_voci_locked };
+      return { ...(c as any), numero_voci_attive, numero_voci_archiviate, numero_voci_locked };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
