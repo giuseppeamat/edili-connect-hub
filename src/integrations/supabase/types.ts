@@ -260,66 +260,126 @@ export type Database = {
       }
       commesse: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           avanzamento_pct: number
           budget_costi: number
           cliente_id: string | null
+          closed_at: string | null
+          closed_by: string | null
           codice: string
+          costi_impegnati: number
+          costi_previsti: number | null
           costi_sostenuti: number
           created_at: string
+          created_by: string | null
+          data_apertura: string | null
           data_fine_effettiva: string | null
           data_fine_prevista: string | null
           data_inizio: string | null
+          data_inizio_effettiva: string | null
+          data_inizio_prevista: string | null
           denominazione: string
+          descrizione: string | null
           id: string
           importo: number
+          importo_contratto: number | null
           indirizzo_cantiere: string | null
+          margine_aggiornato: number | null
+          margine_percentuale: number | null
+          margine_previsto: number | null
           note: string | null
+          note_interne: string | null
           organization_id: string
           preventivo_id: string | null
+          priorita: string | null
           responsabile_id: string | null
+          ricavi_previsti: number | null
           stato: Database["public"]["Enums"]["commessa_stato"]
+          tipologia: string | null
+          titolo: string | null
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           avanzamento_pct?: number
           budget_costi?: number
           cliente_id?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           codice: string
+          costi_impegnati?: number
+          costi_previsti?: number | null
           costi_sostenuti?: number
           created_at?: string
+          created_by?: string | null
+          data_apertura?: string | null
           data_fine_effettiva?: string | null
           data_fine_prevista?: string | null
           data_inizio?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
           denominazione: string
+          descrizione?: string | null
           id?: string
           importo?: number
+          importo_contratto?: number | null
           indirizzo_cantiere?: string | null
+          margine_aggiornato?: number | null
+          margine_percentuale?: number | null
+          margine_previsto?: number | null
           note?: string | null
+          note_interne?: string | null
           organization_id: string
           preventivo_id?: string | null
+          priorita?: string | null
           responsabile_id?: string | null
+          ricavi_previsti?: number | null
           stato?: Database["public"]["Enums"]["commessa_stato"]
+          tipologia?: string | null
+          titolo?: string | null
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           avanzamento_pct?: number
           budget_costi?: number
           cliente_id?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           codice?: string
+          costi_impegnati?: number
+          costi_previsti?: number | null
           costi_sostenuti?: number
           created_at?: string
+          created_by?: string | null
+          data_apertura?: string | null
           data_fine_effettiva?: string | null
           data_fine_prevista?: string | null
           data_inizio?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
           denominazione?: string
+          descrizione?: string | null
           id?: string
           importo?: number
+          importo_contratto?: number | null
           indirizzo_cantiere?: string | null
+          margine_aggiornato?: number | null
+          margine_percentuale?: number | null
+          margine_previsto?: number | null
           note?: string | null
+          note_interne?: string | null
           organization_id?: string
           preventivo_id?: string | null
+          priorita?: string | null
           responsabile_id?: string | null
+          ricavi_previsti?: number | null
           stato?: Database["public"]["Enums"]["commessa_stato"]
+          tipologia?: string | null
+          titolo?: string | null
           updated_at?: string
         }
         Relationships: [
