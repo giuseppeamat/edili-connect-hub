@@ -441,7 +441,7 @@ export const closeCommessa = createServerFn({ method: "POST" })
     };
     if (current.stato !== "completata") patch.stato = "completata";
 
-    const { error } = await supabaseAdmin.from("commesse").update(patch)
+    const { error } = await supabaseAdmin.from("commesse").update(patch as any)
       .eq("id", data.id).eq("organization_id", organizationId);
     if (error) throw error;
     await logAudit(context, organizationId, "commessa.closed", data.id, {
