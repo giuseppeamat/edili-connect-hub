@@ -294,7 +294,7 @@ export const updateCommessa = createServerFn({ method: "POST" })
     setIf("data_inizio_effettiva");
     setIf("data_fine_prevista");
     setIf("data_fine_effettiva");
-    setIf("avanzamento_pct");
+    // avanzamento_pct non è più aggiornabile qui — usare updateManualCommessaProgress (RPC).
     setIf("note_interne");
 
     if (data.importo_contratto !== undefined) {
