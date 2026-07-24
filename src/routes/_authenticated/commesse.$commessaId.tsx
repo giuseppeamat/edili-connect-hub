@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home } from "lucide-react";
+import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home, ListChecks } from "lucide-react";
+import { FasiTab } from "@/components/commesse/fasi-tab";
 import { eur, dateIt } from "@/lib/format";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import {
@@ -132,8 +133,9 @@ function CommessaDetailPage() {
       />
 
       <Tabs defaultValue="panoramica" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mb-4">
+        <TabsList className="grid w-full grid-cols-7 mb-4">
           <TabsTrigger value="panoramica"><Home className="h-4 w-4 mr-1" />Panoramica</TabsTrigger>
+          <TabsTrigger value="fasi"><ListChecks className="h-4 w-4 mr-1" />Fasi</TabsTrigger>
           <TabsTrigger value="cantieri"><MapPin className="h-4 w-4 mr-1" />Cantieri</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" />Team</TabsTrigger>
           <TabsTrigger value="rapportini"><ClipboardList className="h-4 w-4 mr-1" />Rapportini</TabsTrigger>
@@ -143,6 +145,13 @@ function CommessaDetailPage() {
 
         <TabsContent value="panoramica">
           <PanoramicaTab d={d} canEdit={canEditCommesse} canAssignResp={canAssignResp} onDone={invalidate} />
+        </TabsContent>
+        <TabsContent value="fasi">
+          <FasiTab
+            commessaId={c.id}
+            canManage={canEditCommesse || (user.has("responsabile_commessa") && c.responsabile_id === user.userId)}
+            avanzamentoModalita={(c as any).avanzamento_modalita ?? "manuale"}
+          />
         </TabsContent>
         <TabsContent value="cantieri">
           <CantieriTab commessa={c} canManage={canEditCommesse} onDone={invalidate} />
