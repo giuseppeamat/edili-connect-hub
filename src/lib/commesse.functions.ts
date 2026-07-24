@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { mapServerError } from "@/lib/server-error-mapper";
 
 type AppRole =
   | "proprietario" | "amministratore" | "ufficio_tecnico" | "amministrazione"
