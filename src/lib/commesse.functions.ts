@@ -476,3 +476,419 @@ export const reopenCommessa = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+// =========================================================================
+// ============= SPRINT 4 · BLOCCO 4: Membri, Responsabile, Detail ==========
+// =========================================================================
+
+const RUOLI_OPERATIVI = [
+  "responsabile_commessa", "capocantiere", "tecnico", "amministrazione",
+  "operaio", "collaboratore", "altro",
+] as const;
+
+async function fetchCommessaAccessible(context: any, id: string, orgId: string) {
+  const { data, error } = await context.supabase
+    .from("commesse").select("*").eq("id", id).eq("organization_id", orgId).maybeSingle();
+  if (error) throw error;
+  if (!data) throw new Error("Commessa non trovata o non accessibile");
+  return data;
+}
+
+// ============= GET DETAIL =============
+export const getCommessaDetail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const canEcon = hasAny(roles, ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico"])
+      || hasAny(roles, ["responsabile_commessa"]);
+    const c = await fetchCommessaAccessible(context, data.id, organizationId);
+
+    const [{ data: cliente }, { data: resp }, { data: cantieriCount }, { data: membriCount }] = await Promise.all([
+      c.cliente_id
+        ? context.supabase.from("clienti").select("id, ragione_sociale, partita_iva, codice_fiscale, email, telefono")
+            .eq("id", c.cliente_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      c.responsabile_id
+        ? context.supabase.from("profiles").select("id, nome, cognome, email").eq("id", c.responsabile_id).maybeSingle()
+        : Promise.resolve({ data: null }),
+      context.supabase.from("cantieri").select("id", { count: "exact", head: true }).eq("commessa_id", c.id).is("archived_at", null),
+      context.supabase.from("commessa_membri").select("id", { count: "exact", head: true }).eq("commessa_id", c.id).eq("is_active", true),
+    ]);
+
+    // Se non autorizzato ai dati economici, mascheriamo
+    if (!canEcon) {
+      c.importo = null; c.importo_contratto = null; c.ricavi_previsti = null;
+      c.costi_previsti = null; c.costi_impegnati = null; c.costi_sostenuti = null;
+      c.margine_previsto = null; c.margine_aggiornato = null; c.margine_percentuale = null;
+      c.budget_costi = null;
+    }
+
+    return {
+      commessa: c,
+      cliente: cliente ?? null,
+      responsabile: resp ?? null,
+      cantieriCount: (cantieriCount as any) ?? 0,
+      membriCount: (membriCount as any) ?? 0,
+      canViewEconomics: canEcon,
+    };
+  });
+
+// ============= LIST MEMBERS =============
+export const listCommessaMembers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ commessa_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await ctx(context);
+    const { data: rows, error } = await context.supabase
+      .from("commessa_membri")
+      .select("*")
+      .eq("commessa_id", data.commessa_id)
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
+    let profMap = new Map<string, any>();
+    if (ids.length) {
+      const { data: profs } = await context.supabase
+        .from("profiles").select("id, nome, cognome, email").in("id", ids);
+      for (const p of profs ?? []) profMap.set(p.id, p);
+    }
+    return (rows ?? []).map((r: any) => ({ ...r, profile: profMap.get(r.user_id) ?? null }));
+  });
+
+// ============= LIST ASSIGNABLE MEMBERS (per aggiunta team) =============
+export const listAssignableMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { organizationId } = await ctx(context);
+    const INTERNAL: AppRole[] = ["proprietario","amministratore","ufficio_tecnico","amministrazione","responsabile_commessa","capocantiere","operaio"];
+    const { data: rolesRows } = await context.supabase
+      .from("user_roles").select("user_id, role").eq("organization_id", organizationId).in("role", INTERNAL);
+    const ids = Array.from(new Set((rolesRows ?? []).map((r: any) => r.user_id)));
+    if (!ids.length) return [];
+    const { data: profs } = await context.supabase
+      .from("profiles").select("id, nome, cognome, email, is_active, organization_id")
+      .in("id", ids).eq("organization_id", organizationId).eq("is_active", true);
+    const roleByUser = new Map<string, AppRole[]>();
+    for (const r of rolesRows ?? []) {
+      const arr = roleByUser.get((r as any).user_id) ?? [];
+      arr.push((r as any).role);
+      roleByUser.set((r as any).user_id, arr);
+    }
+    return (profs ?? []).map((p: any) => ({
+      id: p.id, nome: p.nome, cognome: p.cognome, email: p.email,
+      roles: roleByUser.get(p.id) ?? [],
+    }));
+  });
+
+// ============= ADD MEMBER =============
+const addMemberSchema = z.object({
+  commessa_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  ruolo_operativo: z.enum(RUOLI_OPERATIVI),
+  cantiere_id: z.string().uuid().nullable().optional(),
+  data_inizio: z.string().optional(),
+  data_fine: z.string().nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+
+async function assertUserActiveInOrg(context: any, orgId: string, userId: string) {
+  const { data: p } = await context.supabase
+    .from("profiles").select("id, is_active, organization_id").eq("id", userId).maybeSingle();
+  if (!p || p.organization_id !== orgId) throw new Error("Utente non appartiene all'organizzazione");
+  if (p.is_active === false) throw new Error("Utente disattivato");
+  const { data: r } = await context.supabase
+    .from("user_roles").select("role").eq("user_id", userId).eq("organization_id", orgId);
+  const rolesU = (r ?? []).map((x: any) => x.role as AppRole);
+  if (rolesU.includes("cliente") || rolesU.includes("fornitore")) {
+    throw new Error("Cliente/Fornitore non possono essere assegnati come membri interni");
+  }
+  if (!rolesU.length) throw new Error("Utente senza ruoli in questa organizzazione");
+}
+
+async function assertCanManageMembers(context: any, commessa: any, roles: AppRole[]) {
+  if (hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])) return;
+  if (hasAny(roles, ["responsabile_commessa"]) && commessa.responsabile_id === context.userId) return;
+  throw new Error("Non autorizzato a gestire i membri di questa commessa");
+}
+
+export const addCommessaMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => addMemberSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const commessa = await fetchCommessaAccessible(context, data.commessa_id, organizationId);
+    await assertCanManageMembers(context, commessa, roles);
+
+    // responsabile_commessa NON può assegnare ruoli amministrativi tramite membri
+    if (!hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])
+        && data.ruolo_operativo === "responsabile_commessa") {
+      throw new Error("Non puoi assegnare il ruolo responsabile via team: usa 'Cambia responsabile'");
+    }
+
+    await assertUserActiveInOrg(context, organizationId, data.user_id);
+
+    if (data.cantiere_id) {
+      const { data: k } = await context.supabase.from("cantieri")
+        .select("id, commessa_id").eq("id", data.cantiere_id).maybeSingle();
+      if (!k || k.commessa_id !== data.commessa_id) throw new Error("Cantiere non valido");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserted, error } = await supabaseAdmin.from("commessa_membri").insert({
+      organization_id: organizationId,
+      commessa_id: data.commessa_id,
+      cantiere_id: data.cantiere_id ?? null,
+      user_id: data.user_id,
+      ruolo_operativo: data.ruolo_operativo,
+      data_inizio: data.data_inizio || new Date().toISOString().slice(0,10),
+      data_fine: data.data_fine ?? null,
+      note: data.note ?? null,
+      is_active: true,
+      created_by: context.userId,
+    }).select("id").single();
+    if (error) throw error;
+    await logAudit(context, organizationId, "commessa.member_added", data.commessa_id, {
+      member_id: inserted.id, user_id: data.user_id, ruolo_operativo: data.ruolo_operativo,
+      cantiere_id: data.cantiere_id ?? null,
+    });
+    return { id: inserted.id };
+  });
+
+// ============= UPDATE MEMBER =============
+const updateMemberSchema = z.object({
+  id: z.string().uuid(),
+  ruolo_operativo: z.enum(RUOLI_OPERATIVI).optional(),
+  cantiere_id: z.string().uuid().nullable().optional(),
+  data_fine: z.string().nullable().optional(),
+  is_active: z.boolean().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+
+export const updateCommessaMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => updateMemberSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const { data: m } = await context.supabase.from("commessa_membri")
+      .select("*").eq("id", data.id).eq("organization_id", organizationId).maybeSingle();
+    if (!m) throw new Error("Membro non trovato");
+    const commessa = await fetchCommessaAccessible(context, m.commessa_id, organizationId);
+    await assertCanManageMembers(context, commessa, roles);
+
+    if (data.cantiere_id) {
+      const { data: k } = await context.supabase.from("cantieri")
+        .select("id, commessa_id").eq("id", data.cantiere_id).maybeSingle();
+      if (!k || k.commessa_id !== m.commessa_id) throw new Error("Cantiere non valido");
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (data.ruolo_operativo !== undefined) patch.ruolo_operativo = data.ruolo_operativo;
+    if (data.cantiere_id !== undefined) patch.cantiere_id = data.cantiere_id;
+    if (data.data_fine !== undefined) patch.data_fine = data.data_fine;
+    if (data.is_active !== undefined) patch.is_active = data.is_active;
+    if (data.note !== undefined) patch.note = data.note;
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("commessa_membri")
+      .update(patch as any).eq("id", data.id).eq("organization_id", organizationId);
+    if (error) throw error;
+    await logAudit(context, organizationId, "commessa.member_updated", m.commessa_id, {
+      member_id: data.id, campi: Object.keys(patch),
+    });
+    return { ok: true };
+  });
+
+// ============= REMOVE MEMBER (logico) =============
+export const removeCommessaMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    id: z.string().uuid(),
+    motivazione: z.string().trim().min(1).max(500),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const { data: m } = await context.supabase.from("commessa_membri")
+      .select("*").eq("id", data.id).eq("organization_id", organizationId).maybeSingle();
+    if (!m) throw new Error("Membro non trovato");
+    const commessa = await fetchCommessaAccessible(context, m.commessa_id, organizationId);
+    await assertCanManageMembers(context, commessa, roles);
+
+    // Se è il responsabile principale, blocca (deve usare setCommessaResponsabile con nuovo o null)
+    if (m.ruolo_operativo === "responsabile_commessa" && commessa.responsabile_id === m.user_id) {
+      throw new Error("Rimuovi prima il responsabile principale usando 'Cambia responsabile'");
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("commessa_membri").update({
+      is_active: false,
+      data_fine: new Date().toISOString().slice(0,10),
+      archived_at: new Date().toISOString(),
+    }).eq("id", data.id).eq("organization_id", organizationId);
+    if (error) throw error;
+    await logAudit(context, organizationId, "commessa.member_removed", m.commessa_id, {
+      member_id: data.id, user_id: m.user_id, motivazione: data.motivazione,
+    });
+    return { ok: true };
+  });
+
+// ============= SET RESPONSABILE (centralizzato) =============
+export const setCommessaResponsabile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    commessa_id: z.string().uuid(),
+    responsabile_id: z.string().uuid().nullable(),
+    expected_updated_at: z.string(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    assertRole(roles, ["proprietario","amministratore","ufficio_tecnico"], "Non autorizzato a cambiare il responsabile");
+    const commessa = await fetchCommessaAccessible(context, data.commessa_id, organizationId);
+    if (new Date(commessa.updated_at).getTime() !== new Date(data.expected_updated_at).getTime()) {
+      throw new Error("Commessa modificata da un altro utente. Ricarica la pagina.");
+    }
+    if (data.responsabile_id) {
+      await validateResponsabile(context, organizationId, data.responsabile_id);
+    }
+    const previous = commessa.responsabile_id;
+    if (previous === data.responsabile_id) return { ok: true };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Termina assegnazioni attive precedenti come responsabile_commessa per questa commessa
+    await supabaseAdmin.from("commessa_membri").update({
+      is_active: false,
+      data_fine: new Date().toISOString().slice(0,10),
+      archived_at: new Date().toISOString(),
+    })
+      .eq("commessa_id", data.commessa_id)
+      .eq("organization_id", organizationId)
+      .eq("ruolo_operativo", "responsabile_commessa")
+      .eq("is_active", true);
+
+    if (data.responsabile_id) {
+      await supabaseAdmin.from("commessa_membri").insert({
+        organization_id: organizationId,
+        commessa_id: data.commessa_id,
+        user_id: data.responsabile_id,
+        ruolo_operativo: "responsabile_commessa",
+        is_active: true,
+        created_by: context.userId,
+      });
+    }
+
+    const { error } = await supabaseAdmin.from("commesse").update({
+      responsabile_id: data.responsabile_id,
+    }).eq("id", data.commessa_id).eq("organization_id", organizationId);
+    if (error) throw error;
+
+    await logAudit(context, organizationId, "commessa.responsabile_changed", data.commessa_id, {
+      responsabile_precedente: previous, responsabile_nuovo: data.responsabile_id,
+    });
+    return { ok: true };
+  });
+
+// ============= LIST AUDIT ENTRIES =============
+export const listCommessaAudit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({
+    commessa_id: z.string().uuid(),
+    limit: z.number().int().min(1).max(200).default(100),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await ctx(context);
+    await fetchCommessaAccessible(context, data.commessa_id, organizationId);
+
+    // Colleziona anche audit dei cantieri della commessa
+    const { data: cantieri } = await context.supabase.from("cantieri")
+      .select("id").eq("commessa_id", data.commessa_id).eq("organization_id", organizationId);
+    const cantIds = (cantieri ?? []).map((k: any) => k.id);
+
+    let query = context.supabase.from("audit_log")
+      .select("*")
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+      .limit(data.limit);
+    // Filtro: entità commesse per questa commessa, oppure entità cantieri dei suoi cantieri
+    const filters: string[] = [
+      `and(entity.eq.commesse,entity_id.eq.${data.commessa_id})`,
+    ];
+    if (cantIds.length) {
+      filters.push(`and(entity.eq.cantieri,entity_id.in.(${cantIds.join(",")}))`);
+    }
+    query = query.or(filters.join(","));
+    const { data: rows, error } = await query;
+    if (error) throw error;
+
+    const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+    let userMap = new Map<string, any>();
+    if (userIds.length) {
+      const { data: profs } = await context.supabase.from("profiles")
+        .select("id, nome, cognome, email").in("id", userIds);
+      for (const p of profs ?? []) userMap.set(p.id, p);
+    }
+    return (rows ?? []).map((r: any) => ({ ...r, user: r.user_id ? userMap.get(r.user_id) ?? null : null }));
+  });
+
+// ============= LIST RAPPORTINI per commessa =============
+export const listRapportiniByCommessa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ commessa_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await ctx(context);
+    await fetchCommessaAccessible(context, data.commessa_id, organizationId);
+    const { data: rows, error } = await context.supabase
+      .from("rapportini")
+      .select("*")
+      .eq("commessa_id", data.commessa_id)
+      .eq("organization_id", organizationId)
+      .order("data", { ascending: false })
+      .limit(50);
+    if (error) throw error;
+
+    const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+    const cantIds = Array.from(new Set((rows ?? []).map((r: any) => r.cantiere_id).filter(Boolean)));
+    const [{ data: profs }, { data: canti }] = await Promise.all([
+      userIds.length
+        ? context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
+        : Promise.resolve({ data: [] }),
+      cantIds.length
+        ? context.supabase.from("cantieri").select("id, codice, nome").in("id", cantIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const pMap = new Map<string, any>((profs ?? []).map((p: any) => [p.id, p]));
+    const kMap = new Map<string, any>((canti ?? []).map((k: any) => [k.id, k]));
+    return (rows ?? []).map((r: any) => ({
+      ...r,
+      user: r.user_id ? pMap.get(r.user_id) ?? null : null,
+      cantiere: r.cantiere_id ? kMap.get(r.cantiere_id) ?? null : null,
+    }));
+  });
+
+// ============= LIST DOCUMENTI per commessa =============
+export const listDocumentiByCommessa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ commessa_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId } = await ctx(context);
+    await fetchCommessaAccessible(context, data.commessa_id, organizationId);
+    const { data: rows, error } = await context.supabase
+      .from("documenti")
+      .select("*")
+      .eq("commessa_id", data.commessa_id)
+      .eq("organization_id", organizationId)
+      .order("data_documento", { ascending: false, nullsFirst: false })
+      .limit(100);
+    if (error) throw error;
+
+    const cantIds = Array.from(new Set((rows ?? []).map((r: any) => r.cantiere_id).filter(Boolean)));
+    const { data: canti } = cantIds.length
+      ? await context.supabase.from("cantieri").select("id, codice, nome").in("id", cantIds)
+      : { data: [] };
+    const kMap = new Map<string, any>((canti ?? []).map((k: any) => [k.id, k]));
+    return (rows ?? []).map((r: any) => ({
+      ...r,
+      cantiere: r.cantiere_id ? kMap.get(r.cantiere_id) ?? null : null,
+    }));
+  });
