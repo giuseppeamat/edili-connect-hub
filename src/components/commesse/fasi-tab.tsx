@@ -358,10 +358,12 @@ function ArchiveDialog({ fase, onClose, onDone }: { fase: FaseRow; onClose: () =
       open onOpenChange={(v) => !v && onClose()}
       title="Archivia fase" description={`La fase "${fase.titolo}" sarà nascosta dagli elenchi principali.`}
       destructive confirmLabel="Archivia" isPending={pending}
-      onConfirm={async () => {
+      requireMotivazione={fase.stato === "in_corso" || fase.stato === "completata"}
+      motivazionePlaceholder="Motivo dell'archiviazione…"
+      onConfirm={async ({ motivazione }) => {
         setPending(true);
         try {
-          await fn({ data: { id: fase.id } });
+          await fn({ data: { id: fase.id, expected_updated_at: fase.updated_at, motivazione: motivazione ?? null } });
           toast.success("Fase archiviata"); onDone(); onClose();
         } finally { setPending(false); }
       }}
