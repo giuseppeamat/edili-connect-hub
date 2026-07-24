@@ -141,6 +141,9 @@ function CommessaDetailPage() {
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" />Team</TabsTrigger>
           <TabsTrigger value="rapportini"><ClipboardList className="h-4 w-4 mr-1" />Rapportini</TabsTrigger>
           <TabsTrigger value="documenti"><FileText className="h-4 w-4 mr-1" />Documenti</TabsTrigger>
+          {user.canViewCommessaBudget && (
+            <TabsTrigger value="budget"><Wallet className="h-4 w-4 mr-1" />Budget</TabsTrigger>
+          )}
           <TabsTrigger value="storico"><History className="h-4 w-4 mr-1" />Storico</TabsTrigger>
         </TabsList>
 
