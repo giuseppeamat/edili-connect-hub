@@ -223,7 +223,7 @@ function FaseRowCard({ fase, canManage, onEdit, onProgress, onState, onArchive, 
           )}
           {canManage && fase.archived_at && (
             <Button size="sm" variant="ghost" onClick={async () => {
-              try { await restoreFn({ data: { id: fase.id } }); toast.success("Ripristinata"); onRestore(); }
+              try { await restoreFn({ data: { id: fase.id, expected_updated_at: fase.updated_at } }); toast.success("Ripristinata"); onRestore(); }
               catch (e: any) { toast.error(e.message); }
             }}>
               <RotateCcw className="h-4 w-4 mr-1" />Ripristina
