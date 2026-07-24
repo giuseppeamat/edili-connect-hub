@@ -71,7 +71,7 @@ function PreventiviPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("preventivi")
-        .select("id, numero, versione, oggetto, titolo, data_preventivo, totale, totale_ricavo, margine, stato, is_current_version, cliente_id, clienti!preventivi_cliente_id_fkey(ragione_sociale, denominazione)")
+        .select("id, numero, versione, oggetto, titolo, data_preventivo, totale, totale_ricavo, margine, stato, is_current_version, root_preventivo_id, cliente_id, clienti!preventivi_cliente_id_fkey(ragione_sociale, denominazione)")
         .order("data_preventivo", { ascending: false });
       if (error) throw error;
       return data as any[];
@@ -85,8 +85,7 @@ function PreventiviPage() {
 
   const filtered = useMemo(() => {
     const qn = q.trim().toLowerCase();
-    return items.filter((p) => {
-      if (soloCorrenti && !p.is_current_version) return false;
+    let list = items.filter((p) => {
       if (stato !== "tutti" && p.stato !== stato) return false;
       if (clienteId !== "tutti" && p.cliente_id !== clienteId) return false;
       if (qn) {
@@ -98,6 +97,21 @@ function PreventiviPage() {
       }
       return true;
     });
+    if (soloCorrenti) {
+      // Dedup per root: preferisci is_current_version=true, poi versione più alta.
+      const best = new Map<string, any>();
+      for (const p of list) {
+        const key = (p.root_preventivo_id ?? p.id) as string;
+        const cur = best.get(key);
+        if (!cur) { best.set(key, p); continue; }
+        const pWin = p.is_current_version && !cur.is_current_version;
+        const cWin = cur.is_current_version && !p.is_current_version;
+        if (pWin) best.set(key, p);
+        else if (!cWin && Number(p.versione ?? 0) > Number(cur.versione ?? 0)) best.set(key, p);
+      }
+      list = Array.from(best.values()).sort((a, b) => String(b.data_preventivo).localeCompare(String(a.data_preventivo)));
+    }
+    return list;
   }, [items, q, stato, clienteId, soloCorrenti]);
 
   const kpi = useMemo(() => {

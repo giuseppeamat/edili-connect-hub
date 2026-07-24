@@ -69,10 +69,25 @@ const eur = (n: number) =>
   new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(Number(n) || 0);
 const dt = (s: string | null | undefined) => (s ? new Date(s).toLocaleDateString("it-IT") : "-");
 
-// Latin-1 sanitization for standard Helvetica (no full Unicode).
+// WinAnsi sanitization for standard Helvetica. Preserves Latin-1 + selected
+// WinAnsi codepoints (€, curly quotes, em/en dash, bullet, TM…) that pdf-lib
+// maps to bytes 0x80–0x9F.
+const WINANSI_EXTRA = new Set([
+  "\u20AC", "\u201A", "\u0192", "\u201E", "\u2026", "\u2020", "\u2021",
+  "\u02C6", "\u2030", "\u0160", "\u2039", "\u0152", "\u017D",
+  "\u2018", "\u2019", "\u201C", "\u201D", "\u2022", "\u2013", "\u2014",
+  "\u02DC", "\u2122", "\u0161", "\u203A", "\u0153", "\u017E", "\u0178",
+]);
 function s(x: string | null | undefined): string {
   if (!x) return "";
-  return String(x).replace(/[^\x09\x0A\x0D\x20-\xFF]/g, "?");
+  let out = "";
+  for (const ch of String(x)) {
+    const c = ch.charCodeAt(0);
+    if (c === 0x09 || c === 0x0A || c === 0x0D || (c >= 0x20 && c <= 0xFF)) out += ch;
+    else if (WINANSI_EXTRA.has(ch)) out += ch;
+    else out += "?";
+  }
+  return out;
 }
 
 export async function generatePreventivoPdf(input: PreventivoPdfInput): Promise<Uint8Array> {
@@ -151,18 +166,42 @@ export async function generatePreventivoPdf(input: PreventivoPdfInput): Promise<
   }
   hr();
 
-  // Voci per categoria
-  const colX = { desc: margin, qty: 320, um: 360, prezzo: 395, sconto: 445, netto: 495 };
+  // Voci per categoria — right edges of each column (right-aligned numeric cells).
+  const rightEdge = A4.w - margin; // 555.28
+  const colR = { um: 330, qty: 380, prezzo: 435, sconto: 475, netto: rightEdge };
+  const descMax = colR.um - margin - 45; // spazio disponibile alla descrizione
+
+  const drawText = (text: string, x: number, size: number, f = font) => {
+    page.drawText(text, { x, y, size, font: f, color: rgb(0.1, 0.1, 0.15) });
+  };
+  const drawRight = (text: string, xRight: number, size: number, f = font) => {
+    const w = f.widthOfTextAtSize(text, size);
+    page.drawText(text, { x: xRight - w, y, size, font: f, color: rgb(0.1, 0.1, 0.15) });
+  };
+
   const drawVociHeader = () => {
     if (y < margin + 40) addPage();
-    page.drawText("Descrizione", { x: colX.desc, y, size: 9, font: bold });
-    page.drawText("Q.tà", { x: colX.qty, y, size: 9, font: bold });
-    page.drawText("UM", { x: colX.um, y, size: 9, font: bold });
-    page.drawText("Prezzo", { x: colX.prezzo, y, size: 9, font: bold });
-    page.drawText("Sc.%", { x: colX.sconto, y, size: 9, font: bold });
-    page.drawText("Netto", { x: colX.netto, y, size: 9, font: bold });
+    drawText("Descrizione", margin, 9, bold);
+    drawText("UM", colR.um - 20, 9, bold);
+    drawRight("Q.tà", colR.qty, 9, bold);
+    drawRight("Prezzo", colR.prezzo, 9, bold);
+    drawRight("Sc.%", colR.sconto, 9, bold);
+    drawRight("Netto", colR.netto, 9, bold);
     y -= 12;
     hr();
+  };
+
+  const wrapDesc = (text: string): string[] => {
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let cur = "";
+    for (const w of words) {
+      const cand = cur ? cur + " " + w : w;
+      if (font.widthOfTextAtSize(cand, 9) <= descMax) cur = cand;
+      else { if (cur) lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [""];
   };
 
   for (const cat of input.categorie) {
@@ -172,33 +211,35 @@ export async function generatePreventivoPdf(input: PreventivoPdfInput): Promise<
     drawVociHeader();
     for (const v of cat.voci) {
       if (y < margin + 30) { addPage(); drawVociHeader(); }
-      const desc = s(v.descrizione);
-      // wrap descrizione a ~50 chars
-      const chunks = desc.match(/.{1,55}(\s|$)/g) ?? [desc];
-      page.drawText(chunks[0] ?? "", { x: colX.desc, y, size: 9, font });
-      page.drawText(String(Number(v.quantita).toFixed(2)), { x: colX.qty, y, size: 9, font });
-      page.drawText(s(v.unita_misura ?? ""), { x: colX.um, y, size: 9, font });
-      page.drawText(eur(v.prezzo_unitario), { x: colX.prezzo, y, size: 9, font });
-      page.drawText(String(Number(v.sconto_pct).toFixed(0)), { x: colX.sconto, y, size: 9, font });
-      page.drawText(eur(v.importo_netto), { x: colX.netto, y, size: 9, font });
+      const chunks = wrapDesc(s(v.descrizione));
+      drawText(chunks[0] ?? "", margin, 9);
+      drawText(s(v.unita_misura ?? ""), colR.um - 20, 9);
+      drawRight(Number(v.quantita).toFixed(2), colR.qty, 9);
+      drawRight(eur(v.prezzo_unitario), colR.prezzo, 9);
+      drawRight(Number(v.sconto_pct).toFixed(0), colR.sconto, 9);
+      drawRight(eur(v.importo_netto), colR.netto, 9, bold);
       y -= 12;
       for (let i = 1; i < chunks.length; i++) {
         if (y < margin + 20) { addPage(); drawVociHeader(); }
-        page.drawText(chunks[i] ?? "", { x: colX.desc, y, size: 9, font });
+        drawText(chunks[i] ?? "", margin, 9);
         y -= 12;
       }
     }
     spacer(2);
-    line(`Subtotale ${cat.titolo}: ${eur(cat.subtotale_ricavo)}`, { size: 10, bold: true });
-    spacer(6);
+    if (y < margin + 20) addPage();
+    drawRight(`Subtotale ${s(cat.titolo)}: ${eur(cat.subtotale_ricavo)}`, rightEdge, 10, bold);
+    y -= 14;
+    spacer(4);
   }
 
   hr();
-  // Totali
+  // Totali (allineati a destra)
+  const labelR = rightEdge - 120;
   const totRight = (label: string, value: string, b = false) => {
     if (y < margin + 20) addPage();
-    page.drawText(label, { x: 340, y, size: 10, font: b ? bold : font });
-    page.drawText(value, { x: 480, y, size: 10, font: b ? bold : font });
+    const f = b ? bold : font;
+    drawRight(label, labelR, 10, f);
+    drawRight(value, rightEdge, 10, f);
     y -= 14;
   };
   totRight("Imponibile", eur(input.preventivo.totale_ricavo));
