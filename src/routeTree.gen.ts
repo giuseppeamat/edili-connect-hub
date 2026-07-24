@@ -24,6 +24,7 @@ import { Route as AuthenticatedCommesseRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
+import { Route as AuthenticatedPreventiviIdRouteImport } from './routes/_authenticated/preventivi.$id'
 import { Route as AuthenticatedClientiClienteIdRouteImport } from './routes/_authenticated/clienti.$clienteId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -104,6 +105,12 @@ const AuthenticatedClientiIndexRoute =
     path: '/clienti/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPreventiviIdRoute =
+  AuthenticatedPreventiviIdRouteImport.update({
+    id: '/preventivi/$id',
+    path: '/preventivi/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClientiClienteIdRoute =
   AuthenticatedClientiClienteIdRouteImport.update({
     id: '/clienti/$clienteId',
@@ -125,6 +132,7 @@ export interface FileRoutesByFullPath {
   '/rapportini': typeof AuthenticatedRapportiniRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti/': typeof AuthenticatedClientiIndexRoute
   '/preventivi/': typeof AuthenticatedPreventiviIndexRoute
 }
@@ -142,6 +150,7 @@ export interface FileRoutesByTo {
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/clienti': typeof AuthenticatedClientiIndexRoute
   '/preventivi': typeof AuthenticatedPreventiviIndexRoute
 }
@@ -161,6 +170,7 @@ export interface FileRoutesById {
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
+  '/_authenticated/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
   '/_authenticated/preventivi/': typeof AuthenticatedPreventiviIndexRoute
 }
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/rapportini'
     | '/scadenziario'
     | '/clienti/$clienteId'
+    | '/preventivi/$id'
     | '/clienti/'
     | '/preventivi/'
   fileRoutesByTo: FileRoutesByTo
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/scadenziario'
     | '/'
     | '/clienti/$clienteId'
+    | '/preventivi/$id'
     | '/clienti'
     | '/preventivi'
   id:
@@ -215,6 +227,7 @@ export interface FileRouteTypes {
     | '/_authenticated/scadenziario'
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
+    | '/_authenticated/preventivi/$id'
     | '/_authenticated/clienti/'
     | '/_authenticated/preventivi/'
   fileRoutesById: FileRoutesById
@@ -333,6 +346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientiIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preventivi/$id': {
+      id: '/_authenticated/preventivi/$id'
+      path: '/preventivi/$id'
+      fullPath: '/preventivi/$id'
+      preLoaderRoute: typeof AuthenticatedPreventiviIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clienti/$clienteId': {
       id: '/_authenticated/clienti/$clienteId'
       path: '/clienti/$clienteId'
@@ -354,6 +374,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedScadenziarioRoute: typeof AuthenticatedScadenziarioRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedClientiClienteIdRoute: typeof AuthenticatedClientiClienteIdRoute
+  AuthenticatedPreventiviIdRoute: typeof AuthenticatedPreventiviIdRoute
   AuthenticatedClientiIndexRoute: typeof AuthenticatedClientiIndexRoute
   AuthenticatedPreventiviIndexRoute: typeof AuthenticatedPreventiviIndexRoute
 }
@@ -369,6 +390,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedScadenziarioRoute: AuthenticatedScadenziarioRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedClientiClienteIdRoute: AuthenticatedClientiClienteIdRoute,
+  AuthenticatedPreventiviIdRoute: AuthenticatedPreventiviIdRoute,
   AuthenticatedClientiIndexRoute: AuthenticatedClientiIndexRoute,
   AuthenticatedPreventiviIndexRoute: AuthenticatedPreventiviIndexRoute,
 }
