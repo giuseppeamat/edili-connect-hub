@@ -93,22 +93,24 @@ export const listResponsabiliCandidati = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { organizationId } = await ctx(context);
-    const { data, error } = await context.supabase
-      .from("profiles")
-      .select("id, nome, cognome, email, is_active, user_roles!inner(role, organization_id)")
+    const { data: rolesRows, error: rErr } = await context.supabase
+      .from("user_roles")
+      .select("user_id, role")
       .eq("organization_id", organizationId)
-      .eq("is_active", true)
-      .eq("user_roles.organization_id", organizationId)
-      .in("user_roles.role", RESPONSABILE_ROLES);
-    if (error) throw error;
-    const uniq = new Map<string, any>();
-    for (const p of (data ?? []) as any[]) {
-      if (!uniq.has(p.id)) uniq.set(p.id, {
-        id: p.id,
-        nome: p.nome, cognome: p.cognome, email: p.email,
-      });
-    }
-    return Array.from(uniq.values());
+      .in("role", RESPONSABILE_ROLES);
+    if (rErr) throw rErr;
+    const ids = Array.from(new Set((rolesRows ?? []).map((r: any) => r.user_id)));
+    if (!ids.length) return [];
+    const { data: profs, error: pErr } = await context.supabase
+      .from("profiles")
+      .select("id, nome, cognome, email, is_active, organization_id")
+      .in("id", ids)
+      .eq("organization_id", organizationId)
+      .eq("is_active", true);
+    if (pErr) throw pErr;
+    return (profs ?? []).map((p: any) => ({
+      id: p.id, nome: p.nome, cognome: p.cognome, email: p.email,
+    }));
   });
 
 // ============= CREATE =============
