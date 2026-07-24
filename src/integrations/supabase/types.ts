@@ -55,6 +55,120 @@ export type Database = {
           },
         ]
       }
+      cantieri: {
+        Row: {
+          archived_at: string | null
+          cap: string | null
+          capocantiere_id: string | null
+          citta: string | null
+          codice: string
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data_fine_effettiva: string | null
+          data_fine_prevista: string | null
+          data_inizio_effettiva: string | null
+          data_inizio_prevista: string | null
+          descrizione: string | null
+          id: string
+          indirizzo: string | null
+          is_principale: boolean
+          latitudine: number | null
+          longitudine: number | null
+          nome: string
+          note_operative: string | null
+          numero_civico: string | null
+          organization_id: string
+          paese: string | null
+          provincia: string | null
+          referente_email: string | null
+          referente_nome: string | null
+          referente_telefono: string | null
+          responsabile_id: string | null
+          stato: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          cap?: string | null
+          capocantiere_id?: string | null
+          citta?: string | null
+          codice: string
+          commessa_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine_effettiva?: string | null
+          data_fine_prevista?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
+          descrizione?: string | null
+          id?: string
+          indirizzo?: string | null
+          is_principale?: boolean
+          latitudine?: number | null
+          longitudine?: number | null
+          nome: string
+          note_operative?: string | null
+          numero_civico?: string | null
+          organization_id: string
+          paese?: string | null
+          provincia?: string | null
+          referente_email?: string | null
+          referente_nome?: string | null
+          referente_telefono?: string | null
+          responsabile_id?: string | null
+          stato?: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          cap?: string | null
+          capocantiere_id?: string | null
+          citta?: string | null
+          codice?: string
+          commessa_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine_effettiva?: string | null
+          data_fine_prevista?: string | null
+          data_inizio_effettiva?: string | null
+          data_inizio_prevista?: string | null
+          descrizione?: string | null
+          id?: string
+          indirizzo?: string | null
+          is_principale?: boolean
+          latitudine?: number | null
+          longitudine?: number | null
+          nome?: string
+          note_operative?: string | null
+          numero_civico?: string | null
+          organization_id?: string
+          paese?: string | null
+          provincia?: string | null
+          referente_email?: string | null
+          referente_nome?: string | null
+          referente_telefono?: string | null
+          responsabile_id?: string | null
+          stato?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cantieri_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "cantieri_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cliente_contatti: {
         Row: {
           archived_at: string | null
@@ -254,6 +368,79 @@ export type Database = {
             columns: ["responsabile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commessa_membri: {
+        Row: {
+          archived_at: string | null
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data_fine: string | null
+          data_inizio: string
+          id: string
+          is_active: boolean
+          note: string | null
+          organization_id: string
+          ruolo_operativo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          cantiere_id?: string | null
+          commessa_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          organization_id: string
+          ruolo_operativo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          cantiere_id?: string | null
+          commessa_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string
+          id?: string
+          is_active?: boolean
+          note?: string | null
+          organization_id?: string
+          ruolo_operativo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commessa_membri_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_membri_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_membri_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -518,6 +705,7 @@ export type Database = {
       }
       documenti: {
         Row: {
+          cantiere_id: string | null
           categoria: string | null
           cliente_id: string | null
           commessa_id: string | null
@@ -541,6 +729,7 @@ export type Database = {
           visibilita: Database["public"]["Enums"]["documento_visibilita"]
         }
         Insert: {
+          cantiere_id?: string | null
           categoria?: string | null
           cliente_id?: string | null
           commessa_id?: string | null
@@ -564,6 +753,7 @@ export type Database = {
           visibilita?: Database["public"]["Enums"]["documento_visibilita"]
         }
         Update: {
+          cantiere_id?: string | null
           categoria?: string | null
           cliente_id?: string | null
           commessa_id?: string | null
@@ -587,6 +777,13 @@ export type Database = {
           visibilita?: Database["public"]["Enums"]["documento_visibilita"]
         }
         Relationships: [
+          {
+            foreignKeyName: "documenti_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "documenti_cliente_id_fkey"
             columns: ["cliente_id"]
@@ -1349,6 +1546,7 @@ export type Database = {
       }
       rapportini: {
         Row: {
+          cantiere_id: string | null
           commessa_id: string | null
           created_at: string
           data: string
@@ -1363,6 +1561,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cantiere_id?: string | null
           commessa_id?: string | null
           created_at?: string
           data?: string
@@ -1377,6 +1576,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cantiere_id?: string | null
           commessa_id?: string | null
           created_at?: string
           data?: string
@@ -1391,6 +1591,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "rapportini_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "rapportini_commessa_id_fkey"
             columns: ["commessa_id"]
@@ -1463,6 +1670,8 @@ export type Database = {
         Args: { _anno: number; _org: string }
         Returns: string
       }
+      can_access_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
+      can_access_commessa: { Args: { _commessa_id: string }; Returns: boolean }
       change_commessa_stato: {
         Args: {
           _commessa_id: string
@@ -1512,6 +1721,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_capocantiere_di: { Args: { _cantiere_id: string }; Returns: boolean }
+      is_membro_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
+      is_membro_commessa: { Args: { _commessa_id: string }; Returns: boolean }
       is_org_member: { Args: { _org: string }; Returns: boolean }
       is_valid_responsabile: {
         Args: { _org: string; _user: string }
