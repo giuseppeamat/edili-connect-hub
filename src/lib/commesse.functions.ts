@@ -196,7 +196,8 @@ export const createCommessa = createServerFn({ method: "POST" })
     return { id: inserted.id, codice };
   });
 
-// ============= UPDATE (senza stato) =============
+// ============= UPDATE (senza stato e senza responsabile) =============
+// responsabile_id è centralizzato in setCommessaResponsabile per garantire sync con commessa_membri
 const updateSchema = z.object({
   id: z.string().uuid(),
   expected_updated_at: z.string(),
@@ -205,7 +206,6 @@ const updateSchema = z.object({
   tipologia: z.enum(TIPOLOGIE).nullable().optional(),
   priorita: z.enum(PRIORITA).nullable().optional(),
   cliente_id: z.string().uuid().optional(),
-  responsabile_id: z.string().uuid().nullable().optional(),
   indirizzo_cantiere: z.string().max(300).nullable().optional(),
   data_apertura: z.string().nullable().optional(),
   data_inizio_prevista: z.string().nullable().optional(),
