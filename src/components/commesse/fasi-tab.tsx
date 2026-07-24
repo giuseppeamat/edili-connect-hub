@@ -258,7 +258,7 @@ function FaseFormDialog({ fase, commessaId, onClose, onDone }: { fase?: FaseRow;
         data_fine_prevista: dfp || null,
         note: note || null,
       };
-      if (isEdit) await updateFn({ data: { id: fase!.id, ...payload } });
+      if (isEdit) await updateFn({ data: { id: fase!.id, expected_updated_at: fase!.updated_at, ...payload } });
       else await createFn({ data: { commessa_id: commessaId, ...payload } });
       toast.success(isEdit ? "Fase aggiornata" : "Fase creata");
       onDone(); onClose();
