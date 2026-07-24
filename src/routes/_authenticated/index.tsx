@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,12 +34,14 @@ function KpiCard({
   icon: Icon,
   hint,
   tone = "default",
+  to,
 }: {
   title: string;
   value: string;
   icon: React.ComponentType<{ className?: string }>;
   hint?: string;
   tone?: "default" | "warning" | "success" | "destructive";
+  to?: string;
 }) {
   const toneCls = {
     default: "bg-primary/10 text-primary",
@@ -47,21 +49,34 @@ function KpiCard({
     success: "bg-[color:var(--success)]/15 text-[color:var(--success)]",
     destructive: "bg-destructive/10 text-destructive",
   }[tone];
-  return (
-    <Card>
-      <CardContent className="p-4 md:p-5 flex items-start gap-3">
-        <div className={`rounded-lg p-2.5 ${toneCls}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{title}</div>
-          <div className="text-2xl font-bold truncate">{value}</div>
-          {hint && <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>}
-        </div>
-      </CardContent>
-    </Card>
+  const body = (
+    <CardContent className="p-4 md:p-5 flex items-start gap-3">
+      <div className={`rounded-lg p-2.5 ${toneCls}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{title}</div>
+        <div className="text-2xl font-bold truncate">{value}</div>
+        {hint && <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>}
+      </div>
+    </CardContent>
   );
+  if (to) {
+    return (
+      <Link
+        to={to as any}
+        aria-label={`Vai a ${title}`}
+        className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Card className="transition hover:shadow-md hover:border-primary/40 cursor-pointer h-full">
+          {body}
+        </Card>
+      </Link>
+    );
+  }
+  return <Card>{body}</Card>;
 }
+
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -136,14 +151,14 @@ function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Preventivi aperti" value={String(data?.preventiviAperti ?? 0)} icon={FileText} />
-        <KpiCard title="Valore commesse" value={eur(data?.valoreCommesse)} icon={Coins} tone="success" />
-        <KpiCard title="Cantieri attivi" value={String(data?.cantieriAttivi ?? 0)} icon={HardHat} tone="warning" />
-        <KpiCard title="Costi sostenuti" value={eur(data?.costiSostenuti)} icon={Wallet} />
-        <KpiCard title="Margine previsto" value={eur(data?.marginePrevisto)} icon={TrendingUp} tone={Number(data?.marginePrevisto ?? 0) >= 0 ? "success" : "destructive"} />
-        <KpiCard title="Documenti in scadenza (30gg)" value={String(data?.docsInScadenza ?? 0)} icon={CalendarClock} tone="warning" />
-        <KpiCard title="Ore lavorate (mese)" value={num(data?.oreMese, 1) + " h"} icon={Clock} />
-        <KpiCard title="SAL da emettere" value={String(data?.salDaEmettere ?? 0)} icon={Receipt} />
+        <KpiCard title="Preventivi aperti" value={String(data?.preventiviAperti ?? 0)} icon={FileText} to="/preventivi" />
+        <KpiCard title="Valore commesse" value={eur(data?.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
+        <KpiCard title="Cantieri attivi" value={String(data?.cantieriAttivi ?? 0)} icon={HardHat} tone="warning" to="/commesse" />
+        <KpiCard title="Costi sostenuti" value={eur(data?.costiSostenuti)} icon={Wallet} to="/commesse" />
+        <KpiCard title="Margine previsto" value={eur(data?.marginePrevisto)} icon={TrendingUp} tone={Number(data?.marginePrevisto ?? 0) >= 0 ? "success" : "destructive"} to="/commesse" />
+        <KpiCard title="Documenti in scadenza (30gg)" value={String(data?.docsInScadenza ?? 0)} icon={CalendarClock} tone="warning" to="/scadenziario" />
+        <KpiCard title="Ore lavorate (mese)" value={num(data?.oreMese, 1) + " h"} icon={Clock} to="/rapportini" />
+        <KpiCard title="SAL da emettere" value={String(data?.salDaEmettere ?? 0)} icon={Receipt} to="/commesse" />
       </div>
 
       <Card>
