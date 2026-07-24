@@ -282,6 +282,10 @@ function PanoramicaTab({ d, canEdit, canAssignResp, onDone }: any) {
   const c = d.commessa;
   const [editOpen, setEditOpen] = useState(false);
   const [respOpen, setRespOpen] = useState(false);
+  const [manProgOpen, setManProgOpen] = useState(false);
+  const modalita = c.avanzamento_modalita ?? "manuale";
+  const avanz = Number(c.avanzamento_pct ?? c.avanzamento_percentuale ?? 0);
+  const canManualProgress = canEdit && modalita === "manuale" && !c.closed_at && !c.archived_at;
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <Card className="lg:col-span-2">
@@ -313,6 +317,35 @@ function PanoramicaTab({ d, canEdit, canAssignResp, onDone }: any) {
           {c.note_interne && <div className="pt-2 border-t"><h4 className="text-sm font-semibold mb-1">Note interne</h4><p className="text-sm text-muted-foreground whitespace-pre-wrap">{c.note_interne}</p></div>}
         </CardContent>
       </Card>
+      <Card>
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">Avanzamento</h3>
+            <Badge variant={modalita === "fasi" ? "secondary" : "outline"}>
+              {modalita === "fasi" ? "Calcolato dalle fasi" : "Manuale"}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-3">
+            <Progress value={avanz} className="flex-1 h-2" />
+            <span className="text-sm font-semibold min-w-[3rem] text-right">{avanz.toFixed(0)}%</span>
+          </div>
+          {modalita === "fasi" ? (
+            <p className="text-xs text-muted-foreground">
+              Il valore è calcolato automaticamente dalla media ponderata delle fasi attive.
+              Per modificarlo interviene sulle fasi.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Valore inserito manualmente dal responsabile.
+            </p>
+          )}
+          {canManualProgress && (
+            <Button size="sm" variant="outline" onClick={() => setManProgOpen(true)}>
+              Aggiorna avanzamento
+            </Button>
+          )}
+        </CardContent>
+      </Card>
       {d.canViewEconomics && (
         <Card>
           <CardContent className="p-5 space-y-3">
@@ -332,9 +365,16 @@ function PanoramicaTab({ d, canEdit, canAssignResp, onDone }: any) {
       )}
       <EditCommessaDialog open={editOpen} onOpenChange={setEditOpen} commessa={c} onDone={onDone} />
       <SetResponsabileDialog open={respOpen} onOpenChange={setRespOpen} commessa={c} onDone={onDone} />
+      <ManualCommessaProgressDialog
+        open={manProgOpen}
+        onOpenChange={setManProgOpen}
+        commessa={{ id: c.id, updated_at: c.updated_at, avanzamento_pct: avanz }}
+        onDone={onDone}
+      />
     </div>
   );
 }
+
 
 function EditCommessaDialog({ open, onOpenChange, commessa, onDone }: any) {
   const updateFn = useServerFn(updateCommessa);
