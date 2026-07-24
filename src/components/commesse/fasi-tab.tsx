@@ -342,7 +342,7 @@ function StateChangeDialog({ data, onClose, onDone }: {
       onConfirm={async ({ motivazione }) => {
         setPending(true);
         try {
-          await fn({ data: { id: data.fase.id, stato: data.nuovo as any, motivazione: motivazione ?? null } });
+          await fn({ data: { id: data.fase.id, expected_updated_at: data.fase.updated_at, stato: data.nuovo as any, motivazione: motivazione ?? null } });
           toast.success("Stato aggiornato"); onDone(); onClose();
         } finally { setPending(false); }
       }}
