@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home, ListChecks } from "lucide-react";
+import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home, ListChecks, Wallet } from "lucide-react";
+import { BudgetTab } from "@/components/commesse/budget-tab";
 import { FasiTab, ManualCommessaProgressDialog } from "@/components/commesse/fasi-tab";
 import { Progress } from "@/components/ui/progress";
 import { eur, dateIt } from "@/lib/format";
@@ -141,6 +142,9 @@ function CommessaDetailPage() {
           <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" />Team</TabsTrigger>
           <TabsTrigger value="rapportini"><ClipboardList className="h-4 w-4 mr-1" />Rapportini</TabsTrigger>
           <TabsTrigger value="documenti"><FileText className="h-4 w-4 mr-1" />Documenti</TabsTrigger>
+          {user.canViewCommessaBudget && (
+            <TabsTrigger value="budget"><Wallet className="h-4 w-4 mr-1" />Budget</TabsTrigger>
+          )}
           <TabsTrigger value="storico"><History className="h-4 w-4 mr-1" />Storico</TabsTrigger>
         </TabsList>
 
@@ -169,6 +173,11 @@ function CommessaDetailPage() {
         <TabsContent value="documenti">
           <DocumentiTab commessaId={c.id} />
         </TabsContent>
+        {user.canViewCommessaBudget && (
+          <TabsContent value="budget">
+            <BudgetTab commessaId={c.id} isClosed={!!c.closed_at} isArchived={!!c.archived_at} />
+          </TabsContent>
+        )}
         <TabsContent value="storico">
           <StoricoTab commessaId={c.id} />
         </TabsContent>

@@ -123,6 +123,19 @@ export function useCurrentUser() {
     canArchiveCommesse: has("proprietario", "amministratore"),
     canAssignResponsabile: has("proprietario", "amministratore", "ufficio_tecnico"),
     canViewCommessaEconomics: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
+    // ===== Budget (Sprint 4 Blocco 6c) =====
+    canViewCommessaBudget: has(
+      "proprietario", "amministratore", "ufficio_tecnico", "amministrazione", "responsabile_commessa",
+    ),
+    canEditCommessaBudget: has(
+      "proprietario", "amministratore", "ufficio_tecnico", "amministrazione", "responsabile_commessa",
+    ),
+    canImportCommessaBudget: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canManageCommessaBaseline: has("proprietario", "amministratore"),
+    canEditManualCommessaBudget: has(
+      "proprietario", "amministratore", "amministrazione", "ufficio_tecnico",
+    ),
+    canChangeCommessaBudgetMode: has("proprietario", "amministratore", "ufficio_tecnico"),
   };
 }
 
