@@ -61,20 +61,28 @@ export const listCommessaFasi = createServerFn({ method: "POST" })
 
       const respIds = Array.from(new Set((rows ?? []).map((r: any) => r.responsabile_id).filter(Boolean)));
       const cantIds = Array.from(new Set((rows ?? []).map((r: any) => r.cantiere_id).filter(Boolean)));
-      const [{ data: profs }, { data: cants }] = await Promise.all([
+      const faseIds = (rows ?? []).map((r: any) => r.id);
+      const [{ data: profs }, { data: cants }, ritardiRes] = await Promise.all([
         respIds.length
           ? context.supabase.from("profiles").select("id, nome, cognome, email").in("id", respIds)
           : Promise.resolve({ data: [] as any[] }),
         cantIds.length
           ? context.supabase.from("cantieri").select("id, codice, nome").in("id", cantIds)
           : Promise.resolve({ data: [] as any[] }),
+        faseIds.length
+          ? (context.supabase.from as any)("commessa_fasi_ritardi")
+              .select("fase_id, is_late, late_type, days_late")
+              .in("fase_id", faseIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
       const cm = new Map((cants ?? []).map((c: any) => [c.id, c]));
+      const rm = new Map(((ritardiRes as any)?.data ?? []).map((r: any) => [r.fase_id, r]));
       return (rows ?? []).map((r: any) => ({
         ...r,
         responsabile: r.responsabile_id ? pm.get(r.responsabile_id) ?? null : null,
         cantiere: r.cantiere_id ? cm.get(r.cantiere_id) ?? null : null,
+        ritardo: rm.get(r.id) ?? null,
       }));
     } catch (e) {
       throw new Error(mapServerError(e));
