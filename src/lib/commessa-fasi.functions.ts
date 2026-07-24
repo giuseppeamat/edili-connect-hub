@@ -105,7 +105,7 @@ export const createCommessaFase = createServerFn({ method: "POST" })
       throw new Error("La data di fine prevista non può essere antecedente alla data di inizio prevista");
     }
     try {
-      const { data: res, error } = await ((context.supabase.rpc as any)("create_commessa_fase", {
+      const { data: res, error } = await (context.supabase.rpc as any)("create_commessa_fase", {
         _commessa_id: data.commessa_id,
         _titolo: data.titolo,
         _descrizione: data.descrizione ?? null,
@@ -149,7 +149,7 @@ export const updateCommessaFase = createServerFn({ method: "POST" })
       throw new Error("La data di fine prevista non può essere antecedente alla data di inizio prevista");
     }
     try {
-      const { data: res, error } = await ((context.supabase.rpc as any)("update_commessa_fase", {
+      const { data: res, error } = await (context.supabase.rpc as any)("update_commessa_fase", {
         _id: data.id,
         _expected_updated_at: data.expected_updated_at,
         _titolo: data.titolo ?? null,
@@ -187,7 +187,7 @@ export const updateFaseAvanzamento = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => avanzSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: newUpd, error } = await ((context.supabase.rpc as any)("update_fase_avanzamento", {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("update_fase_avanzamento", {
         _fase_id: data.id,
         _nuovo_avanzamento: data.avanzamento_percentuale,
         _expected_updated_at: data.expected_updated_at,
@@ -215,7 +215,7 @@ export const changeFaseStato = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => stateSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: newUpd, error } = await ((context.supabase.rpc as any)("change_fase_stato", {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("change_fase_stato", {
         _fase_id: data.id,
         _nuovo_stato: data.stato,
         _expected_updated_at: data.expected_updated_at,
@@ -241,7 +241,7 @@ export const archiveCommessaFase = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => archiveSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: newUpd, error } = await ((context.supabase.rpc as any)("archive_commessa_fase", {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("archive_commessa_fase", {
         _id: data.id,
         _expected_updated_at: data.expected_updated_at,
         _motivazione: data.motivazione ?? null,
@@ -259,7 +259,7 @@ export const restoreCommessaFase = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => restoreSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: newUpd, error } = await ((context.supabase.rpc as any)("restore_commessa_fase", {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("restore_commessa_fase", {
         _id: data.id,
         _expected_updated_at: data.expected_updated_at,
       });
@@ -282,7 +282,7 @@ export const reorderCommessaFasi = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => reorderSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { error } = await ((context.supabase.rpc as any)("reorder_commessa_fasi", {
+      const { error } = await (context.supabase.rpc as any)("reorder_commessa_fasi", {
         _commessa_id: data.commessa_id,
         _ordered_ids: data.order,
       });
@@ -301,7 +301,7 @@ export const distribuisciPesiEqualmente = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ commessa_id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: peso, error } = await ((context.supabase.rpc as any)("distribuisci_pesi_equamente", {
+      const { data: peso, error } = await (context.supabase.rpc as any)("distribuisci_pesi_equamente", {
         _commessa_id: data.commessa_id,
       });
       if (error) throw error;
@@ -326,7 +326,7 @@ export const setCommessaAvanzamentoModalita = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => modalitaSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: newUpd, error } = await ((context.supabase.rpc as any)("set_commessa_progress_mode", {
+      const { data: newUpd, error } = await (context.supabase.rpc as any)("set_commessa_progress_mode", {
         _commessa_id: data.commessa_id,
         _modalita: data.modalita,
         _expected_updated_at: data.expected_updated_at,
