@@ -1463,6 +1463,15 @@ export type Database = {
         Args: { _anno: number; _org: string }
         Returns: string
       }
+      change_commessa_stato: {
+        Args: {
+          _commessa_id: string
+          _expected_updated_at: string
+          _motivazione?: string
+          _nuovo_stato: Database["public"]["Enums"]["commessa_stato"]
+        }
+        Returns: undefined
+      }
       change_preventivo_stato: {
         Args: {
           _motivo?: string
@@ -1539,6 +1548,7 @@ export type Database = {
         | "ente"
         | "altro"
       commessa_stato:
+        | "bozza"
         | "pianificata"
         | "in_corso"
         | "sospesa"
@@ -1722,6 +1732,7 @@ export const Constants = {
         "altro",
       ],
       commessa_stato: [
+        "bozza",
         "pianificata",
         "in_corso",
         "sospesa",

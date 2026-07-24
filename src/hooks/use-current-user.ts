@@ -113,6 +113,16 @@ export function useCurrentUser() {
     canDeleteBusinessData: has("proprietario", "amministratore"),
     canReadAudit: has("proprietario", "amministratore", "amministrazione"),
     isInternal: INTERNAL.some((r) => roles.includes(r)),
+    // ===== Commesse (Sprint 4 Blocco 3) =====
+    canViewCommesse: INTERNAL.some((r) => roles.includes(r)),
+    canCreateCommesse: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canEditCommesse: has("proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa"),
+    canManageCommessaState: has("proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa"),
+    canCloseCommesse: has("proprietario", "amministratore"),
+    canReopenCommesse: has("proprietario", "amministratore"),
+    canArchiveCommesse: has("proprietario", "amministratore"),
+    canAssignResponsabile: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canViewCommessaEconomics: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
   };
 }
 
