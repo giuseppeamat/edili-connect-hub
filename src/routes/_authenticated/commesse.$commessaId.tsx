@@ -495,19 +495,19 @@ function CantieriTab({ commessa, canManage, onDone }: any) {
       />
       {editing && (
         <CantiereFormDialog
-          open={!!editing} onOpenChange={(v) => !v && setEditing(null)}
+          open={!!editing} onOpenChange={(v: boolean) => !v && setEditing(null)}
           commessaId={commessa.id} mode="edit" cantiere={editing}
           onDone={() => { invalidate(); setEditing(null); }}
         />
       )}
       {capoDlg && (
         <SetCapocantiereDialog
-          open={!!capoDlg} onOpenChange={(v) => !v && setCapoDlg(null)}
+          open={!!capoDlg} onOpenChange={(v: boolean) => !v && setCapoDlg(null)}
           cantiere={capoDlg} onDone={() => { invalidate(); setCapoDlg(null); }}
         />
       )}
       <ConfirmDialog
-        open={!!archDlg} onOpenChange={(v) => !v && setArchDlg(null)}
+        open={!!archDlg} onOpenChange={(v: boolean) => !v && setArchDlg(null)}
         title="Archivia cantiere"
         description="Il cantiere sarà nascosto dagli elenchi. I rapportini e i documenti collegati NON saranno eliminati."
         requireMotivazione destructive confirmLabel="Archivia"
@@ -758,7 +758,7 @@ function TeamTab({ commessa, canManage }: any) {
         commessaId={commessa.id} cantieri={cantieri as any[]} onDone={invalidate}
       />
       <ConfirmDialog
-        open={!!removeDlg} onOpenChange={(v) => !v && setRemoveDlg(null)}
+        open={!!removeDlg} onOpenChange={(v: boolean) => !v && setRemoveDlg(null)}
         title="Rimuovi membro"
         description="Il membro sarà disattivato ma lo storico resterà consultabile."
         requireMotivazione confirmLabel="Rimuovi" destructive
