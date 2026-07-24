@@ -281,9 +281,9 @@ export function BudgetTab({
           voci={rowsFiltered}
           commessaId={commessaId}
           canEdit={canEdit}
-          onEdit={(v) => setVoceDlg({ open: true, voce: v })}
-          onArchive={(v) => setArchDlg({ open: true, voce: v })}
-          onRestore={(v) => setRestoreDlg({ open: true, voce: v })}
+          onEdit={(v: any) => setVoceDlg({ open: true, voce: v })}
+          onArchive={(v: any) => setArchDlg({ open: true, voce: v })}
+          onRestore={(v: any) => setRestoreDlg({ open: true, voce: v })}
           onDone={invalidateAll}
           summaryUpdatedAt={s?.updated_at}
         />
