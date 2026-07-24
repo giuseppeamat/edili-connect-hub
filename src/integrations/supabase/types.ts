@@ -1755,9 +1755,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      commessa_fasi_ritardi: {
+        Row: {
+          commessa_id: string | null
+          days_late: number | null
+          fase_id: string | null
+          is_late: boolean | null
+          late_type: string | null
+          organization_id: string | null
+        }
+        Insert: {
+          commessa_id?: string | null
+          days_late?: never
+          fase_id?: string | null
+          is_late?: never
+          late_type?: never
+          organization_id?: string | null
+        }
+        Update: {
+          commessa_id?: string | null
+          days_late?: never
+          fase_id?: string | null
+          is_late?: never
+          late_type?: never
+          organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commessa_fasi_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_fasi_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      _log_audit: {
+        Args: {
+          _action: string
+          _entity: string
+          _entity_id: string
+          _meta: Json
+          _org: string
+        }
+        Returns: undefined
+      }
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
@@ -1780,6 +1831,15 @@ export type Database = {
           _nuovo_stato: Database["public"]["Enums"]["commessa_stato"]
         }
         Returns: undefined
+      }
+      change_fase_stato: {
+        Args: {
+          _expected_updated_at: string
+          _fase_id: string
+          _motivazione?: string
+          _nuovo_stato: string
+        }
+        Returns: string
       }
       change_preventivo_stato: {
         Args: {
@@ -1806,6 +1866,10 @@ export type Database = {
         Returns: string
       }
       current_organization_id: { Args: never; Returns: string }
+      distribuisci_pesi_equamente: {
+        Args: { _commessa_id: string }
+        Returns: number
+      }
       has_any_role: {
         Args: {
           _org: string
@@ -1829,10 +1893,51 @@ export type Database = {
         Args: { _org: string; _user: string }
         Returns: boolean
       }
+      is_valid_responsabile_fase: {
+        Args: {
+          _cantiere_id: string
+          _commessa_id: string
+          _org: string
+          _user: string
+        }
+        Returns: boolean
+      }
       mark_expired_invites: { Args: never; Returns: undefined }
       recalculate_commessa_avanzamento: {
         Args: { _commessa_id: string }
         Returns: number
+      }
+      reorder_commessa_fasi: {
+        Args: { _commessa_id: string; _ordered_ids: string[] }
+        Returns: undefined
+      }
+      set_commessa_progress_mode: {
+        Args: {
+          _commessa_id: string
+          _conferma_peso_zero?: boolean
+          _expected_updated_at: string
+          _modalita: string
+          _motivazione?: string
+        }
+        Returns: string
+      }
+      update_fase_avanzamento: {
+        Args: {
+          _expected_updated_at: string
+          _fase_id: string
+          _motivazione?: string
+          _nuovo_avanzamento: number
+        }
+        Returns: string
+      }
+      update_manual_commessa_progress: {
+        Args: {
+          _commessa_id: string
+          _expected_updated_at: string
+          _motivazione?: string
+          _nuovo_avanzamento: number
+        }
+        Returns: string
       }
     }
     Enums: {
