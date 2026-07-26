@@ -17,6 +17,8 @@ import { Archive, Pencil, Phone, Mail, Plus, RotateCcw, Star, CheckCircle2, XCir
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { archiveCliente, restoreCliente, createContatto, updateContatto, archiveContatto, createAttivita, completeAttivita, cancelAttivita } from "@/lib/crm.functions";
+import { listCommesseByCliente } from "@/lib/commesse.functions";
+
 import { ClienteForm, type ClienteFormValues } from "@/components/crm/cliente-form";
 import { dateIt, eur } from "@/lib/format";
 
@@ -68,10 +70,14 @@ function ClienteDetailPage() {
     queryFn: async () => (await supabase.from("preventivi").select("id, numero, oggetto, stato, totale, data_preventivo").eq("cliente_id", clienteId).order("data_preventivo", { ascending: false })).data ?? [],
   });
 
-  const { data: commesse = [] } = useQuery({
+  const listCommByClienteFn = useServerFn(listCommesseByCliente);
+  const { data: commesseData } = useQuery({
     queryKey: ["cliente", clienteId, "commesse"],
-    queryFn: async () => (await supabase.from("commesse").select("id, codice, denominazione, stato, importo, data_inizio").eq("cliente_id", clienteId).order("data_inizio", { ascending: false })).data ?? [],
+    queryFn: async () => await listCommByClienteFn({ data: { cliente_id: clienteId } }),
   });
+  const commesse = commesseData?.rows ?? [];
+  const commesseCanEcon = commesseData?.canViewEconomics ?? false;
+
 
   const { data: documenti = [] } = useQuery({
     queryKey: ["cliente", clienteId, "documenti"],
@@ -251,7 +257,7 @@ function ClienteDetailPage() {
             {commesse.map((c: any) => (
               <div key={c.id} className="p-3 flex justify-between text-sm">
                 <div><div className="font-medium">{c.codice} — {c.denominazione}</div><div className="text-xs text-muted-foreground">{dateIt(c.data_inizio)} · {c.stato}</div></div>
-                <div className="font-mono">{eur(c.importo)}</div>
+                {commesseCanEcon && <div className="font-mono">{eur(c.importo)}</div>}
               </div>
             ))}
             {commesse.length === 0 && <div className="p-6 text-center text-muted-foreground text-sm">Nessuna commessa.</div>}

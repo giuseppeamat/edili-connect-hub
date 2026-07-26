@@ -549,13 +549,22 @@ export const getCommessaDetail = createServerFn({ method: "POST" })
       context.supabase.from("commessa_membri").select("id", { count: "exact", head: true }).eq("commessa_id", c.id).eq("is_active", true),
     ]);
 
-    // Se non autorizzato ai dati economici, mascheriamo
+    // Se non autorizzato ai dati economici, mascheriamo TUTTE le colonne economiche
     if (!canEcon) {
-      c.importo = null; c.importo_contratto = null; c.ricavi_previsti = null;
-      c.costi_previsti = null; c.costi_impegnati = null; c.costi_sostenuti = null;
-      c.margine_previsto = null; c.margine_aggiornato = null; c.margine_percentuale = null;
-      c.budget_costi = null;
+      const econCols = [
+        "importo","importo_contratto","budget_costi",
+        "ricavi_previsti","ricavi_acquisiti","ricavi_aggiornati",
+        "extra_approvati","extra_non_approvati",
+        "costi_previsti","costi_impegnati","costi_sostenuti","costi_residui_stimati","costo_aggiornato",
+        "margine_previsto","margine_aggiornato","margine_percentuale","margine_percentuale_aggiornato",
+        "scostamento_costi","scostamento_ricavi","scostamento_margine",
+        "baseline_ricavi","baseline_costi","baseline_margine","baseline_preventivo_id",
+        "baseline_created_at","baseline_created_by",
+        "budget_modalita","budget_calcolato_at",
+      ];
+      for (const k of econCols) (c as any)[k] = null;
     }
+
 
     return {
       commessa: c,
@@ -924,4 +933,129 @@ export const listDocumentiByCommessa = createServerFn({ method: "POST" })
       ...r,
       cantiere: r.cantiere_id ? kMap.get(r.cantiere_id) ?? null : null,
     }));
+  });
+
+// =========================================================================
+// SAFE LIST / DASHBOARD — Sprint 4 Blocco 6d (payload role-aware, no colonne
+// economiche per capocantiere/operaio/cliente/fornitore)
+// =========================================================================
+
+const ECON_ROLES: AppRole[] = [
+  "proprietario","amministratore","amministrazione","ufficio_tecnico","responsabile_commessa",
+];
+
+const OPERATIONAL_COLS = [
+  "id","organization_id","cliente_id","responsabile_id","codice","denominazione",
+  "indirizzo_cantiere","data_inizio","data_inizio_prevista","data_inizio_effettiva",
+  "data_fine_prevista","data_fine_effettiva","data_apertura","avanzamento_pct","stato",
+  "note","titolo","descrizione","tipologia","priorita","closed_at","closed_by",
+  "archived_at","archived_by","avanzamento_modalita","avanzamento_calcolato_at",
+  "created_at","updated_at",
+].join(", ");
+
+export const listCommesseBoard = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ showArchived: z.boolean().optional().default(false) }).parse(d ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const canEcon = hasAny(roles, ECON_ROLES);
+    const cols = canEcon
+      ? "*, clienti!commesse_cliente_id_fkey(ragione_sociale)"
+      : `${OPERATIONAL_COLS}, clienti!commesse_cliente_id_fkey(ragione_sociale)`;
+    let q = context.supabase.from("commesse")
+      .select(cols)
+      .eq("organization_id", organizationId)
+      .order("data_inizio_prevista", { ascending: false, nullsFirst: false });
+    if (!data.showArchived) q = q.is("archived_at", null);
+    const { data: rows, error } = await q;
+    if (error) throw new Error(mapServerError(error));
+    const respIds = Array.from(new Set((rows ?? []).map((r: any) => r.responsabile_id).filter(Boolean)));
+    const respMap = new Map<string, any>();
+    if (respIds.length) {
+      const { data: profs } = await context.supabase
+        .from("profiles").select("id, nome, cognome, email").in("id", respIds as any);
+      for (const p of profs ?? []) respMap.set((p as any).id, p);
+    }
+    return {
+      canViewEconomics: canEcon,
+      rows: (rows ?? []).map((r: any) => ({
+        ...r,
+        responsabile: r.responsabile_id ? respMap.get(r.responsabile_id) ?? null : null,
+      })),
+    };
+  });
+
+export const listCommesseByCliente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ cliente_id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const canEcon = hasAny(roles, ECON_ROLES);
+    const cols = canEcon
+      ? "id, codice, denominazione, stato, importo, data_inizio"
+      : "id, codice, denominazione, stato, data_inizio";
+    const { data: rows, error } = await context.supabase
+      .from("commesse").select(cols)
+      .eq("cliente_id", data.cliente_id)
+      .eq("organization_id", organizationId)
+      .order("data_inizio", { ascending: false });
+    if (error) throw new Error(mapServerError(error));
+    return {
+      canViewEconomics: canEcon,
+      rows: (rows ?? []).map((r: any) => (canEcon ? r : { ...r, importo: null })),
+    };
+  });
+
+export const getDashboardOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { organizationId, roles } = await ctx(context);
+    const canEcon = hasAny(roles, ECON_ROLES);
+
+    const econSel = canEcon
+      ? "id, stato, importo, costi_sostenuti, budget_costi"
+      : "id, stato";
+
+    const [prev, comm, rapp, doc] = await Promise.all([
+      canEcon
+        ? context.supabase.from("preventivi").select("id, stato, totale").eq("organization_id", organizationId)
+        : context.supabase.from("preventivi").select("id, stato").eq("organization_id", organizationId),
+      context.supabase.from("commesse").select(econSel).eq("organization_id", organizationId),
+      context.supabase.from("rapportini").select("ore, data").eq("organization_id", organizationId),
+      context.supabase.from("documenti").select("id, data_scadenza, stato").eq("organization_id", organizationId),
+    ]);
+
+    const preventiviAperti = (prev.data ?? []).filter((p: any) => ["bozza","inviato"].includes(p.stato)).length;
+    const commesseAttive = (comm.data ?? []).filter((c: any) => c.stato === "in_corso");
+    const today = new Date(); const in30 = new Date(); in30.setDate(today.getDate() + 30);
+    const docsInScadenza = (doc.data ?? []).filter((d: any) => {
+      if (!d.data_scadenza) return false;
+      return new Date(d.data_scadenza) <= in30;
+    }).length;
+    const oreMese = (rapp.data ?? [])
+      .filter((r: any) => new Date(r.data).getMonth() === today.getMonth())
+      .reduce((s: number, r: any) => s + Number(r.ore ?? 0), 0);
+
+    let valoreCommesse: number | null = null;
+    let costiSostenuti: number | null = null;
+    let marginePrevisto: number | null = null;
+    let salDaEmettere: number | null = null;
+    if (canEcon) {
+      valoreCommesse = commesseAttive.reduce((s: number, c: any) => s + Number(c.importo ?? 0), 0);
+      costiSostenuti = commesseAttive.reduce((s: number, c: any) => s + Number(c.costi_sostenuti ?? 0), 0);
+      marginePrevisto = valoreCommesse - commesseAttive.reduce((s: number, c: any) => s + Number(c.budget_costi ?? 0), 0);
+      salDaEmettere = commesseAttive.filter((c: any) => Number(c.costi_sostenuti) > 0).length;
+    }
+
+    return {
+      canViewEconomics: canEcon,
+      preventiviAperti,
+      cantieriAttivi: commesseAttive.length,
+      docsInScadenza,
+      oreMese,
+      valoreCommesse, costiSostenuti, marginePrevisto, salDaEmettere,
+      totalRecords: (prev.data?.length ?? 0) + (comm.data?.length ?? 0),
+    };
   });
