@@ -112,6 +112,17 @@ export const getCommessaBudgetSummary = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     try {
       const orgId = await currentOrgId(context);
+      // Server-side role gate: PG RLS su `commesse` è row-level, non column-level.
+      // Capocantiere/operaio possono vedere la riga commessa (per accesso operativo) ma
+      // NON devono ricevere le colonne economiche. Blocchiamo qui a livello applicativo,
+      // in coerenza con la policy `cbv_select_econ` su commessa_budget_voci.
+      const ECON_ROLES = ["proprietario","amministratore","ufficio_tecnico","amministrazione","responsabile_commessa"];
+      const { data: myRoles } = await context.supabase
+        .from("user_roles").select("role").eq("user_id", context.userId).eq("organization_id", orgId);
+      const rolesSet = new Set(((myRoles ?? []) as { role: string }[]).map((r) => r.role));
+      const canRead = ECON_ROLES.some((r) => rolesSet.has(r));
+      if (!canRead) throw new Error("Non sei autorizzato a visualizzare i dati economici di questa commessa.");
+
       const { data: c, error } = await context.supabase
         .from("commesse")
         .select([
@@ -145,6 +156,7 @@ export const getCommessaBudgetSummary = createServerFn({ method: "POST" })
       throw new Error(mapServerError(e));
     }
   });
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CREATE
