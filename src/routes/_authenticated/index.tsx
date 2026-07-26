@@ -84,46 +84,12 @@ function Dashboard() {
   const qc = useQueryClient();
   const [seeding, setSeeding] = useState(false);
 
+  const overviewFn = useServerFn(getDashboardOverview);
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
-    queryFn: async () => {
-      const [prev, comm, rapp, doc] = await Promise.all([
-        supabase.from("preventivi").select("id, stato, totale"),
-        supabase.from("commesse").select("id, stato, importo, costi_sostenuti, budget_costi"),
-        supabase.from("rapportini").select("ore, data"),
-        supabase.from("documenti").select("id, data_scadenza, stato"),
-      ]);
-      const preventiviAperti = (prev.data ?? []).filter((p) => ["bozza", "inviato"].includes(p.stato)).length;
-      const commesseAttive = (comm.data ?? []).filter((c) => c.stato === "in_corso");
-      const valoreCommesse = commesseAttive.reduce((s, c) => s + Number(c.importo ?? 0), 0);
-      const costiSostenuti = commesseAttive.reduce((s, c) => s + Number(c.costi_sostenuti ?? 0), 0);
-      const marginePrevisto = valoreCommesse - commesseAttive.reduce((s, c) => s + Number(c.budget_costi ?? 0), 0);
-      const today = new Date();
-      const in30 = new Date();
-      in30.setDate(today.getDate() + 30);
-      const docsInScadenza = (doc.data ?? []).filter((d) => {
-        if (!d.data_scadenza) return false;
-        const dt = new Date(d.data_scadenza);
-        return dt <= in30;
-      }).length;
-      const oreMese = (rapp.data ?? [])
-        .filter((r) => new Date(r.data).getMonth() === today.getMonth())
-        .reduce((s, r) => s + Number(r.ore ?? 0), 0);
-      const salDaEmettere = commesseAttive.filter((c) => Number(c.costi_sostenuti) > 0).length;
-
-      return {
-        preventiviAperti,
-        valoreCommesse,
-        cantieriAttivi: commesseAttive.length,
-        costiSostenuti,
-        marginePrevisto,
-        docsInScadenza,
-        oreMese,
-        salDaEmettere,
-        totalRecords: (prev.data?.length ?? 0) + (comm.data?.length ?? 0),
-      };
-    },
+    queryFn: async () => await overviewFn(),
   });
+
 
   const handleSeed = async () => {
     setSeeding(true);
