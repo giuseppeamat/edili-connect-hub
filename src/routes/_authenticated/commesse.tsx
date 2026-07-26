@@ -22,8 +22,9 @@ import { useCurrentRole } from "@/hooks/use-current-role";
 import {
   createCommessa, archiveCommessa, restoreCommessa,
   changeCommessaStato, closeCommessa, reopenCommessa,
-  listResponsabiliCandidati,
+  listResponsabiliCandidati, listCommesseBoard,
 } from "@/lib/commesse.functions";
+
 
 export const Route = createFileRoute("/_authenticated/commesse")({
   head: () => ({
