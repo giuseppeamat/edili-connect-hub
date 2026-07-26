@@ -17,6 +17,8 @@ import { Archive, Pencil, Phone, Mail, Plus, RotateCcw, Star, CheckCircle2, XCir
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { archiveCliente, restoreCliente, createContatto, updateContatto, archiveContatto, createAttivita, completeAttivita, cancelAttivita } from "@/lib/crm.functions";
+import { listCommesseByCliente } from "@/lib/commesse.functions";
+
 import { ClienteForm, type ClienteFormValues } from "@/components/crm/cliente-form";
 import { dateIt, eur } from "@/lib/format";
 
