@@ -549,13 +549,22 @@ export const getCommessaDetail = createServerFn({ method: "POST" })
       context.supabase.from("commessa_membri").select("id", { count: "exact", head: true }).eq("commessa_id", c.id).eq("is_active", true),
     ]);
 
-    // Se non autorizzato ai dati economici, mascheriamo
+    // Se non autorizzato ai dati economici, mascheriamo TUTTE le colonne economiche
     if (!canEcon) {
-      c.importo = null; c.importo_contratto = null; c.ricavi_previsti = null;
-      c.costi_previsti = null; c.costi_impegnati = null; c.costi_sostenuti = null;
-      c.margine_previsto = null; c.margine_aggiornato = null; c.margine_percentuale = null;
-      c.budget_costi = null;
+      const econCols = [
+        "importo","importo_contratto","budget_costi",
+        "ricavi_previsti","ricavi_acquisiti","ricavi_aggiornati",
+        "extra_approvati","extra_non_approvati",
+        "costi_previsti","costi_impegnati","costi_sostenuti","costi_residui_stimati","costo_aggiornato",
+        "margine_previsto","margine_aggiornato","margine_percentuale","margine_percentuale_aggiornato",
+        "scostamento_costi","scostamento_ricavi","scostamento_margine",
+        "baseline_ricavi","baseline_costi","baseline_margine","baseline_preventivo_id",
+        "baseline_created_at","baseline_created_by",
+        "budget_modalita","budget_calcolato_at",
+      ];
+      for (const k of econCols) (c as any)[k] = null;
     }
+
 
     return {
       commessa: c,
