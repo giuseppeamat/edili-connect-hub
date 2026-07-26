@@ -257,7 +257,7 @@ function ClienteDetailPage() {
             {commesse.map((c: any) => (
               <div key={c.id} className="p-3 flex justify-between text-sm">
                 <div><div className="font-medium">{c.codice} — {c.denominazione}</div><div className="text-xs text-muted-foreground">{dateIt(c.data_inizio)} · {c.stato}</div></div>
-                <div className="font-mono">{eur(c.importo)}</div>
+                {commesseCanEcon && <div className="font-mono">{eur(c.importo)}</div>}
               </div>
             ))}
             {commesse.length === 0 && <div className="p-6 text-center text-muted-foreground text-sm">Nessuna commessa.</div>}
