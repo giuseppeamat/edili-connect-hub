@@ -70,10 +70,14 @@ function ClienteDetailPage() {
     queryFn: async () => (await supabase.from("preventivi").select("id, numero, oggetto, stato, totale, data_preventivo").eq("cliente_id", clienteId).order("data_preventivo", { ascending: false })).data ?? [],
   });
 
-  const { data: commesse = [] } = useQuery({
+  const listCommByClienteFn = useServerFn(listCommesseByCliente);
+  const { data: commesseData } = useQuery({
     queryKey: ["cliente", clienteId, "commesse"],
-    queryFn: async () => (await supabase.from("commesse").select("id, codice, denominazione, stato, importo, data_inizio").eq("cliente_id", clienteId).order("data_inizio", { ascending: false })).data ?? [],
+    queryFn: async () => await listCommByClienteFn({ data: { cliente_id: clienteId } }),
   });
+  const commesse = commesseData?.rows ?? [];
+  const commesseCanEcon = commesseData?.canViewEconomics ?? false;
+
 
   const { data: documenti = [] } = useQuery({
     queryKey: ["cliente", clienteId, "documenti"],
