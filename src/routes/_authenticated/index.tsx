@@ -120,13 +120,22 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard title="Preventivi aperti" value={String(data?.preventiviAperti ?? 0)} icon={FileText} to="/preventivi" />
-        <KpiCard title="Valore commesse" value={eur(data?.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
+        {data?.canViewEconomics && (
+          <KpiCard title="Valore commesse" value={eur(data?.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
+        )}
         <KpiCard title="Cantieri attivi" value={String(data?.cantieriAttivi ?? 0)} icon={HardHat} tone="warning" to="/commesse" />
-        <KpiCard title="Costi sostenuti" value={eur(data?.costiSostenuti)} icon={Wallet} to="/commesse" />
-        <KpiCard title="Margine previsto" value={eur(data?.marginePrevisto)} icon={TrendingUp} tone={Number(data?.marginePrevisto ?? 0) >= 0 ? "success" : "destructive"} to="/commesse" />
+        {data?.canViewEconomics && (
+          <KpiCard title="Costi sostenuti" value={eur(data?.costiSostenuti)} icon={Wallet} to="/commesse" />
+        )}
+        {data?.canViewEconomics && (
+          <KpiCard title="Margine previsto" value={eur(data?.marginePrevisto)} icon={TrendingUp} tone={Number(data?.marginePrevisto ?? 0) >= 0 ? "success" : "destructive"} to="/commesse" />
+        )}
         <KpiCard title="Documenti in scadenza (30gg)" value={String(data?.docsInScadenza ?? 0)} icon={CalendarClock} tone="warning" to="/scadenziario" />
         <KpiCard title="Ore lavorate (mese)" value={num(data?.oreMese, 1) + " h"} icon={Clock} to="/rapportini" />
-        <KpiCard title="SAL da emettere" value={String(data?.salDaEmettere ?? 0)} icon={Receipt} to="/commesse" />
+        {data?.canViewEconomics && (
+          <KpiCard title="SAL da emettere" value={String(data?.salDaEmettere ?? 0)} icon={Receipt} to="/commesse" />
+        )}
+
       </div>
 
       <Card>
