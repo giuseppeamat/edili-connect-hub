@@ -64,14 +64,26 @@ export async function seedDemoData() {
     d.setDate(d.getDate() - offset);
     return d.toISOString().slice(0, 10);
   };
-  const rapportini = [
-    { commessa_id: cantMap.get("C2025-01"), data: dstr(0), ore: 8, lavorazione: "Montaggio ponteggio lato sud", ora_inizio: "07:30", ora_fine: "16:30" },
-    { commessa_id: cantMap.get("C2025-01"), data: dstr(1), ore: 8, lavorazione: "Rimozione intonaco piano 1-2", ora_inizio: "07:30", ora_fine: "16:30" },
-    { commessa_id: cantMap.get("C2025-01"), data: dstr(2), ore: 6, lavorazione: "Preparazione fondo", ora_inizio: "08:00", ora_fine: "15:00" },
-    { commessa_id: cantMap.get("C2025-02"), data: dstr(0), ore: 8, lavorazione: "Demolizione tramezze uffici", ora_inizio: "08:00", ora_fine: "17:00" },
-    { commessa_id: cantMap.get("C2025-02"), data: dstr(1), ore: 8, lavorazione: "Smaltimento macerie", ora_inizio: "08:00", ora_fine: "17:00" },
-  ].map((r) => ({ ...r, organization_id: org, user_id: u.user!.id }));
-  await supabase.from("rapportini").insert(rapportini);
+  const rapportiniSeed = [
+    { commessa_id: cantMap.get("C2025-01"), data: dstr(0), ore: 8, descr: "Montaggio ponteggio lato sud", ora_inizio: "07:30", ora_fine: "16:30" },
+    { commessa_id: cantMap.get("C2025-01"), data: dstr(1), ore: 8, descr: "Rimozione intonaco piano 1-2", ora_inizio: "07:30", ora_fine: "16:30" },
+    { commessa_id: cantMap.get("C2025-01"), data: dstr(2), ore: 6, descr: "Preparazione fondo", ora_inizio: "08:00", ora_fine: "15:00" },
+    { commessa_id: cantMap.get("C2025-02"), data: dstr(0), ore: 8, descr: "Demolizione tramezze uffici", ora_inizio: "08:00", ora_fine: "17:00" },
+    { commessa_id: cantMap.get("C2025-02"), data: dstr(1), ore: 8, descr: "Smaltimento macerie", ora_inizio: "08:00", ora_fine: "17:00" },
+  ];
+  void org;
+  for (const r of rapportiniSeed) {
+    if (!r.commessa_id) continue;
+    await (supabase.rpc as any)("create_rapportino", {
+      _commessa_id: r.commessa_id,
+      _user_id: u.user!.id,
+      _data: r.data,
+      _ore: r.ore,
+      _descrizione_lavori: r.descr,
+      _ora_inizio: r.ora_inizio,
+      _ora_fine: r.ora_fine,
+    });
+  }
 
   // Documenti
   const scad = (offset: number) => {
