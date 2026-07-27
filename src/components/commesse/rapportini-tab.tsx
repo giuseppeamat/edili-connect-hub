@@ -1,16 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Archive, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { dateIt } from "@/lib/format";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { rapportiniKeys } from "@/lib/rapportini.keys";
@@ -21,10 +21,7 @@ import {
   listRapportinoAssignableCantieri,
   listRapportinoAssignableFasi,
 } from "@/lib/rapportini.functions";
-
-const STATO_LABEL: Record<string, string> = {
-  bozza: "Bozza", inviato: "Inviato", approvato: "Approvato", respinto: "Respinto", annullato: "Annullato",
-};
+import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 
 function fullName(r: any) {
   if (!r) return "—";
@@ -45,7 +42,7 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
   const key = rapportiniKeys.byCommessa(commessaId);
   const { data = [] } = useQuery({
     queryKey: key,
-    queryFn: async () => await listFn({ data: { commessa_id: commessaId } }),
+    queryFn: async () => await listFn({ data: { commessa_id: commessaId, includeArchived: true } }),
   });
 
   const invalidate = () => {
@@ -53,12 +50,13 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
   };
 
   const canCreate = !commessaClosed && !commessaArchived && !!user.userId;
+  const rows = data as any[];
 
   return (
     <Card>
       <CardContent className="p-0">
         <div className="p-3 flex justify-between items-center border-b">
-          <div className="text-sm text-muted-foreground">Rapportini della commessa ({(data as any[]).length})</div>
+          <div className="text-sm text-muted-foreground">Rapportini della commessa ({rows.length})</div>
           {canCreate && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -86,10 +84,10 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
             </tr>
           </thead>
           <tbody>
-            {(data as any[]).map((r) => (
+            {rows.map((r) => (
               <RowActions key={r.id} row={r} onDone={invalidate} />
             ))}
-            {(data as any[]).length === 0 && (
+            {rows.length === 0 && (
               <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">Nessun rapportino</td></tr>
             )}
           </tbody>
@@ -100,12 +98,10 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
 }
 
 function RowActions({ row, onDone }: any) {
-  const user = useCurrentUser();
   const qc = useQueryClient();
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const archFn = useServerFn(archiveRapportino);
-  const canArchive = user.canDeleteBusinessData || user.has("responsabile_commessa", "ufficio_tecnico") || row.user_id === user.userId;
   const isAnomaly = Number(row.ore ?? 0) > 16;
   const arch = useMutation({
     mutationFn: async () => await archFn({ data: { id: row.id, expected_updated_at: row.updated_at, motivazione: motivo.trim() } }),
@@ -113,40 +109,45 @@ function RowActions({ row, onDone }: any) {
     onError: (e: any) => toast.error(e.message),
   });
   return (
-    <tr className="border-t">
+    <tr className={`border-t ${row.archived_at ? "opacity-60" : ""}`}>
       <td className="p-3">{dateIt(row.data)}</td>
       <td className="p-3">{fullName(row.user)}</td>
       <td className="p-3 text-xs">{row.cantiere ? `${row.cantiere.codice} — ${row.cantiere.nome}` : "—"}</td>
       <td className="p-3 text-xs">{row.fase?.titolo ?? "—"}</td>
       <td className="p-3 text-right">
         {Number(row.ore ?? 0).toFixed(2)}
-        {isAnomaly && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Durata anomala</Badge>}
+        {isAnomaly && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
       </td>
-      <td className="p-3 text-muted-foreground truncate max-w-xs">{row.descrizione_lavori ?? row.lavorazione ?? "—"}</td>
-      <td className="p-3"><Badge variant="secondary">{STATO_LABEL[row.stato] ?? row.stato}</Badge></td>
-      <td className="p-3 text-right">
-        {canArchive && !row.archived_at && (
-          <Dialog open={archOpen} onOpenChange={setArchOpen}>
-            <DialogTrigger asChild>
-              <Button size="icon" variant="ghost" title="Archivia"><Archive className="h-4 w-4" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Archivia rapportino</DialogTitle></DialogHeader>
-              <div className="space-y-2">
-                <Label>Motivazione *</Label>
-                <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo dell'archiviazione…" />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setArchOpen(false)}>Annulla</Button>
-                <Button onClick={() => arch.mutate()} disabled={!motivo.trim() || arch.isPending}>Archivia</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      <td className="p-3 text-muted-foreground truncate max-w-xs">
+        {row.descrizione_lavori ?? row.lavorazione ?? "—"}
+        {row.stato === "respinto" && row.rejection_reason && (
+          <div className="text-xs text-rose-700 mt-1">Rifiuto: {row.rejection_reason}</div>
         )}
+        {row.stato === "annullato" && row.cancellation_reason && (
+          <div className="text-xs text-zinc-600 mt-1">Annullato: {row.cancellation_reason}</div>
+        )}
+      </td>
+      <td className="p-3"><StatoBadge stato={row.stato} archived={!!row.archived_at} /></td>
+      <td className="p-3 text-right">
+        <RapportinoActionsMenu row={row} onArchive={() => setArchOpen(true)} />
+        <Dialog open={archOpen} onOpenChange={setArchOpen}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Archivia rapportino</DialogTitle></DialogHeader>
+            <div className="space-y-2">
+              <Label>Motivazione *</Label>
+              <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo dell'archiviazione…" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setArchOpen(false)}>Chiudi</Button>
+              <Button onClick={() => arch.mutate()} disabled={!motivo.trim() || arch.isPending}>Archivia</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </td>
     </tr>
   );
 }
+
 
 export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowCommessaSelect, commesseOptions }: {
   commessaId?: string | null;

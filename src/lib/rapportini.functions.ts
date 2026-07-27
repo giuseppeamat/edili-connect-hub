@@ -376,3 +376,91 @@ export const restoreRapportino = createServerFn({ method: "POST" })
       return { updated_at: newUpd as string };
     } catch (e) { throw new Error(mapServerError(e)); }
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKFLOW (Sprint 5 · Blocco 2)
+// ─────────────────────────────────────────────────────────────────────────────
+const idAndExpected = z.object({ id: uuid, expected_updated_at: iso });
+const idExpectedReason = idAndExpected.extend({
+  reason: z.string().trim().min(5, "Motivazione: minimo 5 caratteri").max(1000),
+});
+
+type WorkflowResult = {
+  id: string;
+  stato: string;
+  updated_at: string;
+  transition_at: string | null;
+  transition_by: string | null;
+};
+
+async function callWorkflowRpc(context: any, fn: string, args: Record<string, any>): Promise<WorkflowResult> {
+  await currentOrgId(context);
+  const { data, error } = await context.supabase.rpc(fn as any, args);
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.id) throw new Error("Operazione fallita");
+  return {
+    id: row.id,
+    stato: row.stato,
+    updated_at: row.updated_at,
+    transition_at: row.transition_at ?? null,
+    transition_by: row.transition_by ?? null,
+  };
+}
+
+export const submitRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idAndExpected.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      return await callWorkflowRpc(context, "submit_rapportino", {
+        _id: data.id, _expected_updated_at: data.expected_updated_at,
+      });
+    } catch (e) { throw new Error(mapServerError(e)); }
+  });
+
+export const approveRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    idAndExpected.extend({ note: z.string().trim().max(1000).nullable().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      return await callWorkflowRpc(context, "approve_rapportino", {
+        _id: data.id, _expected_updated_at: data.expected_updated_at, _note: data.note ?? null,
+      });
+    } catch (e) { throw new Error(mapServerError(e)); }
+  });
+
+export const rejectRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idExpectedReason.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      return await callWorkflowRpc(context, "reject_rapportino", {
+        _id: data.id, _expected_updated_at: data.expected_updated_at, _reason: data.reason,
+      });
+    } catch (e) { throw new Error(mapServerError(e)); }
+  });
+
+export const reopenRejectedRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idAndExpected.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      return await callWorkflowRpc(context, "reopen_rejected_rapportino", {
+        _id: data.id, _expected_updated_at: data.expected_updated_at,
+      });
+    } catch (e) { throw new Error(mapServerError(e)); }
+  });
+
+export const cancelRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => idExpectedReason.parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      return await callWorkflowRpc(context, "cancel_rapportino", {
+        _id: data.id, _expected_updated_at: data.expected_updated_at, _reason: data.reason,
+      });
+    } catch (e) { throw new Error(mapServerError(e)); }
+  });
