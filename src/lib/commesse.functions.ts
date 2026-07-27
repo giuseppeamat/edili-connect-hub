@@ -10,7 +10,7 @@ type AppRole =
 const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "ufficio_tecnico"];
 const ADMIN_ROLES: AppRole[] = ["proprietario", "amministratore"];
 const RESPONSABILE_ROLES: AppRole[] = [
-  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa",
+  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
 ];
 
 const TIPOLOGIE = [
@@ -77,10 +77,26 @@ async function fetchCommessaOrThrow(context: any, id: string, orgId: string) {
 
 async function validateResponsabile(context: any, orgId: string, userId: string | null | undefined) {
   if (!userId) return true;
-  const { data: valid } = await context.supabase
+  const { data: valid, error: rpcErr } = await context.supabase
     .rpc("is_valid_responsabile", { _user: userId, _org: orgId });
-  if (!valid) throw new Error("Responsabile non valido (utente disattivato, fuori organizzazione o ruolo non compatibile)");
-  return true;
+  if (rpcErr) {
+    console.error("[validateResponsabile] RPC error", rpcErr);
+    throw new Error("Impossibile verificare il responsabile selezionato. Riprova.");
+  }
+  if (valid) return true;
+
+  // Fallback diagnostico: individua motivo preciso del rifiuto.
+  const [{ data: prof }, { data: roles }] = await Promise.all([
+    context.supabase.from("profiles").select("id, is_active, organization_id").eq("id", userId).maybeSingle(),
+    context.supabase.from("user_roles").select("role, organization_id").eq("user_id", userId),
+  ]);
+  if (!prof) throw new Error("Il responsabile selezionato non è disponibile.");
+  if (prof.is_active === false) throw new Error("Il responsabile selezionato è disattivato.");
+  if (prof.organization_id !== orgId) throw new Error("Il responsabile selezionato appartiene a un'altra organizzazione.");
+  const rolesInOrg = (roles ?? []).filter((r: any) => r.organization_id === orgId).map((r: any) => r.role);
+  const compat = rolesInOrg.some((r: string) => (RESPONSABILE_ROLES as string[]).includes(r));
+  if (!compat) throw new Error("Il ruolo dell'utente selezionato non è compatibile con quello di responsabile commessa.");
+  throw new Error("Il responsabile selezionato non è disponibile.");
 }
 
 async function validateCliente(context: any, orgId: string, clienteId: string) {
