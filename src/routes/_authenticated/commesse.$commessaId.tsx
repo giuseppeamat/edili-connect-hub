@@ -18,6 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home, ListChecks, Wallet } from "lucide-react";
 import { BudgetTab } from "@/components/commesse/budget-tab";
 import { FasiTab, ManualCommessaProgressDialog } from "@/components/commesse/fasi-tab";
+import { CommessaRapportiniTab } from "@/components/commesse/rapportini-tab";
 import { Progress } from "@/components/ui/progress";
 import { eur, dateIt } from "@/lib/format";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -168,7 +169,11 @@ function CommessaDetailPage() {
           <TeamTab commessa={c} canManage={canEditCommesse || (user.has("responsabile_commessa") && c.responsabile_id === user.userId)} />
         </TabsContent>
         <TabsContent value="rapportini">
-          <RapportiniTab commessaId={c.id} />
+          <CommessaRapportiniTab
+            commessaId={c.id}
+            commessaClosed={!!c.closed_at}
+            commessaArchived={!!c.archived_at}
+          />
         </TabsContent>
         <TabsContent value="documenti">
           <DocumentiTab commessaId={c.id} />
