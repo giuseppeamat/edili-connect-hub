@@ -289,7 +289,7 @@ export const getRapportinoCosto = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     try {
       const { org, roles } = await currentOrgAndRole(context);
-      const econ = roles.some((r) =>
+      const econ = roles.some((r: string) =>
         ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa"].includes(r),
       );
       if (!econ) return null;
