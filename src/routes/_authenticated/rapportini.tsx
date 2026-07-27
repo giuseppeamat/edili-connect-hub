@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -39,6 +39,7 @@ function fullName(r: any) {
 
 function RapportiniPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<RapportinoFilters>({ includeArchived: false });
   const [archTarget, setArchTarget] = useState<any | null>(null);
@@ -156,7 +157,11 @@ function RapportiniPage() {
           </TableHeader>
           <TableBody>
             {(items as any[]).map((r) => (
-              <TableRow key={r.id} className={r.archived_at ? "opacity-60" : ""}>
+              <TableRow
+                key={r.id}
+                className={`${r.archived_at ? "opacity-60" : ""} cursor-pointer hover:bg-muted/40`}
+                onClick={() => navigate({ to: "/rapportini/$rapportinoId", params: { rapportinoId: r.id } })}
+              >
                 <TableCell>{dateIt(r.data)}</TableCell>
                 <TableCell>{fullName(r.user)}</TableCell>
                 <TableCell className="text-sm"><span className="font-mono">{r.commessa?.codice}</span><br /><span className="text-muted-foreground text-xs">{r.commessa?.denominazione}</span></TableCell>
@@ -179,7 +184,7 @@ function RapportiniPage() {
                   )}
                 </TableCell>
                 <TableCell><StatoBadge stato={r.stato} archived={!!r.archived_at} /></TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <RapportinoActionsMenu row={r} onArchive={(row) => setArchTarget(row)} />
                 </TableCell>
               </TableRow>
