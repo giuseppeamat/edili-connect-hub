@@ -10,7 +10,7 @@ type AppRole =
 const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "ufficio_tecnico"];
 const ADMIN_ROLES: AppRole[] = ["proprietario", "amministratore"];
 const RESPONSABILE_ROLES: AppRole[] = [
-  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa",
+  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
 ];
 
 const TIPOLOGIE = [
