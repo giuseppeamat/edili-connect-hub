@@ -45,7 +45,11 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { roles } = useCurrentUser();
   const isActive = (u: string) => (u === "/" ? currentPath === "/" : currentPath.startsWith(u));
-  const visible = items.filter((it) => !it.hideForRoles?.some((r) => roles.includes(r)));
+  const visible = items.filter((it) => {
+    if (it.hideForRoles?.some((r) => roles.includes(r))) return false;
+    if (it.onlyForRoles && !it.onlyForRoles.some((r) => roles.includes(r))) return false;
+    return true;
+  });
 
   return (
     <Sidebar collapsible="icon">
