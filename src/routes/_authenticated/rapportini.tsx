@@ -39,6 +39,7 @@ function fullName(r: any) {
 
 function RapportiniPage() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<RapportinoFilters>({ includeArchived: false });
   const [archTarget, setArchTarget] = useState<any | null>(null);
