@@ -32,7 +32,7 @@ function RapportiniPage() {
   const { data: items = [] } = useQuery({
     queryKey: ["rapportini"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("rapportini").select("*, commesse(codice, denominazione)").order("data", { ascending: false });
+      const { data, error } = await supabase.from("rapportini").select("*, commesse!rapportini_commessa_id_fkey(codice, denominazione)").order("data", { ascending: false });
       if (error) throw error;
       return data as any[];
     },
