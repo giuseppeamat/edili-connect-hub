@@ -1850,8 +1850,13 @@ export type Database = {
       }
       rapportini: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           archived_at: string | null
           archived_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           cantiere_id: string | null
           commessa_id: string
           created_at: string
@@ -1868,13 +1873,23 @@ export type Database = {
           ore: number
           organization_id: string
           pausa_minuti: number
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
           stato: string
+          submitted_at: string | null
+          submitted_by: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cantiere_id?: string | null
           commessa_id: string
           created_at?: string
@@ -1891,13 +1906,23 @@ export type Database = {
           ore?: number
           organization_id: string
           pausa_minuti?: number
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           stato?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cantiere_id?: string | null
           commessa_id?: string
           created_at?: string
@@ -1914,7 +1939,12 @@ export type Database = {
           ore?: number
           organization_id?: string
           pausa_minuti?: number
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
           stato?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -2129,6 +2159,16 @@ export type Database = {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
       }
+      approve_rapportino: {
+        Args: { _expected_updated_at: string; _id: string; _note?: string }
+        Returns: {
+          id: string
+          stato: string
+          transition_at: string
+          transition_by: string
+          updated_at: string
+        }[]
+      }
       archive_commessa_budget_voce: {
         Args: {
           _expected_updated_at: string
@@ -2201,6 +2241,16 @@ export type Database = {
       can_manage_commessa_budget: {
         Args: { _commessa_id: string; _operation: string }
         Returns: boolean
+      }
+      cancel_rapportino: {
+        Args: { _expected_updated_at: string; _id: string; _reason: string }
+        Returns: {
+          id: string
+          stato: string
+          transition_at: string
+          transition_by: string
+          updated_at: string
+        }[]
       }
       change_commessa_stato: {
         Args: {
@@ -2395,6 +2445,26 @@ export type Database = {
         Args: { _commessa_id: string }
         Returns: undefined
       }
+      reject_rapportino: {
+        Args: { _expected_updated_at: string; _id: string; _reason: string }
+        Returns: {
+          id: string
+          stato: string
+          transition_at: string
+          transition_by: string
+          updated_at: string
+        }[]
+      }
+      reopen_rejected_rapportino: {
+        Args: { _expected_updated_at: string; _id: string }
+        Returns: {
+          id: string
+          stato: string
+          transition_at: string
+          transition_by: string
+          updated_at: string
+        }[]
+      }
       reorder_commessa_budget_voci: {
         Args: {
           _commessa_id: string
@@ -2482,6 +2552,16 @@ export type Database = {
           _motivazione?: string
         }
         Returns: string
+      }
+      submit_rapportino: {
+        Args: { _expected_updated_at: string; _id: string }
+        Returns: {
+          id: string
+          stato: string
+          transition_at: string
+          transition_by: string
+          updated_at: string
+        }[]
       }
       update_commessa_budget_voce: {
         Args: {
