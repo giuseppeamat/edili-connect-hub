@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MapPin, Calendar, Archive, ArchiveRestore, MoreHorizontal, UserRound, Lock, Unlock, AlertTriangle } from "lucide-react";
+import { Plus, MapPin, Calendar, Archive, ArchiveRestore, MoreHorizontal, UserRound, Lock, Unlock, AlertTriangle, ArrowRight } from "lucide-react";
 import { eur, dateIt } from "@/lib/format";
 import { toast } from "sonner";
 import { useCurrentRole } from "@/hooks/use-current-role";
@@ -390,8 +390,14 @@ function CommessePage() {
                   </div>
                 )}
 
-                {hasAnyAction && (
-                  <div className="pt-2 border-t flex justify-end gap-1">
+                <div className="pt-2 border-t flex flex-wrap justify-between gap-2">
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/commesse/$commessaId" params={{ commessaId: c.id }}>
+                      Apri <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                  </Button>
+                  {hasAnyAction && (
+                    <div className="flex justify-end gap-1">
                     {canStateMenu && transizioni.length > 0 && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -438,8 +444,9 @@ function CommessePage() {
                         </DropdownMenu>
                       )
                     )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           );
