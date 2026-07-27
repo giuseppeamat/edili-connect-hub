@@ -1850,10 +1850,15 @@ export type Database = {
       }
       rapportini: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           cantiere_id: string | null
-          commessa_id: string | null
+          commessa_id: string
           created_at: string
+          created_by: string | null
           data: string
+          descrizione_lavori: string | null
+          fase_id: string | null
           foto_urls: string[] | null
           id: string
           lavorazione: string | null
@@ -1862,13 +1867,21 @@ export type Database = {
           ora_inizio: string | null
           ore: number
           organization_id: string
+          pausa_minuti: number
+          stato: string
+          updated_at: string
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
-          commessa_id?: string | null
+          commessa_id: string
           created_at?: string
+          created_by?: string | null
           data?: string
+          descrizione_lavori?: string | null
+          fase_id?: string | null
           foto_urls?: string[] | null
           id?: string
           lavorazione?: string | null
@@ -1877,13 +1890,21 @@ export type Database = {
           ora_inizio?: string | null
           ore?: number
           organization_id: string
+          pausa_minuti?: number
+          stato?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
-          commessa_id?: string | null
+          commessa_id?: string
           created_at?: string
+          created_by?: string | null
           data?: string
+          descrizione_lavori?: string | null
+          fase_id?: string | null
           foto_urls?: string[] | null
           id?: string
           lavorazione?: string | null
@@ -1892,6 +1913,9 @@ export type Database = {
           ora_inizio?: string | null
           ore?: number
           organization_id?: string
+          pausa_minuti?: number
+          stato?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1903,18 +1927,25 @@ export type Database = {
             referencedColumns: ["id", "organization_id"]
           },
           {
-            foreignKeyName: "rapportini_commessa_id_fkey"
-            columns: ["commessa_id"]
-            isOneToOne: false
-            referencedRelation: "commesse"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "rapportini_commessa_org_fkey"
             columns: ["commessa_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "commesse"
             referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rapportini_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rapportini_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi_ritardi"
+            referencedColumns: ["fase_id", "organization_id"]
           },
           {
             foreignKeyName: "rapportini_organization_id_fkey"
@@ -2087,6 +2118,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      _rap_current_profile: {
+        Args: never
+        Returns: {
+          organization_id: string
+          user_id: string
+        }[]
+      }
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
@@ -2139,6 +2177,14 @@ export type Database = {
           _expected_updated_at: string
           _id: string
           _motivazione?: string
+        }
+        Returns: string
+      }
+      archive_rapportino: {
+        Args: {
+          _expected_updated_at: string
+          _id: string
+          _motivazione: string
         }
         Returns: string
       }
@@ -2273,6 +2319,28 @@ export type Database = {
         Args: { _motivo?: string; _preventivo_id: string }
         Returns: string
       }
+      create_rapportino: {
+        Args: {
+          _cantiere_id?: string
+          _commessa_id: string
+          _data: string
+          _descrizione_lavori: string
+          _fase_id?: string
+          _foto_urls?: string[]
+          _note?: string
+          _ora_fine?: string
+          _ora_inizio?: string
+          _ore: number
+          _override_motivo?: string
+          _override_ore?: boolean
+          _pausa_minuti?: number
+          _user_id: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
+      }
       current_organization_id: { Args: never; Returns: string }
       distribuisci_pesi_equamente: {
         Args: { _commessa_id: string }
@@ -2379,6 +2447,10 @@ export type Database = {
         }
       }
       restore_commessa_fase: {
+        Args: { _expected_updated_at: string; _id: string }
+        Returns: string
+      }
+      restore_rapportino: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
       }
@@ -2519,6 +2591,29 @@ export type Database = {
           _expected_updated_at: string
           _motivazione?: string
           _nuovo_avanzamento: number
+        }
+        Returns: string
+      }
+      update_rapportino: {
+        Args: {
+          _cantiere_id?: string
+          _clear_cantiere?: boolean
+          _clear_fase?: boolean
+          _clear_note?: boolean
+          _clear_ora_fine?: boolean
+          _clear_ora_inizio?: boolean
+          _data?: string
+          _descrizione_lavori?: string
+          _expected_updated_at: string
+          _fase_id?: string
+          _id: string
+          _note?: string
+          _ora_fine?: string
+          _ora_inizio?: string
+          _ore?: number
+          _override_motivo?: string
+          _override_ore?: boolean
+          _pausa_minuti?: number
         }
         Returns: string
       }
