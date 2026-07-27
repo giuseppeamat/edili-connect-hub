@@ -394,6 +394,7 @@ export type Database = {
           is_locked: boolean
           note: string | null
           organization_id: string
+          periodo_riferimento: string | null
           posizione: number
           preventivo_voce_id: string | null
           prezzo_unitario: number | null
@@ -424,6 +425,7 @@ export type Database = {
           is_locked?: boolean
           note?: string | null
           organization_id: string
+          periodo_riferimento?: string | null
           posizione?: number
           preventivo_voce_id?: string | null
           prezzo_unitario?: number | null
@@ -454,6 +456,7 @@ export type Database = {
           is_locked?: boolean
           note?: string | null
           organization_id?: string
+          periodo_riferimento?: string | null
           posizione?: number
           preventivo_voce_id?: string | null
           prezzo_unitario?: number | null
@@ -1337,6 +1340,59 @@ export type Database = {
         }
         Relationships: []
       }
+      personale_costi_orari: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          costo_orario: number
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          organization_id: string
+          updated_at: string
+          user_id: string
+          valido_al: string | null
+          valido_dal: string
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          costo_orario: number
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          organization_id: string
+          updated_at?: string
+          user_id: string
+          valido_al?: string | null
+          valido_dal: string
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          costo_orario?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          organization_id?: string
+          updated_at?: string
+          user_id?: string
+          valido_al?: string | null
+          valido_dal?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personale_costi_orari_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       preventivi: {
         Row: {
           annullato_at: string | null
@@ -1986,6 +2042,135 @@ export type Database = {
           },
         ]
       }
+      rapportini_costi: {
+        Row: {
+          budget_voce_id: string | null
+          cantiere_id: string | null
+          commessa_id: string
+          contabilizzato_at: string
+          contabilizzato_by: string
+          costo_orario_applicato: number
+          costo_orario_id: string | null
+          costo_totale: number
+          created_at: string
+          fase_id: string | null
+          id: string
+          motivo_storno: string | null
+          ore: number
+          organization_id: string
+          periodo_riferimento: string
+          rapportino_id: string
+          stato: string
+          stornato_at: string | null
+          stornato_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_voce_id?: string | null
+          cantiere_id?: string | null
+          commessa_id: string
+          contabilizzato_at?: string
+          contabilizzato_by: string
+          costo_orario_applicato: number
+          costo_orario_id?: string | null
+          costo_totale: number
+          created_at?: string
+          fase_id?: string | null
+          id?: string
+          motivo_storno?: string | null
+          ore: number
+          organization_id: string
+          periodo_riferimento: string
+          rapportino_id: string
+          stato: string
+          stornato_at?: string | null
+          stornato_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_voce_id?: string | null
+          cantiere_id?: string | null
+          commessa_id?: string
+          contabilizzato_at?: string
+          contabilizzato_by?: string
+          costo_orario_applicato?: number
+          costo_orario_id?: string | null
+          costo_totale?: number
+          created_at?: string
+          fase_id?: string | null
+          id?: string
+          motivo_storno?: string | null
+          ore?: number
+          organization_id?: string
+          periodo_riferimento?: string
+          rapportino_id?: string
+          stato?: string
+          stornato_at?: string | null
+          stornato_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapportini_costi_costo_orario_id_fkey"
+            columns: ["costo_orario_id"]
+            isOneToOne: false
+            referencedRelation: "personale_costi_orari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_costi_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rc_bv_fk"
+            columns: ["budget_voce_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_budget_voci"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_cantiere_fk"
+            columns: ["cantiere_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_commessa_fk"
+            columns: ["commessa_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_fase_fk"
+            columns: ["fase_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi_ritardi"
+            referencedColumns: ["fase_id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_rap_fk"
+            columns: ["rapportino_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini"
+            referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2155,6 +2340,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      _recalculate_labor_budget_voce: {
+        Args: {
+          _cantiere_id: string
+          _commessa_id: string
+          _fase_id: string
+          _periodo: string
+        }
+        Returns: string
+      }
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
@@ -2196,6 +2390,7 @@ export type Database = {
           is_locked: boolean
           note: string | null
           organization_id: string
+          periodo_riferimento: string | null
           posizione: number
           preventivo_voce_id: string | null
           prezzo_unitario: number | null
@@ -2218,6 +2413,10 @@ export type Database = {
           _id: string
           _motivazione?: string
         }
+        Returns: string
+      }
+      archive_personale_costo_orario: {
+        Args: { _expected_updated_at: string; _id: string }
         Returns: string
       }
       archive_rapportino: {
@@ -2279,6 +2478,31 @@ export type Database = {
         }
         Returns: undefined
       }
+      contabilizza_rapportini_pendenti: {
+        Args: {
+          _commessa_id?: string
+          _date_from?: string
+          _date_to?: string
+          _limit?: number
+          _user_id?: string
+        }
+        Returns: {
+          budget_manuale: number
+          contabilizzati: number
+          errori: number
+          gia_contabilizzati: number
+          processati: number
+          senza_tariffa: number
+        }[]
+      }
+      contabilizza_rapportino_manodopera: {
+        Args: { _rapportino_id: string }
+        Returns: {
+          rapportino_costo_id: string
+          stato: string
+          warning: string
+        }[]
+      }
       convert_preventivo_to_commessa: {
         Args: {
           _data_fine_prevista?: string
@@ -2332,6 +2556,7 @@ export type Database = {
           is_locked: boolean
           note: string | null
           organization_id: string
+          periodo_riferimento: string | null
           posizione: number
           preventivo_voce_id: string | null
           prezzo_unitario: number | null
@@ -2359,6 +2584,19 @@ export type Database = {
           _peso_percentuale?: number
           _responsabile_id?: string
           _titolo: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
+      }
+      create_personale_costo_orario: {
+        Args: {
+          _costo_orario: number
+          _note?: string
+          _user_id: string
+          _valido_al?: string
+          _valido_dal: string
         }
         Returns: {
           id: string
@@ -2395,6 +2633,29 @@ export type Database = {
       distribuisci_pesi_equamente: {
         Args: { _commessa_id: string }
         Returns: number
+      }
+      get_personale_costo_orario_at_date: {
+        Args: { _data: string; _org: string; _user_id: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          costo_orario: number
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          organization_id: string
+          updated_at: string
+          user_id: string
+          valido_al: string | null
+          valido_dal: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "personale_costi_orari"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       has_any_role: {
         Args: {
@@ -2500,6 +2761,7 @@ export type Database = {
           is_locked: boolean
           note: string | null
           organization_id: string
+          periodo_riferimento: string | null
           posizione: number
           preventivo_voce_id: string | null
           prezzo_unitario: number | null
@@ -2517,6 +2779,10 @@ export type Database = {
         }
       }
       restore_commessa_fase: {
+        Args: { _expected_updated_at: string; _id: string }
+        Returns: string
+      }
+      restore_personale_costo_orario: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
       }
@@ -2604,6 +2870,7 @@ export type Database = {
           is_locked: boolean
           note: string | null
           organization_id: string
+          periodo_riferimento: string | null
           posizione: number
           preventivo_voce_id: string | null
           prezzo_unitario: number | null
@@ -2671,6 +2938,17 @@ export type Database = {
           _expected_updated_at: string
           _motivazione?: string
           _nuovo_avanzamento: number
+        }
+        Returns: string
+      }
+      update_personale_costo_orario: {
+        Args: {
+          _costo_orario: number
+          _expected_updated_at: string
+          _id: string
+          _note: string
+          _valido_al: string
+          _valido_dal: string
         }
         Returns: string
       }
