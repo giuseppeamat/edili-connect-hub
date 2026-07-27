@@ -26,7 +26,7 @@ import {
 } from "@/lib/commesse.functions";
 
 
-export const Route = createFileRoute("/_authenticated/commesse")({
+export const Route = createFileRoute("/_authenticated/commesse/")({
   head: () => ({
     meta: [
       { title: "Commesse e cantieri — CantiereOS" },
