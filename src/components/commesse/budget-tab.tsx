@@ -134,6 +134,8 @@ export function BudgetTab({
     qc.invalidateQueries({ queryKey: ["commessa-budget-summary", commessaId] });
     qc.invalidateQueries({ queryKey: ["commessa-budget-voci", commessaId] });
     qc.invalidateQueries({ queryKey: ["commessa-detail", commessaId] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+    qc.invalidateQueries({ queryKey: ["commesse-board"] });
   };
 
   const [voceDlg, setVoceDlg] = useState<{ open: boolean; voce?: any }>({ open: false });
