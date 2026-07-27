@@ -1015,7 +1015,7 @@ export const getDashboardOverview = createServerFn({ method: "GET" })
     const canEcon = hasAny(roles, ECON_ROLES);
 
     const econSel = canEcon
-      ? "id, stato, importo, costi_sostenuti, budget_costi"
+      ? "id, stato, importo, ricavi_previsti, costi_previsti, costi_sostenuti, budget_costi, margine_previsto"
       : "id, stato";
 
     const [prev, comm, rapp, doc] = await Promise.all([
@@ -1043,9 +1043,18 @@ export const getDashboardOverview = createServerFn({ method: "GET" })
     let marginePrevisto: number | null = null;
     let salDaEmettere: number | null = null;
     if (canEcon) {
-      valoreCommesse = commesseAttive.reduce((s: number, c: any) => s + Number(c.importo ?? 0), 0);
+      valoreCommesse = commesseAttive.reduce(
+        (s: number, c: any) => s + Number(c.ricavi_previsti ?? c.importo ?? 0),
+        0,
+      );
       costiSostenuti = commesseAttive.reduce((s: number, c: any) => s + Number(c.costi_sostenuti ?? 0), 0);
-      marginePrevisto = valoreCommesse - commesseAttive.reduce((s: number, c: any) => s + Number(c.budget_costi ?? 0), 0);
+      marginePrevisto = commesseAttive.reduce((s: number, c: any) => {
+        const m = c.margine_previsto;
+        if (m !== null && m !== undefined) return s + Number(m);
+        const r = Number(c.ricavi_previsti ?? c.importo ?? 0);
+        const cp = Number(c.costi_previsti ?? c.budget_costi ?? 0);
+        return s + (r - cp);
+      }, 0);
       salDaEmettere = commesseAttive.filter((c: any) => Number(c.costi_sostenuti) > 0).length;
     }
 
