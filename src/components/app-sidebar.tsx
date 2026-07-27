@@ -10,6 +10,7 @@ import {
   CalendarClock,
   Shield,
   Building2,
+  Wallet,
 } from "lucide-react";
 import {
   Sidebar,
