@@ -20,6 +20,7 @@ import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
+import { Route as AuthenticatedCostiPersonaleRouteImport } from './routes/_authenticated/costi-personale'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
 import { Route as AuthenticatedCommesseIndexRouteImport } from './routes/_authenticated/commesse.index'
@@ -84,6 +85,12 @@ const AuthenticatedDocumentiRoute = AuthenticatedDocumentiRouteImport.update({
   path: '/documenti',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCostiPersonaleRoute =
+  AuthenticatedCostiPersonaleRouteImport.update({
+    id: '/costi-personale',
+    path: '/costi-personale',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -132,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -150,6 +158,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
+  '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -171,6 +180,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
+  '/_authenticated/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/audit'
+    | '/costi-personale'
     | '/documenti'
     | '/fornitori'
     | '/organizzazione'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/audit'
+    | '/costi-personale'
     | '/documenti'
     | '/fornitori'
     | '/organizzazione'
@@ -231,6 +243,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/reset-password'
     | '/_authenticated/audit'
+    | '/_authenticated/costi-personale'
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
     | '/_authenticated/organizzazione'
@@ -332,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDocumentiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/costi-personale': {
+      id: '/_authenticated/costi-personale'
+      path: '/costi-personale'
+      fullPath: '/costi-personale'
+      preLoaderRoute: typeof AuthenticatedCostiPersonaleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/audit': {
       id: '/_authenticated/audit'
       path: '/audit'
@@ -386,6 +406,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
+  AuthenticatedCostiPersonaleRoute: typeof AuthenticatedCostiPersonaleRoute
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
@@ -403,6 +424,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
+  AuthenticatedCostiPersonaleRoute: AuthenticatedCostiPersonaleRoute,
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
