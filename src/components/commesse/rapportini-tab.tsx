@@ -100,6 +100,7 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
 
 function RowActions({ row, onDone }: any) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const archFn = useServerFn(archiveRapportino);
@@ -109,8 +110,12 @@ function RowActions({ row, onDone }: any) {
     onSuccess: () => { toast.success("Rapportino archiviato"); setArchOpen(false); setMotivo(""); qc.invalidateQueries({ queryKey: rapportiniKeys.all }); onDone?.(); },
     onError: (e: any) => toast.error(e.message),
   });
+  const goto = () => navigate({ to: "/rapportini/$rapportinoId", params: { rapportinoId: row.id } });
   return (
-    <tr className={`border-t ${row.archived_at ? "opacity-60" : ""}`}>
+    <tr
+      className={`border-t cursor-pointer hover:bg-muted/40 ${row.archived_at ? "opacity-60" : ""}`}
+      onClick={goto}
+    >
       <td className="p-3">{dateIt(row.data)}</td>
       <td className="p-3">{fullName(row.user)}</td>
       <td className="p-3 text-xs">{row.cantiere ? `${row.cantiere.codice} — ${row.cantiere.nome}` : "—"}</td>
@@ -129,7 +134,7 @@ function RowActions({ row, onDone }: any) {
         )}
       </td>
       <td className="p-3"><StatoBadge stato={row.stato} archived={!!row.archived_at} /></td>
-      <td className="p-3 text-right">
+      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
         <RapportinoActionsMenu row={row} onArchive={() => setArchOpen(true)} />
         <Dialog open={archOpen} onOpenChange={setArchOpen}>
           <DialogContent>
