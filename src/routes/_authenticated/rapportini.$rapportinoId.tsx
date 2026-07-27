@@ -1,0 +1,246 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { toast } from "sonner";
+import { PageHeader } from "@/components/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
+import { dateIt } from "@/lib/format";
+import { rapportiniKeys } from "@/lib/rapportini.keys";
+import { getRapportino, archiveRapportino } from "@/lib/rapportini.functions";
+import { getRapportinoCosto } from "@/lib/personale-costi.functions";
+import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
+import { useMutation } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/use-current-user";
+
+export const Route = createFileRoute("/_authenticated/rapportini/$rapportinoId")({
+  head: () => ({
+    meta: [
+      { title: "Dettaglio rapportino — CantiereOS" },
+      { name: "description", content: "Dettaglio del rapportino operativo." },
+    ],
+  }),
+  component: RapportinoDetailPage,
+});
+
+function fullName(r: any) {
+  if (!r) return "—";
+  const s = [r?.nome, r?.cognome].filter(Boolean).join(" ").trim();
+  return s || r?.email || "Utente";
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="text-xs uppercase text-muted-foreground tracking-wide">{label}</div>
+      <div className="text-sm mt-1">{children ?? "—"}</div>
+    </div>
+  );
+}
+
+function RapportinoDetailPage() {
+  const { rapportinoId } = Route.useParams();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const user = useCurrentUser();
+
+  const getFn = useServerFn(getRapportino);
+  const costFn = useServerFn(getRapportinoCosto);
+  const archFn = useServerFn(archiveRapportino);
+
+  const { data: r, isLoading, error } = useQuery({
+    queryKey: rapportiniKeys.detail(rapportinoId),
+    queryFn: async () => await getFn({ data: { id: rapportinoId } }),
+  });
+
+  const canViewEcon = user.has(
+    "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa",
+  );
+  const { data: costi = [] } = useQuery({
+    queryKey: ["rapportino", rapportinoId, "costi"],
+    queryFn: async () => (await costFn({ data: { rapportino_id: rapportinoId } })) ?? [],
+    enabled: canViewEcon && !!r,
+  });
+
+  const [archOpen, setArchOpen] = useState(false);
+  const [motivo, setMotivo] = useState("");
+  const arch = useMutation({
+    mutationFn: async () => await archFn({ data: { id: r!.id, expected_updated_at: r!.updated_at, motivazione: motivo.trim() } }),
+    onSuccess: () => {
+      toast.success("Rapportino archiviato");
+      setArchOpen(false); setMotivo("");
+      qc.invalidateQueries({ queryKey: rapportiniKeys.all });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  if (isLoading) {
+    return <div className="p-6 text-sm text-muted-foreground">Caricamento…</div>;
+  }
+  if (error || !r) {
+    return (
+      <div className="p-6">
+        <Button variant="outline" size="sm" onClick={() => navigate({ to: "/rapportini" })}>
+          <ArrowLeft className="h-4 w-4 mr-1" /> Torna ai rapportini
+        </Button>
+        <div className="mt-4 text-sm text-destructive">
+          {(error as any)?.message ?? "Rapportino non disponibile o accesso negato."}
+        </div>
+      </div>
+    );
+  }
+
+  const activeCost = (costi as any[]).find((c) => c.stato === "contabilizzato" && !c.stornato_at);
+
+  return (
+    <div>
+      <PageHeader
+        title={`Rapportino del ${dateIt(r.data)}`}
+        description={`${fullName(r.user)} · ${Number(r.ore ?? 0).toFixed(2)} ore`}
+        actions={
+          <div className="flex gap-2 items-center">
+            <StatoBadge stato={r.stato} archived={!!r.archived_at} />
+            <RapportinoActionsMenu row={r as any} onArchive={() => setArchOpen(true)} />
+            <Button variant="outline" size="sm" onClick={() => navigate({ to: "/rapportini" })}>
+              <ArrowLeft className="h-4 w-4 mr-1" /> Indietro
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <CardContent className="p-4 grid gap-4 grid-cols-2">
+            <Field label="Data">{dateIt(r.data)}</Field>
+            <Field label="Stato"><StatoBadge stato={r.stato} archived={!!r.archived_at} /></Field>
+            <Field label="Autore">{fullName(r.user)}</Field>
+            <Field label="Ore">{Number(r.ore ?? 0).toFixed(2)}</Field>
+            <Field label="Ora inizio">{r.ora_inizio ?? "—"}</Field>
+            <Field label="Ora fine">{r.ora_fine ?? "—"}</Field>
+            <Field label="Pausa (min)">{r.pausa_minuti ?? 0}</Field>
+            <Field label="Creato il">{r.created_at ? dateIt(r.created_at) : "—"}</Field>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 grid gap-4 grid-cols-1">
+            <Field label="Commessa">
+              {r.commessa ? (
+                <Link
+                  to="/commesse/$commessaId"
+                  params={{ commessaId: r.commessa_id }}
+                  className="text-primary hover:underline"
+                >
+                  <span className="font-mono">{r.commessa.codice}</span> — {r.commessa.denominazione}
+                </Link>
+              ) : "—"}
+            </Field>
+            <Field label="Cantiere">
+              {r.cantiere ? `${r.cantiere.codice} — ${r.cantiere.nome}` : "—"}
+            </Field>
+            <Field label="Fase">{r.fase?.titolo ?? "—"}</Field>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-4">
+        <CardContent className="p-4 space-y-4">
+          <Field label="Descrizione lavori">
+            <div className="whitespace-pre-wrap">{r.descrizione_lavori ?? r.lavorazione ?? "—"}</div>
+          </Field>
+          <Field label="Note">
+            <div className="whitespace-pre-wrap">{r.note ?? "—"}</div>
+          </Field>
+          {r.stato === "respinto" && r.rejection_reason && (
+            <Field label="Motivo rifiuto">
+              <div className="text-rose-700">{r.rejection_reason}</div>
+            </Field>
+          )}
+          {r.stato === "annullato" && r.cancellation_reason && (
+            <Field label="Motivo annullamento">
+              <div className="text-zinc-700">{r.cancellation_reason}</div>
+            </Field>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardContent className="p-4">
+          <div className="text-sm font-medium mb-3">Timeline workflow</div>
+          <ol className="space-y-2 text-sm">
+            <li>
+              <span className="text-muted-foreground">Creato:</span>{" "}
+              {r.created_at ? dateIt(r.created_at) : "—"}
+            </li>
+            {r.submitted_at && (
+              <li>
+                <span className="text-muted-foreground">Inviato:</span> {dateIt(r.submitted_at)}
+              </li>
+            )}
+            {r.approved_at && (
+              <li>
+                <span className="text-emerald-700">Approvato:</span> {dateIt(r.approved_at)}
+              </li>
+            )}
+            {r.rejected_at && (
+              <li>
+                <span className="text-rose-700">Respinto:</span> {dateIt(r.rejected_at)}
+              </li>
+            )}
+            {r.cancelled_at && (
+              <li>
+                <span className="text-zinc-700">Annullato:</span> {dateIt(r.cancelled_at)}
+              </li>
+            )}
+            {r.archived_at && (
+              <li>
+                <span className="text-muted-foreground">Archiviato:</span> {dateIt(r.archived_at)}
+              </li>
+            )}
+          </ol>
+        </CardContent>
+      </Card>
+
+      {canViewEcon && (
+        <Card className="mt-4">
+          <CardContent className="p-4">
+            <div className="text-sm font-medium mb-3">Contabilizzazione manodopera</div>
+            {activeCost ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <Field label="Costo orario">€ {Number(activeCost.costo_orario_applicato ?? 0).toFixed(2)}</Field>
+                <Field label="Ore">{Number(activeCost.ore ?? 0).toFixed(2)}</Field>
+                <Field label="Costo totale">€ {Number(activeCost.costo_totale ?? 0).toFixed(2)}</Field>
+                <Field label="Periodo">{activeCost.periodo_riferimento ?? "—"}</Field>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {r.stato === "approvato"
+                  ? "Nessuna contabilizzazione attiva per questo rapportino."
+                  : "La contabilizzazione avviene alla prima approvazione."}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={archOpen} onOpenChange={setArchOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Archivia rapportino</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label>Motivazione *</Label>
+            <Textarea value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="Motivo dell'archiviazione…" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchOpen(false)}>Chiudi</Button>
+            <Button onClick={() => arch.mutate()} disabled={!motivo.trim() || arch.isPending}>Archivia</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
