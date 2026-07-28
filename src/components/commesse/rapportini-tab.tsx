@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -100,7 +100,6 @@ export function CommessaRapportiniTab({ commessaId, commessaClosed, commessaArch
 
 function RowActions({ row, onDone }: any) {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const archFn = useServerFn(archiveRapportino);
@@ -110,14 +109,28 @@ function RowActions({ row, onDone }: any) {
     onSuccess: () => { toast.success("Rapportino archiviato"); setArchOpen(false); setMotivo(""); qc.invalidateQueries({ queryKey: rapportiniKeys.all }); onDone?.(); },
     onError: (e: any) => toast.error(e.message),
   });
-  const goto = () => navigate({ to: "/rapportini/$rapportinoId", params: { rapportinoId: row.id } });
   return (
     <tr
-      className={`border-t cursor-pointer hover:bg-muted/40 ${row.archived_at ? "opacity-60" : ""}`}
-      onClick={goto}
+      className={`border-t hover:bg-muted/40 ${row.archived_at ? "opacity-60" : ""}`}
     >
-      <td className="p-3">{dateIt(row.data)}</td>
-      <td className="p-3">{fullName(row.user)}</td>
+      <td className="p-3">
+        <Link
+          to="/rapportini/$rapportinoId"
+          params={{ rapportinoId: row.id }}
+          className="block font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+        >
+          {dateIt(row.data)}
+        </Link>
+      </td>
+      <td className="p-3">
+        <Link
+          to="/rapportini/$rapportinoId"
+          params={{ rapportinoId: row.id }}
+          className="block text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+        >
+          {fullName(row.user)}
+        </Link>
+      </td>
       <td className="p-3 text-xs">{row.cantiere ? `${row.cantiere.codice} — ${row.cantiere.nome}` : "—"}</td>
       <td className="p-3 text-xs">{row.fase?.titolo ?? "—"}</td>
       <td className="p-3 text-right">
@@ -125,7 +138,13 @@ function RowActions({ row, onDone }: any) {
         {isAnomaly && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
       </td>
       <td className="p-3 text-muted-foreground truncate max-w-xs">
-        {row.descrizione_lavori ?? row.lavorazione ?? "—"}
+        <Link
+          to="/rapportini/$rapportinoId"
+          params={{ rapportinoId: row.id }}
+          className="block truncate text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+        >
+          {row.descrizione_lavori ?? row.lavorazione ?? "—"}
+        </Link>
         {row.stato === "respinto" && row.rejection_reason && (
           <div className="text-xs text-rose-700 mt-1">Rifiuto: {row.rejection_reason}</div>
         )}
