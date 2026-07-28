@@ -303,15 +303,38 @@ export const getRapportinoCosto = createServerFn({ method: "POST" })
         ["proprietario", "amministratore", "amministrazione"].includes(r),
       );
       if (!admin) return null;
+      // Filtro rapportino/org PRIMA della query admin (S5B3.6 Fase 3)
+      const { data: rapCheck } = await context.supabase
+        .from("rapportini")
+        .select("id")
+        .eq("organization_id", org)
+        .eq("id", data.rapportino_id)
+        .maybeSingle();
+      if (!rapCheck) return [];
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: rows, error } = await supabaseAdmin
         .from("rapportini_costi")
-        .select("*")
+        .select(
+          "id, rapportino_id, stato, ore, costo_orario_applicato, costo_totale, contabilizzato_at, stornato_at, motivo_storno, budget_voce_id",
+        )
         .eq("organization_id", org)
         .eq("rapportino_id", data.rapportino_id)
-        .order("created_at", { ascending: false });
+        .order("contabilizzato_at", { ascending: false });
       if (error) throw error;
-      return rows ?? [];
+      // DTO minimo: solo campi utili alla card, nessun user_id/created_by/costo_orario_id/campi interni
+      return (rows ?? []).map((r: any) => ({
+        id: r.id,
+        rapportino_id: r.rapportino_id,
+        stato: r.stato,
+        ore: r.ore,
+        costo_orario_applicato: r.costo_orario_applicato,
+        costo_totale: r.costo_totale,
+        contabilizzato_at: r.contabilizzato_at,
+        stornato_at: r.stornato_at,
+        motivo_storno: r.motivo_storno,
+        budget_voce_id: r.budget_voce_id,
+      }));
     } catch (e) { throw new Error(mapServerError(e)); }
   });
+
 

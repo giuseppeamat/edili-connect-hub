@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -184,12 +184,44 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
   const qc = useQueryClient();
   const user = useCurrentUser();
   const createFn = useServerFn(createRapportino);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const tomorrowIso = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
   const [selCommessa, setSelCommessa] = useState<string | undefined>(commessaId ?? undefined);
   const [cantiereId, setCantiereId] = useState<string | undefined>();
   const [faseId, setFaseId] = useState<string | undefined>();
   const [oreValue, setOreValue] = useState<string>("");
   const [overrideOre, setOverrideOre] = useState(false);
   const [overrideMotivo, setOverrideMotivo] = useState("");
+  const [dataValue, setDataValue] = useState<string>(todayIso);
+  const [oraInizio, setOraInizio] = useState<string>("");
+  const [oraFine, setOraFine] = useState<string>("");
+  const [pausaMin, setPausaMin] = useState<string>("0");
+  const [descrizione, setDescrizione] = useState<string>("");
+  const [noteVal, setNoteVal] = useState<string>("");
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
+  const [commessaError, setCommessaError] = useState<string | null>(null);
+
+  // Reset completo del form ad ogni apertura del dialog (fix S5B3.6 Fase 2)
+  useEffect(() => {
+    setSelCommessa(commessaId ?? undefined);
+    setCantiereId(undefined);
+    setFaseId(undefined);
+    setOreValue("");
+    setOverrideOre(false);
+    setOverrideMotivo("");
+    setDataValue(todayIso);
+    setOraInizio("");
+    setOraFine("");
+    setPausaMin("0");
+    setDescrizione("");
+    setNoteVal("");
+    setDataError(null);
+    setDescError(null);
+    setCommessaError(null);
+    create.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commessaId]);
 
   const cantieriFn = useServerFn(listRapportinoAssignableCantieri);
   const fasiFn = useServerFn(listRapportinoAssignableFasi);
@@ -216,29 +248,48 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onCreated();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => {
+      const msg = (e?.message ?? "").toString();
+      // Map Zod / RPC errors relativi alla data verso l'errore inline
+      if (/data futura|non può essere successiva|maxIso|data\b.*(futura|domani|limite)/i.test(msg)) {
+        setDataError("La data del rapportino non può essere successiva a domani.");
+      }
+      toast.error(msg || "Errore imprevisto");
+    },
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    setDataError(null); setDescError(null); setCommessaError(null);
+    const data = dataValue;
+    const descr = descrizione.trim();
+
+    // validazione client (fix S5B3.6 Fase 1)
+    let hasError = false;
+    if (!selCommessa) { setCommessaError("Seleziona una commessa"); hasError = true; }
+    if (!descr) { setDescError("Descrizione lavori obbligatoria"); hasError = true; }
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      setDataError("Inserisci una data valida."); hasError = true;
+    } else if (data > tomorrowIso) {
+      setDataError("La data del rapportino non può essere successiva a domani."); hasError = true;
+    }
+    if (hasError) return;
+
     const payload: any = {
       commessa_id: selCommessa,
       user_id: user.userId,
-      data: String(fd.get("data") || ""),
-      ore: Number(String(fd.get("ore") || "0").replace(",", ".")),
-      descrizione_lavori: String(fd.get("descrizione_lavori") || "").trim(),
+      data,
+      ore: Number(oreValue.replace(",", ".") || "0"),
+      descrizione_lavori: descr,
       cantiere_id: cantiereId ?? null,
       fase_id: faseId ?? null,
-      ora_inizio: (fd.get("ora_inizio") as string) || null,
-      ora_fine: (fd.get("ora_fine") as string) || null,
-      pausa_minuti: Number(fd.get("pausa_minuti") || 0),
-      note: (fd.get("note") as string) || null,
+      ora_inizio: oraInizio || null,
+      ora_fine: oraFine || null,
+      pausa_minuti: Number(pausaMin || 0),
+      note: noteVal || null,
       override_ore: needsOverride ? overrideOre : false,
       override_motivo: needsOverride && overrideOre ? overrideMotivo : null,
     };
-    if (!payload.commessa_id) { toast.error("Seleziona una commessa"); return; }
-    if (!payload.descrizione_lavori) { toast.error("Descrizione lavori obbligatoria"); return; }
     create.mutate(payload);
   };
 
@@ -249,7 +300,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
         {allowCommessaSelect ? (
           <div>
             <Label>Commessa *</Label>
-            <Select value={selCommessa} onValueChange={(v) => { setSelCommessa(v); setCantiereId(undefined); setFaseId(undefined); }}>
+            <Select value={selCommessa} onValueChange={(v) => { setSelCommessa(v); setCantiereId(undefined); setFaseId(undefined); setCommessaError(null); }}>
               <SelectTrigger><SelectValue placeholder="Seleziona commessa" /></SelectTrigger>
               <SelectContent>
                 {(commesseOptions ?? []).map((c) => (
@@ -257,6 +308,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
                 ))}
               </SelectContent>
             </Select>
+            {commessaError && <p className="text-xs text-destructive mt-1">{commessaError}</p>}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground">Commessa precompilata</div>
@@ -288,14 +340,18 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
           </div>
         </div>
         <div className="grid grid-cols-4 gap-3">
-          <div><Label>Data *</Label><Input name="data" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></div>
-          <div><Label>Ora inizio</Label><Input name="ora_inizio" type="time" /></div>
-          <div><Label>Ora fine</Label><Input name="ora_fine" type="time" /></div>
-          <div><Label>Pausa (min)</Label><Input name="pausa_minuti" type="number" min={0} defaultValue={0} /></div>
+          <div>
+            <Label>Data *</Label>
+            <Input type="date" required max={tomorrowIso} value={dataValue} onChange={(e) => { setDataValue(e.target.value); setDataError(null); }} aria-invalid={!!dataError} />
+            {dataError && <p className="text-xs text-destructive mt-1">{dataError}</p>}
+          </div>
+          <div><Label>Ora inizio</Label><Input type="time" value={oraInizio} onChange={(e) => setOraInizio(e.target.value)} /></div>
+          <div><Label>Ora fine</Label><Input type="time" value={oraFine} onChange={(e) => setOraFine(e.target.value)} /></div>
+          <div><Label>Pausa (min)</Label><Input type="number" min={0} value={pausaMin} onChange={(e) => setPausaMin(e.target.value)} /></div>
         </div>
         <div>
           <Label>Ore totali *</Label>
-          <Input name="ore" type="number" step="0.25" min={0.25} max={24} required value={oreValue} onChange={(e) => setOreValue(e.target.value)} />
+          <Input type="number" step="0.25" min={0.25} max={24} required value={oreValue} onChange={(e) => setOreValue(e.target.value)} />
           {needsOverride && (
             <div className="mt-2 space-y-2 rounded border border-amber-400 bg-amber-50 p-3 text-sm">
               <div className="font-medium text-amber-800">Ore oltre 16h/giorno</div>
@@ -311,12 +367,14 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
         </div>
         <div>
           <Label>Descrizione lavori *</Label>
-          <Textarea name="descrizione_lavori" required maxLength={2000} placeholder="Descrivi il lavoro svolto…" />
+          <Textarea required maxLength={2000} placeholder="Descrivi il lavoro svolto…" value={descrizione} onChange={(e) => { setDescrizione(e.target.value); setDescError(null); }} aria-invalid={!!descError} />
+          {descError && <p className="text-xs text-destructive mt-1">{descError}</p>}
         </div>
         <div>
           <Label>Note</Label>
-          <Textarea name="note" maxLength={4000} />
+          <Textarea maxLength={4000} value={noteVal} onChange={(e) => setNoteVal(e.target.value)} />
         </div>
+
         <DialogFooter>
           {onClose && <Button type="button" variant="outline" onClick={onClose}>Annulla</Button>}
           <Button type="submit" disabled={create.isPending}>Salva</Button>
