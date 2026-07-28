@@ -15,13 +15,13 @@ import { Route as AccettaInvitoRouteImport } from './routes/accetta-invito'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
-import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
 import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
 import { Route as AuthenticatedCostiPersonaleRouteImport } from './routes/_authenticated/costi-personale'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
+import { Route as AuthenticatedRapportiniIndexRouteImport } from './routes/_authenticated/rapportini.index'
 import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
 import { Route as AuthenticatedCommesseIndexRouteImport } from './routes/_authenticated/commesse.index'
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
@@ -60,11 +60,6 @@ const AuthenticatedScadenziarioRoute =
     path: '/scadenziario',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedRapportiniRoute = AuthenticatedRapportiniRouteImport.update({
-  id: '/rapportini',
-  path: '/rapportini',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedProfiloRoute = AuthenticatedProfiloRouteImport.update({
   id: '/profilo',
   path: '/profilo',
@@ -97,6 +92,12 @@ const AuthenticatedAuditRoute = AuthenticatedAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRapportiniIndexRoute =
+  AuthenticatedRapportiniIndexRouteImport.update({
+    id: '/rapportini/',
+    path: '/rapportini/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPreventiviIndexRoute =
   AuthenticatedPreventiviIndexRouteImport.update({
     id: '/preventivi/',
@@ -117,9 +118,9 @@ const AuthenticatedClientiIndexRoute =
   } as any)
 const AuthenticatedRapportiniRapportinoIdRoute =
   AuthenticatedRapportiniRapportinoIdRouteImport.update({
-    id: '/$rapportinoId',
-    path: '/$rapportinoId',
-    getParentRoute: () => AuthenticatedRapportiniRoute,
+    id: '/rapportini/$rapportinoId',
+    path: '/rapportini/$rapportinoId',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPreventiviIdRoute =
   AuthenticatedPreventiviIdRouteImport.update({
@@ -151,7 +152,6 @@ export interface FileRoutesByFullPath {
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
-  '/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
@@ -160,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/clienti/': typeof AuthenticatedClientiIndexRoute
   '/commesse/': typeof AuthenticatedCommesseIndexRoute
   '/preventivi/': typeof AuthenticatedPreventiviIndexRoute
+  '/rapportini/': typeof AuthenticatedRapportiniIndexRoute
 }
 export interface FileRoutesByTo {
   '/accetta-invito': typeof AccettaInvitoRoute
@@ -171,7 +172,6 @@ export interface FileRoutesByTo {
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
-  '/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
@@ -181,6 +181,7 @@ export interface FileRoutesByTo {
   '/clienti': typeof AuthenticatedClientiIndexRoute
   '/commesse': typeof AuthenticatedCommesseIndexRoute
   '/preventivi': typeof AuthenticatedPreventiviIndexRoute
+  '/rapportini': typeof AuthenticatedRapportiniIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -194,7 +195,6 @@ export interface FileRoutesById {
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
-  '/_authenticated/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
@@ -204,6 +204,7 @@ export interface FileRoutesById {
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
   '/_authenticated/commesse/': typeof AuthenticatedCommesseIndexRoute
   '/_authenticated/preventivi/': typeof AuthenticatedPreventiviIndexRoute
+  '/_authenticated/rapportini/': typeof AuthenticatedRapportiniIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -218,7 +219,6 @@ export interface FileRouteTypes {
     | '/fornitori'
     | '/organizzazione'
     | '/profilo'
-    | '/rapportini'
     | '/scadenziario'
     | '/clienti/$clienteId'
     | '/commesse/$commessaId'
@@ -227,6 +227,7 @@ export interface FileRouteTypes {
     | '/clienti/'
     | '/commesse/'
     | '/preventivi/'
+    | '/rapportini/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/accetta-invito'
@@ -238,7 +239,6 @@ export interface FileRouteTypes {
     | '/fornitori'
     | '/organizzazione'
     | '/profilo'
-    | '/rapportini'
     | '/scadenziario'
     | '/'
     | '/clienti/$clienteId'
@@ -248,6 +248,7 @@ export interface FileRouteTypes {
     | '/clienti'
     | '/commesse'
     | '/preventivi'
+    | '/rapportini'
   id:
     | '__root__'
     | '/_authenticated'
@@ -260,7 +261,6 @@ export interface FileRouteTypes {
     | '/_authenticated/fornitori'
     | '/_authenticated/organizzazione'
     | '/_authenticated/profilo'
-    | '/_authenticated/rapportini'
     | '/_authenticated/scadenziario'
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
@@ -270,6 +270,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clienti/'
     | '/_authenticated/commesse/'
     | '/_authenticated/preventivi/'
+    | '/_authenticated/rapportini/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -323,13 +324,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedScadenziarioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/rapportini': {
-      id: '/_authenticated/rapportini'
-      path: '/rapportini'
-      fullPath: '/rapportini'
-      preLoaderRoute: typeof AuthenticatedRapportiniRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/profilo': {
       id: '/_authenticated/profilo'
       path: '/profilo'
@@ -372,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAuditRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/rapportini/': {
+      id: '/_authenticated/rapportini/'
+      path: '/rapportini'
+      fullPath: '/rapportini/'
+      preLoaderRoute: typeof AuthenticatedRapportiniIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/preventivi/': {
       id: '/_authenticated/preventivi/'
       path: '/preventivi'
@@ -395,10 +396,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/rapportini/$rapportinoId': {
       id: '/_authenticated/rapportini/$rapportinoId'
-      path: '/$rapportinoId'
+      path: '/rapportini/$rapportinoId'
       fullPath: '/rapportini/$rapportinoId'
       preLoaderRoute: typeof AuthenticatedRapportiniRapportinoIdRouteImport
-      parentRoute: typeof AuthenticatedRapportiniRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/preventivi/$id': {
       id: '/_authenticated/preventivi/$id'
@@ -424,21 +425,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedRapportiniRouteChildren {
-  AuthenticatedRapportiniRapportinoIdRoute: typeof AuthenticatedRapportiniRapportinoIdRoute
-}
-
-const AuthenticatedRapportiniRouteChildren: AuthenticatedRapportiniRouteChildren =
-  {
-    AuthenticatedRapportiniRapportinoIdRoute:
-      AuthenticatedRapportiniRapportinoIdRoute,
-  }
-
-const AuthenticatedRapportiniRouteWithChildren =
-  AuthenticatedRapportiniRoute._addFileChildren(
-    AuthenticatedRapportiniRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedCostiPersonaleRoute: typeof AuthenticatedCostiPersonaleRoute
@@ -446,15 +432,16 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
-  AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRouteWithChildren
   AuthenticatedScadenziarioRoute: typeof AuthenticatedScadenziarioRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedClientiClienteIdRoute: typeof AuthenticatedClientiClienteIdRoute
   AuthenticatedCommesseCommessaIdRoute: typeof AuthenticatedCommesseCommessaIdRoute
   AuthenticatedPreventiviIdRoute: typeof AuthenticatedPreventiviIdRoute
+  AuthenticatedRapportiniRapportinoIdRoute: typeof AuthenticatedRapportiniRapportinoIdRoute
   AuthenticatedClientiIndexRoute: typeof AuthenticatedClientiIndexRoute
   AuthenticatedCommesseIndexRoute: typeof AuthenticatedCommesseIndexRoute
   AuthenticatedPreventiviIndexRoute: typeof AuthenticatedPreventiviIndexRoute
+  AuthenticatedRapportiniIndexRoute: typeof AuthenticatedRapportiniIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -464,15 +451,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
-  AuthenticatedRapportiniRoute: AuthenticatedRapportiniRouteWithChildren,
   AuthenticatedScadenziarioRoute: AuthenticatedScadenziarioRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedClientiClienteIdRoute: AuthenticatedClientiClienteIdRoute,
   AuthenticatedCommesseCommessaIdRoute: AuthenticatedCommesseCommessaIdRoute,
   AuthenticatedPreventiviIdRoute: AuthenticatedPreventiviIdRoute,
+  AuthenticatedRapportiniRapportinoIdRoute:
+    AuthenticatedRapportiniRapportinoIdRoute,
   AuthenticatedClientiIndexRoute: AuthenticatedClientiIndexRoute,
   AuthenticatedCommesseIndexRoute: AuthenticatedCommesseIndexRoute,
   AuthenticatedPreventiviIndexRoute: AuthenticatedPreventiviIndexRoute,
+  AuthenticatedRapportiniIndexRoute: AuthenticatedRapportiniIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -487,13 +476,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

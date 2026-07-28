@@ -21,7 +21,7 @@ import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
 
-export const Route = createFileRoute("/_authenticated/rapportini")({
+export const Route = createFileRoute("/_authenticated/rapportini/")({
   head: () => ({
     meta: [
       { title: "Rapportini — CantiereOS" },
