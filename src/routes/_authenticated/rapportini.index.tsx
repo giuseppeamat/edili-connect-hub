@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -39,7 +39,6 @@ function fullName(r: any) {
 
 function RapportiniPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<RapportinoFilters>({ includeArchived: false });
   const [archTarget, setArchTarget] = useState<any | null>(null);
@@ -159,11 +158,26 @@ function RapportiniPage() {
             {(items as any[]).map((r) => (
               <TableRow
                 key={r.id}
-                className={`${r.archived_at ? "opacity-60" : ""} cursor-pointer hover:bg-muted/40`}
-                onClick={() => navigate({ to: "/rapportini/$rapportinoId", params: { rapportinoId: r.id } })}
+                className={`${r.archived_at ? "opacity-60" : ""} hover:bg-muted/40`}
               >
-                <TableCell>{dateIt(r.data)}</TableCell>
-                <TableCell>{fullName(r.user)}</TableCell>
+                <TableCell>
+                  <Link
+                    to="/rapportini/$rapportinoId"
+                    params={{ rapportinoId: r.id }}
+                    className="block font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {dateIt(r.data)}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <Link
+                    to="/rapportini/$rapportinoId"
+                    params={{ rapportinoId: r.id }}
+                    className="block text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {fullName(r.user)}
+                  </Link>
+                </TableCell>
                 <TableCell className="text-sm"><span className="font-mono">{r.commessa?.codice}</span><br /><span className="text-muted-foreground text-xs">{r.commessa?.denominazione}</span></TableCell>
                 <TableCell className="text-xs">{r.cantiere ? `${r.cantiere.codice} — ${r.cantiere.nome}` : "—"}</TableCell>
                 <TableCell className="text-xs">{r.fase?.titolo ?? "—"}</TableCell>
@@ -172,7 +186,13 @@ function RapportiniPage() {
                   {Number(r.ore ?? 0) > 16 && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
                 </TableCell>
                 <TableCell className="text-muted-foreground max-w-md">
-                  <div className="truncate">{r.descrizione_lavori ?? r.lavorazione ?? "—"}</div>
+                  <Link
+                    to="/rapportini/$rapportinoId"
+                    params={{ rapportinoId: r.id }}
+                    className="block truncate text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >
+                    {r.descrizione_lavori ?? r.lavorazione ?? "—"}
+                  </Link>
                   {r.stato === "respinto" && r.rejection_reason && (
                     <div className="text-xs text-rose-700 mt-1">Rifiuto: {r.rejection_reason}</div>
                   )}
