@@ -300,7 +300,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
         {allowCommessaSelect ? (
           <div>
             <Label>Commessa *</Label>
-            <Select value={selCommessa} onValueChange={(v) => { setSelCommessa(v); setCantiereId(undefined); setFaseId(undefined); }}>
+            <Select value={selCommessa} onValueChange={(v) => { setSelCommessa(v); setCantiereId(undefined); setFaseId(undefined); setCommessaError(null); }}>
               <SelectTrigger><SelectValue placeholder="Seleziona commessa" /></SelectTrigger>
               <SelectContent>
                 {(commesseOptions ?? []).map((c) => (
@@ -308,6 +308,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
                 ))}
               </SelectContent>
             </Select>
+            {commessaError && <p className="text-xs text-destructive mt-1">{commessaError}</p>}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground">Commessa precompilata</div>
@@ -339,14 +340,18 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
           </div>
         </div>
         <div className="grid grid-cols-4 gap-3">
-          <div><Label>Data *</Label><Input name="data" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} /></div>
-          <div><Label>Ora inizio</Label><Input name="ora_inizio" type="time" /></div>
-          <div><Label>Ora fine</Label><Input name="ora_fine" type="time" /></div>
-          <div><Label>Pausa (min)</Label><Input name="pausa_minuti" type="number" min={0} defaultValue={0} /></div>
+          <div>
+            <Label>Data *</Label>
+            <Input type="date" required max={tomorrowIso} value={dataValue} onChange={(e) => { setDataValue(e.target.value); setDataError(null); }} aria-invalid={!!dataError} />
+            {dataError && <p className="text-xs text-destructive mt-1">{dataError}</p>}
+          </div>
+          <div><Label>Ora inizio</Label><Input type="time" value={oraInizio} onChange={(e) => setOraInizio(e.target.value)} /></div>
+          <div><Label>Ora fine</Label><Input type="time" value={oraFine} onChange={(e) => setOraFine(e.target.value)} /></div>
+          <div><Label>Pausa (min)</Label><Input type="number" min={0} value={pausaMin} onChange={(e) => setPausaMin(e.target.value)} /></div>
         </div>
         <div>
           <Label>Ore totali *</Label>
-          <Input name="ore" type="number" step="0.25" min={0.25} max={24} required value={oreValue} onChange={(e) => setOreValue(e.target.value)} />
+          <Input type="number" step="0.25" min={0.25} max={24} required value={oreValue} onChange={(e) => setOreValue(e.target.value)} />
           {needsOverride && (
             <div className="mt-2 space-y-2 rounded border border-amber-400 bg-amber-50 p-3 text-sm">
               <div className="font-medium text-amber-800">Ore oltre 16h/giorno</div>
@@ -362,12 +367,14 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
         </div>
         <div>
           <Label>Descrizione lavori *</Label>
-          <Textarea name="descrizione_lavori" required maxLength={2000} placeholder="Descrivi il lavoro svolto…" />
+          <Textarea required maxLength={2000} placeholder="Descrivi il lavoro svolto…" value={descrizione} onChange={(e) => { setDescrizione(e.target.value); setDescError(null); }} aria-invalid={!!descError} />
+          {descError && <p className="text-xs text-destructive mt-1">{descError}</p>}
         </div>
         <div>
           <Label>Note</Label>
-          <Textarea name="note" maxLength={4000} />
+          <Textarea maxLength={4000} value={noteVal} onChange={(e) => setNoteVal(e.target.value)} />
         </div>
+
         <DialogFooter>
           {onClose && <Button type="button" variant="outline" onClick={onClose}>Annulla</Button>}
           <Button type="submit" disabled={create.isPending}>Salva</Button>
