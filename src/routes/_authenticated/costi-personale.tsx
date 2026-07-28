@@ -216,8 +216,8 @@ function TariffaDialog({
   const [al, setAl] = useState<string>(edit?.valido_al ?? "");
   const [note, setNote] = useState<string>(edit?.note ?? "");
 
-  // Reset when opening
-  useState(() => {
+  // Reset when opening (fix S5B3.5: precedente `useState(cb)` non ricaricava i valori originali)
+  useEffect(() => {
     if (open) {
       setUserId(edit?.user_id ?? "");
       setCosto(edit?.costo_orario?.toString() ?? "");
@@ -225,7 +225,7 @@ function TariffaDialog({
       setAl(edit?.valido_al ?? "");
       setNote(edit?.note ?? "");
     }
-  });
+  }, [open, edit]);
 
   const mut = useMutation({
     mutationFn: async () => {
