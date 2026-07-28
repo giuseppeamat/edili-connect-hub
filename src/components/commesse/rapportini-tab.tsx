@@ -184,12 +184,44 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
   const qc = useQueryClient();
   const user = useCurrentUser();
   const createFn = useServerFn(createRapportino);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const tomorrowIso = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); })();
   const [selCommessa, setSelCommessa] = useState<string | undefined>(commessaId ?? undefined);
   const [cantiereId, setCantiereId] = useState<string | undefined>();
   const [faseId, setFaseId] = useState<string | undefined>();
   const [oreValue, setOreValue] = useState<string>("");
   const [overrideOre, setOverrideOre] = useState(false);
   const [overrideMotivo, setOverrideMotivo] = useState("");
+  const [dataValue, setDataValue] = useState<string>(todayIso);
+  const [oraInizio, setOraInizio] = useState<string>("");
+  const [oraFine, setOraFine] = useState<string>("");
+  const [pausaMin, setPausaMin] = useState<string>("0");
+  const [descrizione, setDescrizione] = useState<string>("");
+  const [noteVal, setNoteVal] = useState<string>("");
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [descError, setDescError] = useState<string | null>(null);
+  const [commessaError, setCommessaError] = useState<string | null>(null);
+
+  // Reset completo del form ad ogni apertura del dialog (fix S5B3.6 Fase 2)
+  useEffect(() => {
+    setSelCommessa(commessaId ?? undefined);
+    setCantiereId(undefined);
+    setFaseId(undefined);
+    setOreValue("");
+    setOverrideOre(false);
+    setOverrideMotivo("");
+    setDataValue(todayIso);
+    setOraInizio("");
+    setOraFine("");
+    setPausaMin("0");
+    setDescrizione("");
+    setNoteVal("");
+    setDataError(null);
+    setDescError(null);
+    setCommessaError(null);
+    create.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [commessaId]);
 
   const cantieriFn = useServerFn(listRapportinoAssignableCantieri);
   const fasiFn = useServerFn(listRapportinoAssignableFasi);
@@ -216,29 +248,48 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       onCreated();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => {
+      const msg = (e?.message ?? "").toString();
+      // Map Zod / RPC errors relativi alla data verso l'errore inline
+      if (/data futura|non può essere successiva|maxIso|data\b.*(futura|domani|limite)/i.test(msg)) {
+        setDataError("La data del rapportino non può essere successiva a domani.");
+      }
+      toast.error(msg || "Errore imprevisto");
+    },
   });
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
+    setDataError(null); setDescError(null); setCommessaError(null);
+    const data = dataValue;
+    const descr = descrizione.trim();
+
+    // validazione client (fix S5B3.6 Fase 1)
+    let hasError = false;
+    if (!selCommessa) { setCommessaError("Seleziona una commessa"); hasError = true; }
+    if (!descr) { setDescError("Descrizione lavori obbligatoria"); hasError = true; }
+    if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) {
+      setDataError("Inserisci una data valida."); hasError = true;
+    } else if (data > tomorrowIso) {
+      setDataError("La data del rapportino non può essere successiva a domani."); hasError = true;
+    }
+    if (hasError) return;
+
     const payload: any = {
       commessa_id: selCommessa,
       user_id: user.userId,
-      data: String(fd.get("data") || ""),
-      ore: Number(String(fd.get("ore") || "0").replace(",", ".")),
-      descrizione_lavori: String(fd.get("descrizione_lavori") || "").trim(),
+      data,
+      ore: Number(oreValue.replace(",", ".") || "0"),
+      descrizione_lavori: descr,
       cantiere_id: cantiereId ?? null,
       fase_id: faseId ?? null,
-      ora_inizio: (fd.get("ora_inizio") as string) || null,
-      ora_fine: (fd.get("ora_fine") as string) || null,
-      pausa_minuti: Number(fd.get("pausa_minuti") || 0),
-      note: (fd.get("note") as string) || null,
+      ora_inizio: oraInizio || null,
+      ora_fine: oraFine || null,
+      pausa_minuti: Number(pausaMin || 0),
+      note: noteVal || null,
       override_ore: needsOverride ? overrideOre : false,
       override_motivo: needsOverride && overrideOre ? overrideMotivo : null,
     };
-    if (!payload.commessa_id) { toast.error("Seleziona una commessa"); return; }
-    if (!payload.descrizione_lavori) { toast.error("Descrizione lavori obbligatoria"); return; }
     create.mutate(payload);
   };
 
