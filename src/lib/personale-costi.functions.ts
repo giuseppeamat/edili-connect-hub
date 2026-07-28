@@ -219,9 +219,14 @@ export const listRapportiniCostiPendenti = createServerFn({ method: "GET" })
       if (error) throw error;
       const ids = (rap ?? []).map((r: any) => r.id);
       if (!ids.length) return [];
-      const { data: costi } = await context.supabase
+      // Lettura rapportini_costi via supabaseAdmin: la tabella non è accessibile
+      // direttamente al ruolo authenticated (hardening Blocco 3.4). Il gate di
+      // ruolo è già stato applicato sopra via assertCanManageCosti().
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: costi } = await supabaseAdmin
         .from("rapportini_costi")
         .select("rapportino_id, stato, stornato_at")
+        .eq("organization_id", org)
         .in("rapportino_id", ids);
       const contMap = new Map<string, string>();
       (costi ?? []).forEach((c: any) => {
@@ -233,6 +238,7 @@ export const listRapportiniCostiPendenti = createServerFn({ method: "GET" })
         .map((r: any) => ({ ...r, stato_contabilizzazione: contMap.get(r.id) ?? "assente" }));
     } catch (e) { throw new Error(mapServerError(e)); }
   });
+
 
 export const contabilizzaRapportinoManodopera = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -282,18 +288,23 @@ export const contabilizzaRapportiniPendenti = createServerFn({ method: "POST" })
     } catch (e) { throw new Error(mapServerError(e)); }
   });
 
-// Costo di un singolo rapportino (per card dettaglio - visibile solo a ruoli economici)
+// Costo di un singolo rapportino (card dettaglio) — visibile SOLO a
+// proprietario/amministratore/amministrazione (Sprint 5 Blocco 3.4).
+// Ufficio tecnico, responsabile commessa, capocantiere, operaio, cliente,
+// fornitore: nessun accesso al dato individuale. Lettura via supabaseAdmin
+// perché la tabella non è più accessibile direttamente al ruolo authenticated.
 export const getRapportinoCosto = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ rapportino_id: uuid }).parse(d))
   .handler(async ({ data, context }) => {
     try {
       const { org, roles } = await currentOrgAndRole(context);
-      const econ = roles.some((r: string) =>
-        ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa"].includes(r),
+      const admin = roles.some((r: string) =>
+        ["proprietario", "amministratore", "amministrazione"].includes(r),
       );
-      if (!econ) return null;
-      const { data: rows, error } = await context.supabase
+      if (!admin) return null;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: rows, error } = await supabaseAdmin
         .from("rapportini_costi")
         .select("*")
         .eq("organization_id", org)
@@ -303,3 +314,4 @@ export const getRapportinoCosto = createServerFn({ method: "POST" })
       return rows ?? [];
     } catch (e) { throw new Error(mapServerError(e)); }
   });
+

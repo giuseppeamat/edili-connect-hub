@@ -59,8 +59,9 @@ function RapportinoDetailPage() {
   });
 
   const canViewEcon = user.has(
-    "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa",
+    "proprietario", "amministratore", "amministrazione",
   );
+
   const { data: costi = [] } = useQuery({
     queryKey: ["rapportino", rapportinoId, "costi"],
     queryFn: async () => (await costFn({ data: { rapportino_id: rapportinoId } })) ?? [],
