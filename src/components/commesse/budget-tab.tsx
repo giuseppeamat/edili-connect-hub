@@ -28,6 +28,8 @@ import {
   listBudgetAssignableCantieriFasi, listBudgetFornitori,
   getBudgetPreventivoInfo, BUDGET_CATEGORIES,
 } from "@/lib/commessa-budget.functions";
+import { isCommessaBudgetLocked, commessaLockReason, BUDGET_MSG } from "@/lib/commessa-lock";
+
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -72,14 +74,23 @@ function catLabel(tipo: string, categoria: string | null | undefined) {
 // BUDGET TAB (root)
 // ---------------------------------------------------------------------------
 export function BudgetTab({
-  commessaId, isClosed, isArchived,
+  commessa, commessaId, isClosed, isArchived,
 }: {
+  commessa?: { stato?: string | null; closed_at?: string | null; archived_at?: string | null } | null;
   commessaId: string;
   isClosed: boolean;
   isArchived: boolean;
 }) {
   const user = useCurrentUser();
   const qc = useQueryClient();
+
+  const lockInput = {
+    stato: commessa?.stato ?? null,
+    closed_at: commessa?.closed_at ?? (isClosed ? "1" : null),
+    archived_at: commessa?.archived_at ?? (isArchived ? "1" : null),
+  };
+  const locked = isCommessaBudgetLocked(lockInput);
+  const lockReason = commessaLockReason(lockInput);
 
   const getSummaryFn = useServerFn(getCommessaBudgetSummary);
   const listVociFn = useServerFn(listCommessaBudgetVoci);
@@ -88,11 +99,12 @@ export function BudgetTab({
   const getPrevFn = useServerFn(getBudgetPreventivoInfo);
 
   const canView = user.canViewCommessaBudget;
-  const canEdit = user.canEditCommessaBudget && !isClosed && !isArchived;
-  const canImport = user.canImportCommessaBudget && !isClosed && !isArchived;
-  const canBaseline = user.canManageCommessaBaseline && !isClosed && !isArchived;
-  const canManualUpd = user.canEditManualCommessaBudget && !isClosed && !isArchived;
-  const canChangeMode = user.canChangeCommessaBudgetMode && !isClosed && !isArchived;
+  const canEdit = user.canEditCommessaBudget && !locked;
+  const canImport = user.canImportCommessaBudget && !locked;
+  const canBaseline = user.canManageCommessaBaseline && !locked;
+  const canManualUpd = user.canEditManualCommessaBudget && !locked;
+  const canChangeMode = user.canChangeCommessaBudgetMode && !locked;
+
 
   const [filters, setFilters] = useState<{
     tipo?: "ricavo" | "costo"; categoria?: string;
@@ -177,13 +189,26 @@ export function BudgetTab({
 
   return (
     <div className="space-y-4">
-      {/* HEADER */}
+      {/* SOLA LETTURA */}
+      {locked && (
+        <Card className="border-amber-300">
+          <CardContent className="p-3 flex items-start gap-2 text-sm text-amber-900">
+            <Lock className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>{lockReason}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* HEADER — MODALITÀ BUDGET (distinta dallo stato commessa) */}
       <Card>
         <CardContent className="p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Badge variant={isAnalytic ? "default" : "secondary"}>
-              {isAnalytic ? "Analitico" : "Manuale"}
-            </Badge>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Modalità Budget</span>
+              <Badge variant={isAnalytic ? "default" : "secondary"}>
+                {isAnalytic ? "Analitico" : "Manuale"}
+              </Badge>
+            </div>
             <div className="text-xs text-muted-foreground">
               Ultimo ricalcolo: {s?.budget_calcolato_at ? new Date(s.budget_calcolato_at).toLocaleString("it-IT") : "—"}
             </div>
@@ -193,11 +218,15 @@ export function BudgetTab({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canChangeMode && (
               <Button size="sm" variant="outline" onClick={() => setModeDlg(true)}>
-                <Settings2 className="h-4 w-4 mr-1" />Modalità
+                <Settings2 className="h-4 w-4 mr-1" />
+                {isAnalytic ? "Passa a manuale" : "Passa ad analitico"}
               </Button>
+            )}
+            {!canChangeMode && !locked && user.canViewCommessaBudget && (
+              <span className="text-xs text-muted-foreground">{BUDGET_MSG.notAuthorized}</span>
             )}
             {canManualUpd && !isAnalytic && (
               <Button size="sm" variant="outline" onClick={() => setManualDlg(true)}>
@@ -214,9 +243,16 @@ export function BudgetTab({
                 <Plus className="h-4 w-4 mr-1" />Nuova voce
               </Button>
             )}
+            {!isAnalytic && user.canEditCommessaBudget && !locked && (
+              <span className="text-xs text-muted-foreground">{BUDGET_MSG.manualMode}</span>
+            )}
+            {locked && user.canEditCommessaBudget && (
+              <span className="text-xs text-muted-foreground">{BUDGET_MSG.locked}</span>
+            )}
           </div>
         </CardContent>
       </Card>
+
 
       {/* KPI */}
       <KpiGrid s={s} />
@@ -293,10 +329,11 @@ export function BudgetTab({
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground">
             Budget in modalità manuale: gli aggregati sopra sono modificabili con "Aggiorna manuale".
-            Passa alla modalità analitica per gestire le voci di dettaglio.
+            {" "}{BUDGET_MSG.manualMode}
           </CardContent>
         </Card>
       )}
+
 
       {/* BASELINE */}
       <BaselineCard s={s} canBaseline={canBaseline} onOpen={() => setBaselineDlg(true)} />
@@ -446,7 +483,7 @@ function VociTable({
   });
 
   if (!voci?.length) {
-    return <Card><CardContent className="p-4 text-sm text-muted-foreground">Nessuna voce.</CardContent></Card>;
+    return <Card><CardContent className="p-4 text-sm text-muted-foreground">{BUDGET_MSG.emptyAnalytic}</CardContent></Card>;
   }
 
   const activeIds = voci.filter((v: any) => !v.archived_at).map((v: any) => v.id);

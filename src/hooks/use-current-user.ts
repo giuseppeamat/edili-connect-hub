@@ -55,14 +55,25 @@ export function useCurrentUser() {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
 
-      const [{ data: profile }, { data: rolesRows }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, organization_id, nome, cognome, email, telefono, created_at, updated_at, organizations(id, nome)")
-          .eq("id", u.user.id)
-          .maybeSingle(),
-        supabase.from("user_roles").select("role, organization_id").eq("user_id", u.user.id),
-      ]);
+      // 1) profilo → 2) organizzazione corrente → 3) ruoli di QUELLA organizzazione
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, organization_id, nome, cognome, email, telefono, is_active, created_at, updated_at, organizations(id, nome)")
+        .eq("id", u.user.id)
+        .maybeSingle();
+
+      const orgId = profile?.organization_id ?? null;
+      const isActive = (profile as any)?.is_active !== false;
+
+      let roles: AppRole[] = [];
+      if (orgId && isActive) {
+        const { data: rolesRows } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", u.user.id)
+          .eq("organization_id", orgId);
+        roles = ((rolesRows ?? []) as { role: AppRole }[]).map((r) => r.role);
+      }
 
       const organization = (profile as any)?.organizations
         ? { id: (profile as any).organizations.id, nome: (profile as any).organizations.nome }
@@ -84,9 +95,10 @@ export function useCurrentUser() {
             }
           : null,
         organization,
-        roles: ((rolesRows ?? []) as { role: AppRole }[]).map((r) => r.role),
+        roles,
       };
     },
+
   });
 
   const data = q.data ?? null;
@@ -136,6 +148,12 @@ export function useCurrentUser() {
       "proprietario", "amministratore", "amministrazione", "ufficio_tecnico",
     ),
     canChangeCommessaBudgetMode: has("proprietario", "amministratore", "ufficio_tecnico"),
+    // ===== Personale / Rapportini =====
+    canViewPersonnelHourlyCost: has("proprietario", "amministratore", "amministrazione"),
+    canApproveRapportino: has(
+      "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
+    ),
+
   };
 }
 

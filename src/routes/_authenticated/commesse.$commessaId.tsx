@@ -136,18 +136,19 @@ function CommessaDetailPage() {
       />
 
       <Tabs defaultValue="panoramica" className="w-full">
-        <TabsList className="grid w-full grid-cols-7 mb-4">
-          <TabsTrigger value="panoramica"><Home className="h-4 w-4 mr-1" />Panoramica</TabsTrigger>
-          <TabsTrigger value="fasi"><ListChecks className="h-4 w-4 mr-1" />Fasi</TabsTrigger>
-          <TabsTrigger value="cantieri"><MapPin className="h-4 w-4 mr-1" />Cantieri</TabsTrigger>
-          <TabsTrigger value="team"><Users className="h-4 w-4 mr-1" />Team</TabsTrigger>
-          <TabsTrigger value="rapportini"><ClipboardList className="h-4 w-4 mr-1" />Rapportini</TabsTrigger>
-          <TabsTrigger value="documenti"><FileText className="h-4 w-4 mr-1" />Documenti</TabsTrigger>
+        <TabsList className="mb-4 flex w-full flex-nowrap justify-start gap-1 overflow-x-auto">
+          <TabsTrigger value="panoramica" className="shrink-0 whitespace-nowrap"><Home className="h-4 w-4 mr-1" />Panoramica</TabsTrigger>
+          <TabsTrigger value="fasi" className="shrink-0 whitespace-nowrap"><ListChecks className="h-4 w-4 mr-1" />Fasi</TabsTrigger>
+          <TabsTrigger value="cantieri" className="shrink-0 whitespace-nowrap"><MapPin className="h-4 w-4 mr-1" />Cantieri</TabsTrigger>
+          <TabsTrigger value="team" className="shrink-0 whitespace-nowrap"><Users className="h-4 w-4 mr-1" />Team</TabsTrigger>
+          <TabsTrigger value="rapportini" className="shrink-0 whitespace-nowrap"><ClipboardList className="h-4 w-4 mr-1" />Rapportini</TabsTrigger>
+          <TabsTrigger value="documenti" className="shrink-0 whitespace-nowrap"><FileText className="h-4 w-4 mr-1" />Documenti</TabsTrigger>
           {user.canViewCommessaBudget && (
-            <TabsTrigger value="budget"><Wallet className="h-4 w-4 mr-1" />Budget</TabsTrigger>
+            <TabsTrigger value="budget" className="shrink-0 whitespace-nowrap"><Wallet className="h-4 w-4 mr-1" />Budget</TabsTrigger>
           )}
-          <TabsTrigger value="storico"><History className="h-4 w-4 mr-1" />Storico</TabsTrigger>
+          <TabsTrigger value="storico" className="shrink-0 whitespace-nowrap"><History className="h-4 w-4 mr-1" />Storico</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="panoramica">
           <PanoramicaTab d={d} canEdit={canEditCommesse} canAssignResp={canAssignResp} onDone={invalidate} />
@@ -180,9 +181,10 @@ function CommessaDetailPage() {
         </TabsContent>
         {user.canViewCommessaBudget && (
           <TabsContent value="budget">
-            <BudgetTab commessaId={c.id} isClosed={!!c.closed_at} isArchived={!!c.archived_at} />
+            <BudgetTab commessa={c} commessaId={c.id} isClosed={!!c.closed_at} isArchived={!!c.archived_at} />
           </TabsContent>
         )}
+
         <TabsContent value="storico">
           <StoricoTab commessaId={c.id} />
         </TabsContent>
