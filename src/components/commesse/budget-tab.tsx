@@ -483,7 +483,7 @@ function VociTable({
   });
 
   if (!voci?.length) {
-    return <Card><CardContent className="p-4 text-sm text-muted-foreground">Nessuna voce.</CardContent></Card>;
+    return <Card><CardContent className="p-4 text-sm text-muted-foreground">{BUDGET_MSG.emptyAnalytic}</CardContent></Card>;
   }
 
   const activeIds = voci.filter((v: any) => !v.archived_at).map((v: any) => v.id);
