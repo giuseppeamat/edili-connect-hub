@@ -27,8 +27,10 @@ const PATTERNS: Array<{ re: RegExp; msg: string }> = [
   { re: /fase archiviata/i, msg: "La fase è archiviata. Ripristinala prima di modificarla." },
   { re: /responsabile.*non valido/i, msg: "Il responsabile selezionato non è disponibile per questa fase." },
   { re: /cantiere.*non appartiene alla commessa/i, msg: "Il cantiere selezionato non appartiene alla commessa." },
-  { re: /commessa chiusa|commessa è chiusa/i, msg: "La commessa è chiusa e non può essere modificata." },
-  { re: /commessa archiviata|commessa è archiviata/i, msg: "La commessa è archiviata e non può essere modificata." },
+  { re: /non è modificabile nello stato attuale/i, msg: "La commessa non è modificabile nello stato attuale." },
+  { re: /commessa chiusa|commessa è chiusa/i, msg: "La commessa non è modificabile nello stato attuale." },
+  { re: /commessa archiviata|commessa è archiviata/i, msg: "La commessa non è modificabile nello stato attuale." },
+
   { re: /modalità.*non manuale|avanzamento manuale/i, msg: "L'avanzamento manuale non è disponibile quando il calcolo deriva dalle fasi." },
   { re: /avanzamento fuori range/i, msg: "L'avanzamento deve essere compreso tra 0 e 100." },
   { re: /peso fuori range/i, msg: "Il peso deve essere compreso tra 0 e 100." },
