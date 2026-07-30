@@ -28,6 +28,8 @@ import {
   listBudgetAssignableCantieriFasi, listBudgetFornitori,
   getBudgetPreventivoInfo, BUDGET_CATEGORIES,
 } from "@/lib/commessa-budget.functions";
+import { isCommessaBudgetLocked, commessaLockReason, BUDGET_MSG } from "@/lib/commessa-lock";
+
 
 // ---------------------------------------------------------------------------
 // helpers
@@ -72,14 +74,23 @@ function catLabel(tipo: string, categoria: string | null | undefined) {
 // BUDGET TAB (root)
 // ---------------------------------------------------------------------------
 export function BudgetTab({
-  commessaId, isClosed, isArchived,
+  commessa, commessaId, isClosed, isArchived,
 }: {
+  commessa?: { stato?: string | null; closed_at?: string | null; archived_at?: string | null } | null;
   commessaId: string;
   isClosed: boolean;
   isArchived: boolean;
 }) {
   const user = useCurrentUser();
   const qc = useQueryClient();
+
+  const lockInput = {
+    stato: commessa?.stato ?? null,
+    closed_at: commessa?.closed_at ?? (isClosed ? "1" : null),
+    archived_at: commessa?.archived_at ?? (isArchived ? "1" : null),
+  };
+  const locked = isCommessaBudgetLocked(lockInput);
+  const lockReason = commessaLockReason(lockInput);
 
   const getSummaryFn = useServerFn(getCommessaBudgetSummary);
   const listVociFn = useServerFn(listCommessaBudgetVoci);
@@ -88,11 +99,12 @@ export function BudgetTab({
   const getPrevFn = useServerFn(getBudgetPreventivoInfo);
 
   const canView = user.canViewCommessaBudget;
-  const canEdit = user.canEditCommessaBudget && !isClosed && !isArchived;
-  const canImport = user.canImportCommessaBudget && !isClosed && !isArchived;
-  const canBaseline = user.canManageCommessaBaseline && !isClosed && !isArchived;
-  const canManualUpd = user.canEditManualCommessaBudget && !isClosed && !isArchived;
-  const canChangeMode = user.canChangeCommessaBudgetMode && !isClosed && !isArchived;
+  const canEdit = user.canEditCommessaBudget && !locked;
+  const canImport = user.canImportCommessaBudget && !locked;
+  const canBaseline = user.canManageCommessaBaseline && !locked;
+  const canManualUpd = user.canEditManualCommessaBudget && !locked;
+  const canChangeMode = user.canChangeCommessaBudgetMode && !locked;
+
 
   const [filters, setFilters] = useState<{
     tipo?: "ricavo" | "costo"; categoria?: string;
