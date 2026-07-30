@@ -1,19 +1,19 @@
 /**
  * Fonte unica di verità (lato UI) per stabilire se una commessa è in sola
- * lettura. Deve restare allineata a public.can_manage_commessa_budget:
- * il DB blocca le mutazioni quando stato ∈ (completata, chiusa, archiviata).
- * Qui includiamo anche `annullata` e i flag closed_at / archived_at.
+ * lettura. Deve restare allineata a public.is_commessa_budget_locked:
+ *
+ *   stato IN ('completata','annullata')
+ *   OR closed_at IS NOT NULL
+ *   OR archived_at IS NOT NULL
+ *
+ * "chiusa" e "archiviata" NON sono valori dell'enum commessa_stato: sono
+ * rappresentati dai flag closed_at / archived_at e restano solo etichette UI.
  *
  * L'autorità resta il database: questa funzione serve solo a non mostrare
  * comandi che poi fallirebbero lato RPC.
  */
 
-export const STATI_COMMESSA_NON_OPERATIVI = [
-  "completata",
-  "chiusa",
-  "annullata",
-  "archiviata",
-] as const;
+export const STATI_COMMESSA_NON_OPERATIVI = ["completata", "annullata"] as const;
 
 export type CommessaLockInput = {
   stato?: string | null;
@@ -35,8 +35,10 @@ export function commessaLockReason(c: CommessaLockInput | null | undefined): str
   if (!isCommessaBudgetLocked(c)) return null;
   if (c?.archived_at) return "Il Budget è in sola lettura perché la commessa è archiviata.";
   if (c?.closed_at) return "Il Budget è in sola lettura perché la commessa è chiusa.";
-  return "Il Budget è in sola lettura perché la commessa è completata, chiusa, annullata o archiviata.";
+  if (c?.stato === "annullata") return "Il Budget è in sola lettura perché la commessa è annullata.";
+  return "Il Budget è in sola lettura perché la commessa è completata.";
 }
+
 
 export const BUDGET_MSG = {
   locked: "Non puoi modificare il Budget di una commessa non operativa.",
