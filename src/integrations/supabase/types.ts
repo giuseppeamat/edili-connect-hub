@@ -2681,6 +2681,10 @@ export type Database = {
         Returns: Json
       }
       is_capocantiere_di: { Args: { _cantiere_id: string }; Returns: boolean }
+      is_commessa_budget_locked: {
+        Args: { _commessa_id: string }
+        Returns: boolean
+      }
       is_membro_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
       is_membro_commessa: { Args: { _commessa_id: string }; Returns: boolean }
       is_org_member: { Args: { _org: string }; Returns: boolean }
