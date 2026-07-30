@@ -148,6 +148,12 @@ export function useCurrentUser() {
       "proprietario", "amministratore", "amministrazione", "ufficio_tecnico",
     ),
     canChangeCommessaBudgetMode: has("proprietario", "amministratore", "ufficio_tecnico"),
+    // ===== Personale / Rapportini =====
+    canViewPersonnelHourlyCost: has("proprietario", "amministratore", "amministrazione"),
+    canApproveRapportino: has(
+      "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
+    ),
+
   };
 }
 

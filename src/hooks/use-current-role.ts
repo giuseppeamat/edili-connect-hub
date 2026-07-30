@@ -26,15 +26,26 @@ export function useCurrentRole() {
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return { roles: [] as AppRole[], organizationId: null as string | null };
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("organization_id, is_active")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      const orgId = profile?.organization_id ?? null;
+      if (!orgId || (profile as any)?.is_active === false) {
+        return { roles: [] as AppRole[], organizationId: orgId };
+      }
       const { data } = await supabase
         .from("user_roles")
-        .select("role, organization_id")
-        .eq("user_id", u.user.id);
+        .select("role")
+        .eq("user_id", u.user.id)
+        .eq("organization_id", orgId);
       return {
         roles: (data ?? []).map((r) => r.role as AppRole),
-        organizationId: data?.[0]?.organization_id ?? null,
+        organizationId: orgId,
       };
     },
+
   });
 
   const roles = q.data?.roles ?? [];
