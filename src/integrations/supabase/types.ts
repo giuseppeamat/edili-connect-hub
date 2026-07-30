@@ -2249,6 +2249,10 @@ export type Database = {
       }
     }
     Functions: {
+      _assert_commessa_budget_mutabile: {
+        Args: { _commessa_id: string }
+        Returns: undefined
+      }
       _assert_commessa_fase_editabile: {
         Args: { _commessa_id: string }
         Returns: {
