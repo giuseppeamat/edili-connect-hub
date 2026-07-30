@@ -329,10 +329,11 @@ export function BudgetTab({
         <Card>
           <CardContent className="p-4 text-sm text-muted-foreground">
             Budget in modalità manuale: gli aggregati sopra sono modificabili con "Aggiorna manuale".
-            Passa alla modalità analitica per gestire le voci di dettaglio.
+            {" "}{BUDGET_MSG.manualMode}
           </CardContent>
         </Card>
       )}
+
 
       {/* BASELINE */}
       <BaselineCard s={s} canBaseline={canBaseline} onOpen={() => setBaselineDlg(true)} />
