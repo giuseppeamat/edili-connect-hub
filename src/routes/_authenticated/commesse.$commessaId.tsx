@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentiEntityPanel } from "@/components/documenti/documenti-entity-panel";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,7 @@ import {
   addCommessaMember, updateCommessaMember, removeCommessaMember,
   setCommessaResponsabile, listResponsabiliCandidati, updateCommessa,
   changeCommessaStato, closeCommessa, reopenCommessa, archiveCommessa, restoreCommessa,
-  listCommessaAudit, listRapportiniByCommessa, listDocumentiByCommessa,
+  listCommessaAudit, listRapportiniByCommessa,
 } from "@/lib/commesse.functions";
 import {
   listCantieri, createCantiere, updateCantiere, archiveCantiere, restoreCantiere, setCapocantiere,
@@ -178,7 +179,7 @@ function CommessaDetailPage() {
           />
         </TabsContent>
         <TabsContent value="documenti">
-          <DocumentiTab commessaId={c.id} />
+          <DocumentiEntityPanel entityType="commessa" entityId={c.id} canUpload canManage />
         </TabsContent>
         {user.canViewCommessaBudget && (
           <TabsContent value="budget">
@@ -946,48 +947,6 @@ function RapportiniTab({ commessaId }: any) {
               </tr>
             ))}
             {data.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nessun rapportino</td></tr>}
-          </tbody>
-        </table>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============= DOCUMENTI TAB =============
-function DocumentiTab({ commessaId }: any) {
-  const listFn = useServerFn(listDocumentiByCommessa);
-  const { data = [] } = useQuery({
-    queryKey: ["documenti-commessa", commessaId],
-    queryFn: async () => await listFn({ data: { commessa_id: commessaId } }),
-  });
-  return (
-    <Card>
-      <CardContent className="p-0">
-        <div className="p-3 flex justify-between items-center border-b">
-          <div className="text-sm text-muted-foreground">Documenti collegati ({data.length})</div>
-          <Button asChild size="sm" variant="outline"><Link to="/documenti">Vai al modulo</Link></Button>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
-            <tr>
-              <th className="text-left p-3">Nome</th>
-              <th className="text-left p-3">Categoria</th>
-              <th className="text-left p-3">Cantiere</th>
-              <th className="text-left p-3">Data</th>
-              <th className="text-left p-3">Scadenza</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(data as any[]).map((r) => (
-              <tr key={r.id} className="border-t">
-                <td className="p-3">{r.nome}</td>
-                <td className="p-3 text-xs text-muted-foreground">{r.categoria ?? "—"}</td>
-                <td className="p-3 text-xs">{r.cantiere ? `${r.cantiere.codice} — ${r.cantiere.nome}` : "—"}</td>
-                <td className="p-3">{dateIt(r.data_documento)}</td>
-                <td className="p-3">{dateIt(r.data_scadenza)}</td>
-              </tr>
-            ))}
-            {data.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nessun documento</td></tr>}
           </tbody>
         </table>
       </CardContent>
