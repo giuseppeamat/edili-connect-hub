@@ -183,7 +183,7 @@ function Dashboard() {
               {PERIODO_LABEL[p]}
             </Button>
           ))}
-          {!isLoading && data?.isEmpty && (
+          {!isPending && !isError && data?.isEmpty && (
             <Button onClick={handleSeed} disabled={seeding}>
               {seeding ? "Caricamento..." : "Carica dati demo"}
             </Button>
@@ -191,13 +191,30 @@ function Dashboard() {
         </div>
       </header>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {isPending ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-busy="true" aria-live="polite">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
+      ) : isError ? (
+        <Card role="alert" data-testid="dashboard-error" className="border-destructive/40">
+          <CardContent className="flex flex-col items-start gap-3 p-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-semibold">Non è stato possibile caricare la Dashboard.</span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Controlla la connessione e riprova. Se il problema persiste, contatta l'amministratore
+              dell'organizzazione.
+            </p>
+            <Button onClick={() => refetch()} disabled={isFetching} className="min-h-11">
+              {isFetching ? "Nuovo tentativo..." : "Riprova"}
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
+
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
