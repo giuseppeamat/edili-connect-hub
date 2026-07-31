@@ -89,6 +89,7 @@ function CommessaDetailPage() {
     qc.invalidateQueries({ queryKey: ["commessa-detail", commessaId] });
     qc.invalidateQueries({ queryKey: ["cantieri", commessaId] });
     qc.invalidateQueries({ queryKey: ["commesse"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   if (detailQuery.isLoading) {

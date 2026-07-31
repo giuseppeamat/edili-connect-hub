@@ -109,6 +109,7 @@ function PreventivoEditor() {
     qc.invalidateQueries({ queryKey: ["preventivo-cat", id] });
     qc.invalidateQueries({ queryKey: ["preventivo-voci", id] });
     qc.invalidateQueries({ queryKey: ["preventivi"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
   const saveHeader = useMutation({

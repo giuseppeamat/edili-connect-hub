@@ -129,6 +129,7 @@ function PreventiviPage() {
     mutationFn: async (payload: any) => createFn({ data: payload }),
     onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ["preventivi"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       toast.success(`Preventivo ${res.numero} creato`);
       navigate({ to: "/preventivi/$id", params: { id: res.id } });

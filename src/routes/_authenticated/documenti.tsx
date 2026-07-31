@@ -43,7 +43,7 @@ function DocumentiPage() {
       const { error } = await supabase.from("documenti").delete().eq("id", row.id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["documenti"] }); toast.success("Eliminato"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["documenti"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Eliminato"); },
   });
 
   const upload = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -78,7 +78,7 @@ function DocumentiPage() {
       };
       const { error } = await supabase.from("documenti").insert(payload);
       if (error) throw error;
-      qc.invalidateQueries({ queryKey: ["documenti"] });
+      qc.invalidateQueries({ queryKey: ["documenti"] }); qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpen(false);
       toast.success("Documento caricato");
     } catch (err: any) {
