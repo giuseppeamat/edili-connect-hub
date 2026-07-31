@@ -39,6 +39,7 @@ const PATTERNS: Array<{ re: RegExp; msg: string }> = [
   { re: /utente disattivato/i, msg: "Utente disattivato: contatta un amministratore." },
   { re: /non autenticato/i, msg: "Sessione scaduta: effettua nuovamente l'accesso." },
   { re: /non autorizzato/i, msg: "Non sei autorizzato a completare questa operazione." },
+  { re: /NOTIFICA_NON_TROVATA|notifica non trovata/i, msg: "La notifica è già stata aggiornata." },
   { re: /fase non trovata/i, msg: "La fase richiesta non è più disponibile." },
   { re: /commessa non trovata/i, msg: "La commessa richiesta non è più disponibile." },
 ];

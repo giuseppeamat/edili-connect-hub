@@ -11,6 +11,7 @@ import {
   Shield,
   Building2,
   Wallet,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
@@ -36,6 +37,7 @@ const items: NavItem[] = [
   { title: "Rapportini", url: "/rapportini", icon: ClipboardList },
   { title: "Costi personale", url: "/costi-personale", icon: Wallet, onlyForRoles: ["proprietario", "amministratore", "amministrazione"] },
   { title: "Documenti", url: "/documenti", icon: FolderOpen },
+  { title: "Notifiche", url: "/notifiche", icon: Bell },
   { title: "Scadenziario", url: "/scadenziario", icon: CalendarClock },
   { title: "Organizzazione", url: "/organizzazione", icon: Building2 },
   { title: "Audit", url: "/audit", icon: Shield },
