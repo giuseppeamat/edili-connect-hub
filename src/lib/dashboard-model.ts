@@ -147,3 +147,28 @@ export function auditLabel(action: string): string {
   };
   return map[action] ?? action.replace(/[._]/g, " ");
 }
+
+/** True se la data (YYYY-MM-DD) ricade nell'intervallo inclusivo del periodo. */
+export function inPeriodo(dateIso: string | null | undefined, range: { from: string; to: string }): boolean {
+  if (!dateIso) return false;
+  const d = String(dateIso).slice(0, 10);
+  return d >= range.from && d <= range.to;
+}
+
+/** Conta i rapportini in stato "inviato" (in attesa di approvazione). */
+export function countDaApprovare(rows: Array<{ stato?: string | null }>): number {
+  return rows.filter((r) => r.stato === "inviato").length;
+}
+
+/** Classifica un documento con scadenza rispetto a oggi. */
+export function docScadenzaStato(
+  dataScadenza: string | null | undefined,
+  today = new Date(),
+): "scaduto" | "in_scadenza" | "ok" | null {
+  const gg = daysUntil(dataScadenza, today);
+  if (gg === null) return null;
+  if (gg < 0) return "scaduto";
+  if (gg <= 30) return "in_scadenza";
+  return "ok";
+}
+
