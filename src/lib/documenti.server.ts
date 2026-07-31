@@ -321,7 +321,7 @@ export async function versionChain(
   // Risalita
   let currentId: string | null = id;
   for (let i = 0; i < 50 && currentId; i++) {
-    const { data } = await supabase
+    const { data } = (await supabase
       .from("documenti")
       .select("id, versione, is_versione_corrente, documento_precedente_id")
       .eq("id", currentId)
