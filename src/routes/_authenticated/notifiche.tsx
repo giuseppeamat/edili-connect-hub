@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { Archive, CheckCheck, Mail, MailOpen } from "lucide-react";
 import { SeverityIcon } from "@/components/notifiche/notifiche-bell";
 import {
+  getNotificheSummary,
   listNotifiche,
   markNotificaRead,
   markNotificaUnread,
@@ -91,6 +92,7 @@ function NotifichePage() {
     pageSize: PAGE_SIZE,
   };
 
+  const summaryFn = useServerFn(getNotificheSummary);
   const listFn = useServerFn(listNotifiche);
   const readFn = useServerFn(markNotificaRead);
   const unreadFn = useServerFn(markNotificaUnread);
@@ -100,7 +102,16 @@ function NotifichePage() {
 
   const query = useQuery({
     queryKey: notificheKeys.list(filters as any),
-    queryFn: () => listFn({ data: filters as any }),
+    queryFn: async () => {
+      // Garantisce che lo sweep (idempotente) sia già stato eseguito almeno una
+      // volta prima di leggere la lista, senza costi aggiuntivi se già fresco.
+      await qc.ensureQueryData({
+        queryKey: notificheKeys.preview(),
+        queryFn: () => summaryFn({ data: undefined as any }),
+        staleTime: 90_000,
+      });
+      return listFn({ data: filters as any });
+    },
     staleTime: 30_000,
     retry: 1,
   });
