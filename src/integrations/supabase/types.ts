@@ -1012,75 +1012,108 @@ export type Database = {
       }
       documenti: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           cantiere_id: string | null
           categoria: string | null
           cliente_id: string | null
           commessa_id: string | null
           created_at: string
+          created_by: string | null
           data_documento: string | null
           data_scadenza: string | null
           descrizione: string | null
           dipendente_id: string | null
+          documento_precedente_id: string | null
+          file_name_originale: string | null
           fornitore_id: string | null
           id: string
+          is_versione_corrente: boolean
           mime_type: string | null
           nome: string
+          note_versione: string | null
           organization_id: string
           preventivo_id: string | null
           size_bytes: number | null
           stato: Database["public"]["Enums"]["documento_stato"]
+          storage_bucket: string
           storage_path: string | null
           tags: string[] | null
           updated_at: string
+          updated_by: string | null
+          upload_stato: string
           uploaded_by: string | null
+          versione: number
           visibilita: Database["public"]["Enums"]["documento_visibilita"]
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
           categoria?: string | null
           cliente_id?: string | null
           commessa_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_documento?: string | null
           data_scadenza?: string | null
           descrizione?: string | null
           dipendente_id?: string | null
+          documento_precedente_id?: string | null
+          file_name_originale?: string | null
           fornitore_id?: string | null
           id?: string
+          is_versione_corrente?: boolean
           mime_type?: string | null
           nome: string
+          note_versione?: string | null
           organization_id: string
           preventivo_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
+          storage_bucket?: string
           storage_path?: string | null
           tags?: string[] | null
           updated_at?: string
+          updated_by?: string | null
+          upload_stato?: string
           uploaded_by?: string | null
+          versione?: number
           visibilita?: Database["public"]["Enums"]["documento_visibilita"]
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
           categoria?: string | null
           cliente_id?: string | null
           commessa_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_documento?: string | null
           data_scadenza?: string | null
           descrizione?: string | null
           dipendente_id?: string | null
+          documento_precedente_id?: string | null
+          file_name_originale?: string | null
           fornitore_id?: string | null
           id?: string
+          is_versione_corrente?: boolean
           mime_type?: string | null
           nome?: string
+          note_versione?: string | null
           organization_id?: string
           preventivo_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
+          storage_bucket?: string
           storage_path?: string | null
           tags?: string[] | null
           updated_at?: string
+          updated_by?: string | null
+          upload_stato?: string
           uploaded_by?: string | null
+          versione?: number
           visibilita?: Database["public"]["Enums"]["documento_visibilita"]
         }
         Relationships: [
@@ -1139,6 +1172,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_precedente_fk"
+            columns: ["documento_precedente_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "documenti"
+            referencedColumns: ["id", "organization_id"]
           },
           {
             foreignKeyName: "documenti_preventivo_id_fkey"
@@ -2637,6 +2677,10 @@ export type Database = {
       distribuisci_pesi_equamente: {
         Args: { _commessa_id: string }
         Returns: number
+      }
+      documento_scadenza_stato: {
+        Args: { _data_scadenza: string; _soglia_giorni?: number }
+        Returns: string
       }
       get_personale_costo_orario_at_date: {
         Args: { _data: string; _org: string; _user_id: string }
