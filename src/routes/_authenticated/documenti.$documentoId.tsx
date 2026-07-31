@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Archive, ArchiveRestore, Download, Eye, FilePlus2, Pencil } from "lucide-react";
+import { ConfirmDialog } from "@/components/commesse/confirm-dialog";
+import { MSG_ARCHIVE_CHAIN, MSG_RESTORE_CHAIN, categoriaLabel } from "@/lib/documenti-model";
 import { dateIt } from "@/lib/format";
 import { CATEGORIE_DOCUMENTO, scadenzaLabel } from "@/lib/documenti-model";
 import {
@@ -114,6 +116,8 @@ function DocumentoDetailPage() {
       ).data ?? [],
   });
 
+  const [confirm, setConfirm] = useState<"archive" | "restore" | null>(null);
+
   const archive = useMutation({
     mutationFn: () => archiveFn({ data: { id: documentoId } }),
     onSuccess: () => {
@@ -150,6 +154,19 @@ function DocumentoDetailPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!confirm}
+        onOpenChange={(v) => !v && setConfirm(null)}
+        title={confirm === "restore" ? "Ripristina documento" : "Archivia documento"}
+        description={confirm === "restore" ? MSG_RESTORE_CHAIN : MSG_ARCHIVE_CHAIN}
+        confirmLabel={confirm === "restore" ? "Ripristina" : "Archivia"}
+        isPending={archive.isPending || restore.isPending}
+        onConfirm={async () => {
+          if (confirm === "archive") await archive.mutateAsync();
+          else if (confirm === "restore") await restore.mutateAsync();
+          setConfirm(null);
+        }}
+      />
       <PageHeader
         title={doc.nome}
         description={`Versione ${doc.versione}${doc.archived_at ? " — archiviato" : ""}`}
@@ -177,12 +194,12 @@ function DocumentoDetailPage() {
               </Button>
             )}
             {caps.canArchive && (
-              <Button size="sm" variant="outline" onClick={() => archive.mutate()}>
+              <Button size="sm" variant="outline" onClick={() => setConfirm("archive")}>
                 <Archive className="h-4 w-4 mr-1" />Archivia
               </Button>
             )}
             {caps.canRestore && (
-              <Button size="sm" variant="outline" onClick={() => restore.mutate()}>
+              <Button size="sm" variant="outline" onClick={() => setConfirm("restore")}>
                 <ArchiveRestore className="h-4 w-4 mr-1" />Ripristina
               </Button>
             )}
@@ -194,7 +211,7 @@ function DocumentoDetailPage() {
         <Card className="lg:col-span-2">
           <CardHeader><CardTitle className="text-base">Dati documento</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <Field label="Categoria" value={doc.categoria ?? "—"} />
+            <Field label="Categoria" value={categoriaLabel(doc.categoria)} />
             <Field label="Visibilità" value={doc.visibilita} />
             <Field label="Data documento" value={doc.data_documento ? dateIt(doc.data_documento) : "—"} />
             <Field
