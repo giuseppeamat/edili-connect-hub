@@ -76,7 +76,10 @@ describe("cleanup orfani", () => {
     expect(isOrphanObject("org/doc/1/a.pdf", referenced)).toBe(false);
   });
   it("rispetta la soglia temporale di 24 ore", () => {
-    expect(orphanCleanupAllowed(hoursAgo(2), NOW)).toEqual({ ok: false, error: ERR_CLEANUP_TOO_RECENT });
+    expect(orphanCleanupAllowed(hoursAgo(2), NOW)).toEqual({
+      ok: false,
+      error: ERR_CLEANUP_TOO_RECENT,
+    });
     expect(orphanCleanupAllowed(hoursAgo(30), NOW)).toEqual({ ok: true });
   });
   it("la forzatura QA esplicita bypassa la soglia", () => {
@@ -89,7 +92,13 @@ describe("cleanup orfani", () => {
   it("solo proprietario e amministratore possono fare cleanup", () => {
     expect(canCleanupStorage(["proprietario"])).toBe(true);
     expect(canCleanupStorage(["amministratore"])).toBe(true);
-    for (const r of ["capocantiere", "operaio", "responsabile_commessa", "ufficio_tecnico", "amministrazione"]) {
+    for (const r of [
+      "capocantiere",
+      "operaio",
+      "responsabile_commessa",
+      "ufficio_tecnico",
+      "amministrazione",
+    ]) {
       expect(canCleanupStorage([r])).toBe(false);
     }
     expect(canCleanupStorage([])).toBe(false);
@@ -98,15 +107,43 @@ describe("cleanup orfani", () => {
 
 describe("riconciliazione upload interrotti", () => {
   it("preparato recente senza file: non toccare", () => {
-    expect(uploadReconciliation({ upload_stato: "preparato", created_at: hoursAgo(2), hasFile: false, now: NOW })).toBe("nessuna_azione");
+    expect(
+      uploadReconciliation({
+        upload_stato: "preparato",
+        created_at: hoursAgo(2),
+        hasFile: false,
+        now: NOW,
+      }),
+    ).toBe("nessuna_azione");
   });
   it("preparato oltre soglia senza file: può passare a fallito", () => {
-    expect(uploadReconciliation({ upload_stato: "preparato", created_at: hoursAgo(48), hasFile: false, now: NOW })).toBe("marca_fallito");
+    expect(
+      uploadReconciliation({
+        upload_stato: "preparato",
+        created_at: hoursAgo(48),
+        hasFile: false,
+        now: NOW,
+      }),
+    ).toBe("marca_fallito");
   });
   it("upload completato ma finalize fallito: ritentabile", () => {
-    expect(uploadReconciliation({ upload_stato: "preparato", created_at: hoursAgo(48), hasFile: true, now: NOW })).toBe("finalizzabile");
+    expect(
+      uploadReconciliation({
+        upload_stato: "preparato",
+        created_at: hoursAgo(48),
+        hasFile: true,
+        now: NOW,
+      }),
+    ).toBe("finalizzabile");
   });
   it("documento disponibile: nessuna riconciliazione", () => {
-    expect(uploadReconciliation({ upload_stato: "disponibile", created_at: hoursAgo(48), hasFile: true, now: NOW })).toBe("gia_disponibile");
+    expect(
+      uploadReconciliation({
+        upload_stato: "disponibile",
+        created_at: hoursAgo(48),
+        hasFile: true,
+        now: NOW,
+      }),
+    ).toBe("gia_disponibile");
   });
 });

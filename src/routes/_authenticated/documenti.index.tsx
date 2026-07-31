@@ -85,11 +85,15 @@ function DocumentiPage() {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline">
-              <Link to="/scadenziario"><CalendarClock className="h-4 w-4 mr-1" />Scadenziario</Link>
+              <Link to="/scadenziario">
+                <CalendarClock className="h-4 w-4 mr-1" />
+                Scadenziario
+              </Link>
             </Button>
             {caps?.canUpload && (
               <Button onClick={() => setOpen(true)}>
-                <Upload className="h-4 w-4 mr-1" />Nuovo documento
+                <Upload className="h-4 w-4 mr-1" />
+                Nuovo documento
               </Button>
             )}
           </div>
@@ -104,25 +108,46 @@ function DocumentiPage() {
               id="doc-q"
               value={q}
               placeholder="Nome documento…"
-              onChange={(e) => { setQ(e.target.value); setPage(1); }}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <div>
             <Label>Categoria</Label>
-            <Select value={categoria} onValueChange={(v) => { setCategoria(v); setPage(1); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={categoria}
+              onValueChange={(v) => {
+                setCategoria(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>Tutte</SelectItem>
                 {CATEGORIA_FILTER_OPTIONS.map((c) => (
-                  <SelectItem key={c} value={c}>{categoriaLabel(c)}</SelectItem>
+                  <SelectItem key={c} value={c}>
+                    {categoriaLabel(c)}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
             <Label>Stato scadenza</Label>
-            <Select value={scadenza} onValueChange={(v) => { setScadenza(v); setPage(1); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={scadenza}
+              onValueChange={(v) => {
+                setScadenza(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>Tutti</SelectItem>
                 <SelectItem value="scaduto">Scaduti</SelectItem>
@@ -134,8 +159,16 @@ function DocumentiPage() {
           </div>
           <div>
             <Label>Ordinamento</Label>
-            <Select value={sort} onValueChange={(v) => { setSort(v); setPage(1); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+            <Select
+              value={sort}
+              onValueChange={(v) => {
+                setSort(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="updated_at">Ultima modifica</SelectItem>
                 <SelectItem value="created_at">Data creazione</SelectItem>
@@ -150,15 +183,28 @@ function DocumentiPage() {
             <Switch
               id="arch"
               checked={includeArchived}
-              onCheckedChange={(v) => { setIncludeArchived(v); setPage(1); }}
+              onCheckedChange={(v) => {
+                setIncludeArchived(v);
+                setPage(1);
+              }}
             />
-            <Label htmlFor="arch" className="text-sm">Includi archiviati</Label>
+            <Label htmlFor="arch" className="text-sm">
+              Includi archiviati
+            </Label>
           </div>
           {caps?.canAdmin && (
             <div className="flex items-center gap-2">
               <Label className="text-sm">Stato upload</Label>
-              <Select value={uploadStato} onValueChange={(v) => { setUploadStato(v); setPage(1); }}>
-                <SelectTrigger className="w-[190px]"><SelectValue /></SelectTrigger>
+              <Select
+                value={uploadStato}
+                onValueChange={(v) => {
+                  setUploadStato(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[190px]">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="disponibile">Disponibili</SelectItem>
                   <SelectItem value="preparato">In attesa di file</SelectItem>
@@ -174,8 +220,12 @@ function DocumentiPage() {
         {isLoading && <div className="p-6 text-sm text-muted-foreground">Caricamento…</div>}
         {isError && (
           <div className="p-6 text-sm">
-            <p className="text-destructive">{(error as any)?.message ?? "Errore di caricamento."}</p>
-            <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>Riprova</Button>
+            <p className="text-destructive">
+              {(error as any)?.message ?? "Errore di caricamento."}
+            </p>
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>
+              Riprova
+            </Button>
           </div>
         )}
         {data && (
@@ -189,12 +239,24 @@ function DocumentiPage() {
 
       {pages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <span className="text-sm text-muted-foreground">Pagina {page} di {pages}</span>
+          <span className="text-sm text-muted-foreground">
+            Pagina {page} di {pages}
+          </span>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
               Precedente
             </Button>
-            <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={page >= pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
               Successiva
             </Button>
           </div>

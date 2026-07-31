@@ -12,12 +12,7 @@ export const DOCUMENTI_BUCKET = "documenti";
 export const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 /** MIME ammessi con preview e download. */
-export const PREVIEW_MIME = [
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-] as const;
+export const PREVIEW_MIME = ["application/pdf", "image/jpeg", "image/png", "image/webp"] as const;
 
 /** MIME ammessi solo in download. */
 export const DOWNLOAD_ONLY_MIME = [
@@ -79,8 +74,7 @@ export const ERR_MIME = "Questo formato di file non è supportato.";
 export const ERR_SIZE = "Il file supera la dimensione massima consentita.";
 export const ERR_NOT_FOUND = "Elemento non trovato.";
 export const ERR_FILE_MISSING = "Il file caricato non è disponibile.";
-export const ERR_CONFLICT =
-  "Il documento è stato modificato da un altro utente. Ricarica i dati.";
+export const ERR_CONFLICT = "Il documento è stato modificato da un altro utente. Ricarica i dati.";
 
 export function fileExtension(fileName: string): string {
   const clean = (fileName ?? "").trim().toLowerCase();
@@ -339,8 +333,7 @@ export function isCategoriaLegacy(categoria?: string | null): boolean {
 export function isCategoriaValida(categoria?: string | null): boolean {
   if (!categoria) return true;
   return (
-    (CATEGORIE_DOCUMENTO as readonly string[]).includes(categoria) ||
-    isCategoriaLegacy(categoria)
+    (CATEGORIE_DOCUMENTO as readonly string[]).includes(categoria) || isCategoriaLegacy(categoria)
   );
 }
 
@@ -354,10 +347,7 @@ export function categorieSelezionabili(categoriaCorrente?: string | null): strin
 }
 
 /** Opzioni di filtro: whitelist stabile + categorie storiche ancora presenti. */
-export const CATEGORIA_FILTER_OPTIONS: string[] = [
-  ...CATEGORIE_DOCUMENTO,
-  ...CATEGORIE_LEGACY,
-];
+export const CATEGORIA_FILTER_OPTIONS: string[] = [...CATEGORIE_DOCUMENTO, ...CATEGORIE_LEGACY];
 
 export const VISIBILITA = ["privato", "organizzazione"] as const;
 
@@ -431,7 +421,6 @@ export function chainTuttaAttiva(chain: VersioneRow[]): boolean {
 export const MSG_ARCHIVE_CHAIN =
   "Archiviando il documento verranno archiviate tutte le sue versioni.";
 export const MSG_RESTORE_CHAIN = "Verranno ripristinate tutte le versioni del documento.";
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Riconciliazione upload interrotti (regole pure — nessun cron in questo blocco)

@@ -77,19 +77,22 @@ export function DocumentoUploadDialog({
     queryKey: ["documenti", "opts", "commesse"],
     enabled: open && !isVersion,
     queryFn: async () =>
-      (await supabase.from("commesse").select("id, codice, denominazione").order("codice")).data ?? [],
+      (await supabase.from("commesse").select("id, codice, denominazione").order("codice")).data ??
+      [],
   });
   const { data: cantieri = [] } = useQuery({
     queryKey: ["documenti", "opts", "cantieri", commessaId],
     enabled: open && !isVersion && commessaId !== NONE,
     queryFn: async () =>
-      (await supabase.from("cantieri").select("id, codice, nome").eq("commessa_id", commessaId)).data ?? [],
+      (await supabase.from("cantieri").select("id, codice, nome").eq("commessa_id", commessaId))
+        .data ?? [],
   });
   const { data: clienti = [] } = useQuery({
     queryKey: ["documenti", "opts", "clienti"],
     enabled: open && !isVersion,
     queryFn: async () =>
-      (await supabase.from("clienti").select("id, denominazione").order("denominazione")).data ?? [],
+      (await supabase.from("clienti").select("id, denominazione").order("denominazione")).data ??
+      [],
   });
 
   const reset = () => {
@@ -190,11 +193,15 @@ export function DocumentoUploadDialog({
                 <div>
                   <Label>Categoria</Label>
                   <Select value={categoria} onValueChange={setCategoria}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NONE}>—</SelectItem>
                       {CATEGORIE_DOCUMENTO.map((c) => (
-                        <SelectItem key={c} value={c}>{categoriaLabel(c)}</SelectItem>
+                        <SelectItem key={c} value={c}>
+                          {categoriaLabel(c)}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -202,11 +209,15 @@ export function DocumentoUploadDialog({
                 <div>
                   <Label>Cliente</Label>
                   <Select value={clienteId} onValueChange={setClienteId} disabled={lockPreset}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NONE}>—</SelectItem>
                       {(clienti as any[]).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.denominazione}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.denominazione}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -217,26 +228,41 @@ export function DocumentoUploadDialog({
                   <Label>Commessa</Label>
                   <Select
                     value={commessaId}
-                    onValueChange={(v) => { setCommessaId(v); setCantiereId(NONE); }}
+                    onValueChange={(v) => {
+                      setCommessaId(v);
+                      setCantiereId(NONE);
+                    }}
                     disabled={lockPreset}
                   >
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NONE}>—</SelectItem>
                       {(commesse as any[]).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.codice} — {c.denominazione}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.codice} — {c.denominazione}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Cantiere</Label>
-                  <Select value={cantiereId} onValueChange={setCantiereId} disabled={commessaId === NONE}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <Select
+                    value={cantiereId}
+                    onValueChange={setCantiereId}
+                    disabled={commessaId === NONE}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NONE}>—</SelectItem>
                       {(cantieri as any[]).map((k) => (
-                        <SelectItem key={k.id} value={k.id}>{k.codice} — {k.nome}</SelectItem>
+                        <SelectItem key={k.id} value={k.id}>
+                          {k.codice} — {k.nome}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

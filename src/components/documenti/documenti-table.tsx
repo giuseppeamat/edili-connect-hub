@@ -138,7 +138,9 @@ export function DocumentiTable({
                   >
                     {d.nome}
                   </Link>
-                  <div className="text-xs text-muted-foreground md:hidden">{d.categoria ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground md:hidden">
+                    {d.categoria ?? "—"}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{d.categoria ?? "—"}</TableCell>
                 {showCommessa && (
@@ -165,12 +167,22 @@ export function DocumentiTable({
                 <TableCell className="hidden lg:table-cell">v{d.versione}</TableCell>
                 <TableCell className="text-right whitespace-nowrap">
                   {d.upload_stato === "disponibile" && canPreview(d.mime_type) && (
-                    <Button size="icon" variant="ghost" aria-label="Anteprima" onClick={() => preview(d.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Anteprima"
+                      onClick={() => preview(d.id)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
                   {d.upload_stato === "disponibile" && (
-                    <Button size="icon" variant="ghost" aria-label="Scarica" onClick={() => download(d.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Scarica"
+                      onClick={() => download(d.id)}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   )}
@@ -209,7 +221,10 @@ export function DocumentiTable({
             ))}
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showCommessa ? 7 : 6} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={showCommessa ? 7 : 6}
+                  className="text-center text-muted-foreground py-8"
+                >
                   {emptyLabel}
                 </TableCell>
               </TableRow>

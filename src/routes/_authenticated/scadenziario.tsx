@@ -47,8 +47,16 @@ const GROUPS = [
   { key: "scaduti", label: "Scaduti", test: (g: number | null) => g !== null && g < 0 },
   { key: "oggi", label: "In scadenza oggi", test: (g: number | null) => g === 0 },
   { key: "7", label: "Entro 7 giorni", test: (g: number | null) => g !== null && g > 0 && g <= 7 },
-  { key: "30", label: "Entro 30 giorni", test: (g: number | null) => g !== null && g > 7 && g <= 30 },
-  { key: "60", label: "Entro 60 giorni", test: (g: number | null) => g !== null && g > 30 && g <= 60 },
+  {
+    key: "30",
+    label: "Entro 30 giorni",
+    test: (g: number | null) => g !== null && g > 7 && g <= 30,
+  },
+  {
+    key: "60",
+    label: "Entro 60 giorni",
+    test: (g: number | null) => g !== null && g > 30 && g <= 60,
+  },
   { key: "oltre", label: "Oltre 60 giorni", test: (g: number | null) => g !== null && g > 60 },
 ];
 
@@ -80,7 +88,9 @@ function ScadenziarioPage() {
         title="Scadenziario"
         description="Documenti in scadenza raggruppati per finestra temporale"
         actions={
-          <Button variant="outline" asChild><Link to="/documenti">Archivio documenti</Link></Button>
+          <Button variant="outline" asChild>
+            <Link to="/documenti">Archivio documenti</Link>
+          </Button>
         }
       />
 
@@ -89,7 +99,9 @@ function ScadenziarioPage() {
           <div>
             <Label>Finestra</Label>
             <Select value={filtro} onValueChange={setFiltro}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">Scaduti e prossimi 60 giorni</SelectItem>
                 <SelectItem value="scaduti">Solo scaduti</SelectItem>
@@ -103,11 +115,15 @@ function ScadenziarioPage() {
           <div>
             <Label>Categoria</Label>
             <Select value={categoria} onValueChange={setCategoria}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>Tutte</SelectItem>
                 {CATEGORIE_DOCUMENTO.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -119,7 +135,9 @@ function ScadenziarioPage() {
       {isError && (
         <Card className="p-6 text-sm">
           <p className="text-destructive">{(error as any)?.message ?? "Errore di caricamento."}</p>
-          <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>Riprova</Button>
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>
+            Riprova
+          </Button>
         </Card>
       )}
 
@@ -129,7 +147,9 @@ function ScadenziarioPage() {
             <Card key={g.key}>
               <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-base">{g.label}</CardTitle>
-                <Badge variant={g.key === "scaduti" ? "destructive" : "outline"}>{g.items.length}</Badge>
+                <Badge variant={g.key === "scaduti" ? "destructive" : "outline"}>
+                  {g.items.length}
+                </Badge>
               </CardHeader>
               <CardContent className="space-y-2">
                 {g.items.length === 0 && (
