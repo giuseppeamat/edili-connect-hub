@@ -13,8 +13,7 @@ describe("periodRange", () => {
 describe("daysUntil", () => {
   it("futuro", () => expect(daysUntil("2026-03-20", today)).toBe(5));
   it("passato", () => expect(daysUntil("2026-03-10", today)).toBe(-5));
-  it("null", () => expect(daysUntil(null, today)).toBeNull();
-  );
+  it("null", () => expect(daysUntil(null, today)).toBeNull());
 });
 
 describe("commessaAlerts", () => {
