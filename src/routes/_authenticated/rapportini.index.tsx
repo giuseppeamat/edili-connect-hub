@@ -21,7 +21,12 @@ import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
 
+const searchSchema = z.object({
+  stato: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/_authenticated/rapportini/")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
       { title: "Rapportini — CantiereOS" },
