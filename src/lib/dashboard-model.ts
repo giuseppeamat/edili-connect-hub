@@ -79,7 +79,11 @@ export function commessaAlerts(c: CommessaAlertInput, today = new Date()): Comme
     out.push({ code: "in_scadenza", label: `Consegna fra ${gg} gg`, severity: "attenzione" });
   }
   if (gg !== null && gg >= 0 && gg <= 30 && avanz < 70) {
-    out.push({ code: "avanzamento_basso", label: `Avanzamento ${avanz.toFixed(0)}%`, severity: "attenzione" });
+    out.push({
+      code: "avanzamento_basso",
+      label: `Avanzamento ${avanz.toFixed(0)}%`,
+      severity: "attenzione",
+    });
   }
   if (stato === "sospesa") {
     out.push({ code: "sospesa", label: "Commessa sospesa", severity: "attenzione" });
@@ -93,9 +97,17 @@ export function commessaAlerts(c: CommessaAlertInput, today = new Date()): Comme
   if (previsti > 0) {
     const ratio = sostenuti / previsti;
     if (ratio > 1) {
-      out.push({ code: "budget_superato", label: `Costi oltre budget (${(ratio * 100).toFixed(0)}%)`, severity: "critico" });
+      out.push({
+        code: "budget_superato",
+        label: `Costi oltre budget (${(ratio * 100).toFixed(0)}%)`,
+        severity: "critico",
+      });
     } else if (ratio >= 0.9) {
-      out.push({ code: "budget_vicino", label: `Budget al ${(ratio * 100).toFixed(0)}%`, severity: "attenzione" });
+      out.push({
+        code: "budget_vicino",
+        label: `Budget al ${(ratio * 100).toFixed(0)}%`,
+        severity: "attenzione",
+      });
     }
   }
   return out;
@@ -146,4 +158,31 @@ export function auditLabel(action: string): string {
     "attivita.created": "Attività CRM creata",
   };
   return map[action] ?? action.replace(/[._]/g, " ");
+}
+
+/** True se la data (YYYY-MM-DD) ricade nell'intervallo inclusivo del periodo. */
+export function inPeriodo(
+  dateIso: string | null | undefined,
+  range: { from: string; to: string },
+): boolean {
+  if (!dateIso) return false;
+  const d = String(dateIso).slice(0, 10);
+  return d >= range.from && d <= range.to;
+}
+
+/** Conta i rapportini in stato "inviato" (in attesa di approvazione). */
+export function countDaApprovare(rows: Array<{ stato?: string | null }>): number {
+  return rows.filter((r) => r.stato === "inviato").length;
+}
+
+/** Classifica un documento con scadenza rispetto a oggi. */
+export function docScadenzaStato(
+  dataScadenza: string | null | undefined,
+  today = new Date(),
+): "scaduto" | "in_scadenza" | "ok" | null {
+  const gg = daysUntil(dataScadenza, today);
+  if (gg === null) return null;
+  if (gg < 0) return "scaduto";
+  if (gg <= 30) return "in_scadenza";
+  return "ok";
 }
