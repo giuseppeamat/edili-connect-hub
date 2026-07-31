@@ -328,7 +328,7 @@ export const updateDocumento = createServerFn({ method: "POST" })
 
       const { data: updated, error } = await context.supabase
         .from("documenti")
-        .update(patch)
+        .update(patch as any)
         .eq("id", data.id)
         .eq("organization_id", ctx.organizationId)
         .eq("updated_at", doc.updated_at)
@@ -440,7 +440,7 @@ export const prepareDocumentoVersionUpload = createServerFn({ method: "POST" })
       const { data: created, error } = await context.supabase
         .from("documenti")
         .insert({
-          ...base,
+          ...(base as any),
           organization_id: ctx.organizationId,
           documento_precedente_id: corrente.id,
           versione: maxVersione + 1,
@@ -454,7 +454,7 @@ export const prepareDocumentoVersionUpload = createServerFn({ method: "POST" })
           created_by: context.userId,
           uploaded_by: context.userId,
           updated_by: context.userId,
-        })
+        } as any)
         .select("id, versione")
         .single();
       if (error) throw error;
