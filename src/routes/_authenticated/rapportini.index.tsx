@@ -20,6 +20,8 @@ import { listRapportini, listRapportinoAssignableCommesse, archiveRapportino } f
 import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
 const searchSchema = z.object({
   stato: fallback(z.string(), "").default(""),
