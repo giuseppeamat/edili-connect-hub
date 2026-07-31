@@ -390,3 +390,65 @@ export function scadenziarioRange(q: any, filtro: string) {
       return q.not("data_scadenza", "is", null).lte("data_scadenza", isoDay(30));
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cleanup tecnico: file Storage orfani (Sprint 7 — hardening finale)
+// ─────────────────────────────────────────────────────────────────────────────
+import { canCleanupStorage } from "@/lib/documenti-model";
+
+export function assertCleanup(ctx: DocContext) {
+  if (!canCleanupStorage(ctx.roles)) throw new Error("Non autorizzato");
+}
+
+export type StorageObjectInfo = {
+  path: string;
+  size: number | null;
+  created_at: string | null;
+  mime_type: string | null;
+};
+
+/** Elenca ricorsivamente gli oggetti sotto un prefisso (max ~5 livelli). */
+export async function listStorageObjects(
+  supabase: any,
+  prefix: string,
+  depth = 0,
+): Promise<StorageObjectInfo[]> {
+  if (depth > 5) return [];
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTI_BUCKET)
+    .list(prefix, { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (error || !data) return [];
+  const out: StorageObjectInfo[] = [];
+  for (const entry of data as any[]) {
+    const full = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.id === null || entry.metadata == null) {
+      out.push(...(await listStorageObjects(supabase, full, depth + 1)));
+    } else {
+      out.push({
+        path: full,
+        size: entry.metadata?.size ?? null,
+        created_at: entry.created_at ?? null,
+        mime_type: entry.metadata?.mimetype ?? null,
+      });
+    }
+  }
+  return out;
+}
+
+/** Tutti i path referenziati da un documento dell'organizzazione (qualunque stato). */
+export async function referencedStoragePaths(supabase: any, org: string): Promise<Set<string>> {
+  const paths = new Set<string>();
+  const pageSize = 1000;
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await supabase
+      .from("documenti")
+      .select("storage_path")
+      .eq("organization_id", org)
+      .not("storage_path", "is", null)
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error || !data || data.length === 0) break;
+    (data as any[]).forEach((r) => r.storage_path && paths.add(String(r.storage_path)));
+    if (data.length < pageSize) break;
+  }
+  return paths;
+}
