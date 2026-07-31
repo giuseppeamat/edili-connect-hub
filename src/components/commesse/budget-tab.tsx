@@ -746,31 +746,31 @@ function VoceFormDialog({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Cantiere</Label>
-              <Select value={f.cantiere_id || "__none__"} onValueChange={(v) => setF({ ...f, cantiere_id: v === "__none__" ? "" : v })}>
+              <Select value={f.cantiere_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, cantiere_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuno</SelectItem>
-                  {cantieri.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuno</SelectItem>
+                  {uniqueEntities(cantieri).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Fase</Label>
-              <Select value={f.fase_id || "__none__"} onValueChange={(v) => setF({ ...f, fase_id: v === "__none__" ? "" : v })}>
+              <Select value={f.fase_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, fase_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuna</SelectItem>
-                  {fasi.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuna</SelectItem>
+                  {uniqueEntities(fasi).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Fornitore</Label>
-              <Select value={f.fornitore_id || "__none__"} onValueChange={(v) => setF({ ...f, fornitore_id: v === "__none__" ? "" : v })}>
+              <Select value={f.fornitore_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, fornitore_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuno</SelectItem>
-                  {fornitori.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuno</SelectItem>
+                  {uniqueEntities(fornitori).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
