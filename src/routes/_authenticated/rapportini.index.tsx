@@ -46,8 +46,12 @@ function fullName(r: any) {
 
 function RapportiniPage() {
   const qc = useQueryClient();
+  const { stato: statoParam } = Route.useSearch();
   const [open, setOpen] = useState(false);
-  const [filters, setFilters] = useState<RapportinoFilters>({ includeArchived: false });
+  const [filters, setFilters] = useState<RapportinoFilters>({
+    includeArchived: false,
+    stato: statoParam || null,
+  });
   const [archTarget, setArchTarget] = useState<any | null>(null);
   const [archMotivo, setArchMotivo] = useState("");
 
