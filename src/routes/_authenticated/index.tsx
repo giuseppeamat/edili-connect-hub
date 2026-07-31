@@ -1,14 +1,20 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getDashboardOverview } from "@/lib/commesse.functions";
+import { useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
+import { getDashboardOperativa } from "@/lib/dashboard.functions";
+import { PERIODO_LABEL, isPeriodo, type PeriodoKey } from "@/lib/dashboard-model";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { eur, num } from "@/lib/format";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { eur, num, dateIt } from "@/lib/format";
 import { seedDemoData } from "@/lib/seed-demo";
-import { toast } from "sonner";
-import { useState } from "react";
 import {
   FileText,
   HardHat,
@@ -16,15 +22,27 @@ import {
   TrendingUp,
   CalendarClock,
   Clock,
-  Receipt,
   Wallet,
+  AlertTriangle,
+  ClipboardCheck,
+  Activity,
+  PhoneCall,
+  ArrowRight,
 } from "lucide-react";
 
+const searchSchema = z.object({
+  periodo: fallback(z.string(), "30").default("30"),
+});
+
 export const Route = createFileRoute("/_authenticated/")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Dashboard — CantiereOS" },
-      { name: "description", content: "Panoramica commesse, preventivi, cantieri e scadenze." },
+      { title: "Dashboard operativa — CantiereOS" },
+      {
+        name: "description",
+        content: "Cosa richiede attenzione oggi: commesse critiche, rapportini da approvare, scadenze e attività.",
+      },
     ],
   }),
   component: Dashboard,
@@ -37,6 +55,7 @@ function KpiCard({
   hint,
   tone = "default",
   to,
+  search,
 }: {
   title: string;
   value: string;
@@ -44,6 +63,7 @@ function KpiCard({
   hint?: string;
   tone?: "default" | "warning" | "success" | "destructive";
   to?: string;
+  search?: Record<string, string>;
 }) {
   const toneCls = {
     default: "bg-primary/10 text-primary",
@@ -53,7 +73,7 @@ function KpiCard({
   }[tone];
   const body = (
     <CardContent className="p-4 md:p-5 flex items-start gap-3">
-      <div className={`rounded-lg p-2.5 ${toneCls}`}>
+      <div className={`rounded-lg p-2.5 shrink-0 ${toneCls}`}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
@@ -67,29 +87,60 @@ function KpiCard({
     return (
       <Link
         to={to as any}
+        search={search as any}
         aria-label={`Vai a ${title}`}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Card className="transition hover:shadow-md hover:border-primary/40 cursor-pointer h-full">
-          {body}
-        </Card>
+        <Card className="transition hover:shadow-md hover:border-primary/40 cursor-pointer h-full">{body}</Card>
       </Link>
     );
   }
   return <Card>{body}</Card>;
 }
 
+function SectionCard({
+  title,
+  icon: Icon,
+  action,
+  children,
+}: {
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="h-full">
+      <CardHeader className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 pb-3">
+        <CardTitle className="flex min-w-0 items-center gap-2 text-base">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="truncate">{title}</span>
+        </CardTitle>
+        {action}
+      </CardHeader>
+      <CardContent className="space-y-2">{children}</CardContent>
+    </Card>
+  );
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="text-sm text-muted-foreground py-2">{text}</div>;
+}
+
+const sevVariant = (s: string) => (s === "critico" ? "destructive" : s === "attenzione" ? "secondary" : "outline");
 
 function Dashboard() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const periodo: PeriodoKey = isPeriodo(search.periodo) ? search.periodo : "30";
   const [seeding, setSeeding] = useState(false);
 
-  const overviewFn = useServerFn(getDashboardOverview);
+  const dashFn = useServerFn(getDashboardOperativa);
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: async () => await overviewFn(),
+    queryKey: ["dashboard-operativa", periodo],
+    queryFn: async () => await dashFn({ data: { periodo } }),
   });
-
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -104,49 +155,283 @@ function Dashboard() {
     }
   };
 
+  const kpi = data?.kpi;
+  const econ = data?.economia ?? null;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Panoramica in tempo reale della tua impresa</p>
+      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold truncate">Dashboard operativa</h1>
+          <p className="text-sm text-muted-foreground">
+            Cosa richiede attenzione oggi · {PERIODO_LABEL[periodo]}
+          </p>
         </div>
-        {!isLoading && data?.totalRecords === 0 && (
-          <Button onClick={handleSeed} disabled={seeding} variant="default">
-            {seeding ? "Caricamento..." : "Carica dati demo"}
-          </Button>
-        )}
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {(Object.keys(PERIODO_LABEL) as PeriodoKey[]).map((p) => (
+            <Button
+              key={p}
+              size="sm"
+              variant={p === periodo ? "default" : "outline"}
+              onClick={() => navigate({ to: "/", search: { periodo: p } })}
+            >
+              {PERIODO_LABEL[p]}
+            </Button>
+          ))}
+          {!isLoading && data?.isEmpty && (
+            <Button onClick={handleSeed} disabled={seeding}>
+              {seeding ? "Caricamento..." : "Carica dati demo"}
+            </Button>
+          )}
+        </div>
+      </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Preventivi aperti" value={String(data?.preventiviAperti ?? 0)} icon={FileText} to="/preventivi" />
-        {data?.canViewEconomics && (
-          <KpiCard title="Valore commesse" value={eur(data?.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
-        )}
-        <KpiCard title="Cantieri attivi" value={String(data?.cantieriAttivi ?? 0)} icon={HardHat} tone="warning" to="/commesse" />
-        {data?.canViewEconomics && (
-          <KpiCard title="Costi sostenuti" value={eur(data?.costiSostenuti)} icon={Wallet} to="/commesse" />
-        )}
-        {data?.canViewEconomics && (
-          <KpiCard title="Margine previsto" value={eur(data?.marginePrevisto)} icon={TrendingUp} tone={Number(data?.marginePrevisto ?? 0) >= 0 ? "success" : "destructive"} to="/commesse" />
-        )}
-        <KpiCard title="Documenti in scadenza (30gg)" value={String(data?.docsInScadenza ?? 0)} icon={CalendarClock} tone="warning" to="/scadenziario" />
-        <KpiCard title="Ore lavorate (mese)" value={num(data?.oreMese, 1) + " h"} icon={Clock} to="/rapportini" />
-        {data?.canViewEconomics && (
-          <KpiCard title="SAL da emettere" value={String(data?.salDaEmettere ?? 0)} icon={Receipt} to="/commesse" />
-        )}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard
+              title="Commesse critiche"
+              value={String(kpi?.commesseCritiche ?? 0)}
+              icon={AlertTriangle}
+              tone={(kpi?.commesseCritiche ?? 0) > 0 ? "destructive" : "success"}
+              hint={`${kpi?.commesseInCorso ?? 0} in corso`}
+              to="/commesse"
+            />
+            <KpiCard
+              title="Rapportini da approvare"
+              value={String(kpi?.rapportiniDaApprovare ?? 0)}
+              icon={ClipboardCheck}
+              tone={(kpi?.rapportiniDaApprovare ?? 0) > 0 ? "warning" : "default"}
+              to="/rapportini"
+              search={{ stato: "inviato" }}
+            />
+            <KpiCard
+              title="Ore nel periodo"
+              value={`${num(kpi?.orePeriodo, 1)} h`}
+              icon={Clock}
+              hint={`${num(kpi?.oreApprovate, 1)} h approvate`}
+              to="/rapportini"
+            />
+            <KpiCard
+              title="Documenti scaduti"
+              value={String(kpi?.documentiScaduti ?? 0)}
+              icon={CalendarClock}
+              tone={(kpi?.documentiScaduti ?? 0) > 0 ? "destructive" : "default"}
+              hint={`${kpi?.documentiInScadenza ?? 0} in scadenza (30gg)`}
+              to="/scadenziario"
+            />
+            <KpiCard title="Preventivi aperti" value={String(kpi?.preventiviAperti ?? 0)} icon={FileText} to="/preventivi" />
+            <KpiCard
+              title="Cantieri attivi"
+              value={String(kpi?.cantieriAttivi ?? 0)}
+              icon={HardHat}
+              tone="warning"
+              to="/commesse"
+            />
+            {econ && (
+              <>
+                <KpiCard title="Valore commesse attive" value={eur(econ.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
+                <KpiCard
+                  title="Margine previsto"
+                  value={eur(econ.marginePrevisto)}
+                  icon={TrendingUp}
+                  tone={econ.marginePrevisto >= 0 ? "success" : "destructive"}
+                  hint={econ.margineMediaPct !== null ? `${num(econ.margineMediaPct, 1)}% medio` : undefined}
+                  to="/commesse"
+                />
+                <KpiCard title="Costi sostenuti" value={eur(econ.costiSostenuti)} icon={Wallet} to="/commesse" />
+                {econ.manodoperaDaContabilizzare !== null && (
+                  <KpiCard
+                    title="Manodopera da contabilizzare"
+                    value={String(econ.manodoperaDaContabilizzare)}
+                    icon={Coins}
+                    tone={econ.manodoperaDaContabilizzare > 0 ? "warning" : "default"}
+                    to="/costi-personale"
+                  />
+                )}
+              </>
+            )}
+          </div>
 
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <SectionCard
+              title="Commesse che richiedono attenzione"
+              icon={AlertTriangle}
+              action={
+                <Link to="/commesse" className="text-xs text-primary hover:underline whitespace-nowrap">
+                  Tutte <ArrowRight className="inline h-3 w-3" />
+                </Link>
+              }
+            >
+              {(data?.commesseCritiche ?? []).length === 0 && <Empty text="Nessuna criticità rilevata. Ottimo." />}
+              {(data?.commesseCritiche ?? []).map((c: any) => (
+                <Link
+                  key={c.id}
+                  to="/commesse/$commessaId"
+                  params={{ commessaId: c.id }}
+                  className="block rounded-lg border p-3 hover:border-primary/50 hover:bg-muted/40 transition"
+                >
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">
+                        <span className="font-mono text-xs text-muted-foreground mr-2">{c.codice}</span>
+                        {c.denominazione}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {c.alerts.map((a: any) => (
+                          <Badge key={a.code} variant={sevVariant(a.severity) as any} className="text-[11px]">
+                            {a.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-muted-foreground">{dateIt(c.data_fine_prevista)}</div>
+                      <Progress value={Number(c.avanzamento_pct ?? 0)} className="mt-2 w-24 h-1.5" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </SectionCard>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Benvenuto in CantiereOS</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>Usa il menu laterale per accedere ai moduli: anagrafiche, preventivi, cantieri, rapportini e documenti.</p>
-          <p>Tutti i dati sono isolati per organizzazione tramite Row Level Security nel database.</p>
-        </CardContent>
-      </Card>
+            <SectionCard
+              title="Rapportini da approvare"
+              icon={ClipboardCheck}
+              action={
+                <Link to="/rapportini" search={{ stato: "inviato" } as any} className="text-xs text-primary hover:underline whitespace-nowrap">
+                  Apri lista <ArrowRight className="inline h-3 w-3" />
+                </Link>
+              }
+            >
+              {!data?.capabilities.canApprove && <Empty text="Non hai permessi di approvazione." />}
+              {data?.capabilities.canApprove && (data?.rapportiniDaApprovare ?? []).length === 0 && (
+                <Empty text="Nessun rapportino in attesa." />
+              )}
+              {(data?.rapportiniDaApprovare ?? []).map((r: any) => (
+                <Link
+                  key={r.id}
+                  to="/rapportini/$rapportinoId"
+                  params={{ rapportinoId: r.id }}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border p-3 hover:border-primary/50 hover:bg-muted/40 transition"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{r.autore}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {r.commessa ? `${r.commessa.codice} — ${r.commessa.denominazione}` : "Senza commessa"}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0 text-sm">
+                    <div className="font-medium">{r.ore.toFixed(2)} h</div>
+                    <div className="text-xs text-muted-foreground">{dateIt(r.data)}</div>
+                  </div>
+                </Link>
+              ))}
+
+              {(data?.mieiRapportini ?? []).length > 0 && (
+                <div className="pt-2 border-t mt-2">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                    I miei rapportini da completare
+                  </div>
+                  {(data?.mieiRapportini ?? []).map((r: any) => (
+                    <Link
+                      key={r.id}
+                      to="/rapportini/$rapportinoId"
+                      params={{ rapportinoId: r.id }}
+                      className="flex items-center justify-between gap-3 py-1.5 text-sm hover:text-primary"
+                    >
+                      <span className="truncate">
+                        {dateIt(r.data)} · {r.commessa?.codice ?? "—"}
+                      </span>
+                      <Badge variant={r.stato === "respinto" ? "destructive" : "outline"} className="shrink-0">
+                        {r.stato === "respinto" ? "Respinto" : "Bozza"}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+
+            <SectionCard
+              title="Scadenze documentali"
+              icon={CalendarClock}
+              action={
+                <Link to="/scadenziario" className="text-xs text-primary hover:underline whitespace-nowrap">
+                  Scadenziario <ArrowRight className="inline h-3 w-3" />
+                </Link>
+              }
+            >
+              {(data?.documenti ?? []).length === 0 && <Empty text="Nessun documento in scadenza nei prossimi 30 giorni." />}
+              {(data?.documenti ?? []).map((d: any) => (
+                <div key={d.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{d.nome}</div>
+                    <div className="text-xs text-muted-foreground truncate">{d.categoria ?? "—"}</div>
+                  </div>
+                  <Badge variant={d.scaduto ? "destructive" : "secondary"} className="shrink-0">
+                    {dateIt(d.data_scadenza)}
+                  </Badge>
+                </div>
+              ))}
+            </SectionCard>
+
+            <SectionCard title="Attività CRM in scadenza" icon={PhoneCall}>
+              {(data?.attivita ?? []).length === 0 && <Empty text="Nessuna attività pianificata nei prossimi 7 giorni." />}
+              {(data?.attivita ?? []).map((a: any) => (
+                <Link
+                  key={a.id}
+                  to="/clienti/$clienteId"
+                  params={{ clienteId: a.cliente_id }}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2 hover:text-primary"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{a.titolo}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {a.cliente?.denominazione ?? "Cliente"} · {a.tipo}
+                    </div>
+                  </div>
+                  <Badge
+                    variant={a.priorita === "urgente" || a.priorita === "alta" ? "destructive" : "outline"}
+                    className="shrink-0"
+                  >
+                    {dateIt(a.scadenza)}
+                  </Badge>
+                </Link>
+              ))}
+            </SectionCard>
+          </div>
+
+          {data?.capabilities.canReadAudit && (
+            <SectionCard
+              title="Ultime attività"
+              icon={Activity}
+              action={
+                <Link to="/audit" className="text-xs text-primary hover:underline whitespace-nowrap">
+                  Audit log <ArrowRight className="inline h-3 w-3" />
+                </Link>
+              }
+            >
+              {(data?.attivitaRecenti ?? []).length === 0 && <Empty text="Nessuna attività registrata." />}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                {(data?.attivitaRecenti ?? []).map((a: any) => (
+                  <div key={a.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2">
+                    <div className="min-w-0">
+                      <div className="text-sm truncate">{a.label}</div>
+                      <div className="text-xs text-muted-foreground truncate">{a.autore}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground shrink-0">{dateIt(a.created_at)}</div>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+        </>
+      )}
     </div>
   );
 }
