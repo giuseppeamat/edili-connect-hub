@@ -13,8 +13,10 @@ import {
   ERR_CONFLICT,
   ERR_FILE_MISSING,
   ERR_NOT_FOUND,
+  ERR_CLEANUP_REFERENCED,
   buildStoragePath,
   canPreview,
+  orphanCleanupAllowed,
   validateFile,
 } from "@/lib/documenti-model";
 import {
@@ -34,6 +36,9 @@ import {
   versionChain,
   applyScadenzaFilter,
   scadenziarioRange,
+  assertCleanup,
+  listStorageObjects,
+  referencedStoragePaths,
 } from "@/lib/documenti.server";
 
 const uuid = z.string().uuid();
@@ -645,6 +650,98 @@ export const listScadenziario = createServerFn({ method: "POST" })
         items: (rows ?? []).map((r: any) => toListDTO(r, lookups)),
         capabilities: ctx.caps,
       };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Strumenti tecnici: file Storage orfani (solo proprietario/amministratore)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Elenca gli oggetti Storage della PROPRIA organizzazione non referenziati da
+ * alcun documento. Non genera signed URL e non cancella nulla.
+ */
+export const listDocumentoStorageOrphans = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({}).parse(d ?? {}))
+  .handler(async ({ context }) => {
+    try {
+      const ctx = await resolveDocContext(context.supabase, context.userId);
+      assertCleanup(ctx);
+      const [objects, referenced] = await Promise.all([
+        listStorageObjects(context.supabase, ctx.organizationId),
+        referencedStoragePaths(context.supabase, ctx.organizationId),
+      ]);
+      const now = Date.now();
+      const items = objects
+        .filter((o) => !referenced.has(o.path))
+        .map((o) => ({
+          path: o.path,
+          size: o.size,
+          created_at: o.created_at,
+          eta_ore: o.created_at
+            ? Math.floor((now - new Date(o.created_at).getTime()) / 3600000)
+            : null,
+          cleanup_consentito: o.created_at
+            ? orphanCleanupAllowed(o.created_at).ok
+            : false,
+        }));
+      return { organization_id: ctx.organizationId, total: items.length, items };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+/**
+ * Rimozione tecnica e controllata di UN oggetto Storage orfano.
+ * Idempotente, verifica organizzazione, referenza e soglia temporale.
+ * Non è mai raggiungibile da capocantiere, operaio, responsabile commessa,
+ * ufficio tecnico o amministrazione.
+ */
+export const cleanupDocumentoStorageOrphan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ path: z.string().trim().min(3).max(600), force: z.boolean().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const ctx = await resolveDocContext(context.supabase, context.userId);
+      assertCleanup(ctx);
+
+      if (!data.path.startsWith(`${ctx.organizationId}/`) || data.path.includes("..")) {
+        throw new Error(ERR_NOT_FOUND);
+      }
+
+      const { data: referenced, error: refErr } = await context.supabase.rpc(
+        "documento_storage_path_referenced",
+        { _org: ctx.organizationId, _path: data.path },
+      );
+      if (refErr) throw refErr;
+      if (referenced === true) throw new Error(ERR_CLEANUP_REFERENCED);
+
+      const dir = data.path.slice(0, data.path.lastIndexOf("/"));
+      const objects = await listStorageObjects(context.supabase, dir);
+      const found = objects.find((o) => o.path === data.path);
+      if (!found) {
+        return { path: data.path, removed: false, idempotent: true };
+      }
+
+      const allowed = orphanCleanupAllowed(found.created_at ?? 0, new Date(), data.force === true);
+      if (!allowed.ok) throw new Error(allowed.error);
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.storage.from(DOCUMENTI_BUCKET).remove([data.path]);
+      if (error) throw error;
+
+      await audit(ctx.organizationId, context.userId, "storage_orfano_rimosso", ctx.organizationId, {
+        path: data.path,
+        size: found.size,
+        forzato: data.force === true,
+      });
+      return { path: data.path, removed: true, idempotent: false };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
