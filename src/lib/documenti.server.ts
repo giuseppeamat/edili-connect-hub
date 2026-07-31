@@ -326,7 +326,7 @@ export async function versionChain(
       .select("id, versione, is_versione_corrente, documento_precedente_id")
       .eq("id", currentId)
       .eq("organization_id", org)
-      .maybeSingle();
+      .maybeSingle()) as { data: any };
     if (!data || seen.has(data.id)) break;
     seen.set(data.id, data);
     currentId = data.documento_precedente_id ?? null;
