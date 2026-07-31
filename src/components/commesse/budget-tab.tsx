@@ -48,6 +48,27 @@ function isConflict(e: any) {
   return /modificato da un altro utente|conflitto di concorrenza/i.test(m);
 }
 
+/** Sentinel esplicito per "nessuna selezione" nelle Select (Radix vieta value=""). */
+export const NONE_VALUE = "__none__";
+export const toNullable = (v: string | null | undefined) =>
+  !v || v === NONE_VALUE ? null : v;
+
+/** Rimuove opzioni senza value e duplicati (key/value univoci garantiti). */
+function uniqueOptions<T extends { value: string }>(opts: T[]): T[] {
+  const seen = new Set<string>();
+  return opts.filter((o) => {
+    if (!o?.value || seen.has(o.value)) return false;
+    seen.add(o.value);
+    return true;
+  });
+}
+
+/** Come uniqueOptions, ma per liste {id,label} provenienti dal server. */
+function uniqueEntities(list: any[]): { id: string; label: string }[] {
+  return uniqueOptions((list ?? []).map((x: any) => ({ value: String(x?.id ?? ""), label: x?.label ?? "—" })))
+    .map((o) => ({ id: o.value, label: o.label }));
+}
+
 const COSTO_CAT_LABEL: Record<string, string> = {
   manodopera: "Manodopera", materiali: "Materiali", subappalti: "Subappalti",
   noleggi: "Noleggi", mezzi: "Mezzi", trasporti: "Trasporti",
