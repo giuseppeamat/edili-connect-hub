@@ -13,40 +13,22 @@ import {
   sortByCriticita,
   auditLabel,
   isPeriodo,
+  countDaApprovare,
+  docScadenzaStato,
   type PeriodoKey,
 } from "@/lib/dashboard-model";
-
-const ECON_ROLES = ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa"];
-const APPROVER_ROLES = ["proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere"];
-const AUDIT_ROLES = ["proprietario", "amministratore", "amministrazione"];
-const COSTI_ROLES = ["proprietario", "amministratore", "amministrazione"];
-
-async function ctx(context: any) {
-  const { data: prof } = await context.supabase
-    .from("profiles")
-    .select("organization_id, is_active")
-    .eq("id", context.userId)
-    .maybeSingle();
-  if (!prof?.organization_id) throw new Error("Organizzazione non trovata");
-  if (prof.is_active === false) throw new Error("Utente disattivato");
-  const { data: rr } = await context.supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", context.userId)
-    .eq("organization_id", prof.organization_id);
-  return {
-    organizationId: prof.organization_id as string,
-    roles: (rr ?? []).map((r: any) => String(r.role)),
-  };
-}
-
-const has = (roles: string[], allowed: string[]) => roles.some((r) => allowed.includes(r));
+import {
+  capabilitiesFor,
+  commesseSelect,
+  resolveDashboardContext,
+} from "@/lib/dashboard-authz";
 
 function name(p: any): string {
   if (!p) return "—";
   const s = [p.nome, p.cognome].filter(Boolean).join(" ").trim();
   return s || p.email || "Utente";
 }
+
 
 export const getDashboardOperativa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
