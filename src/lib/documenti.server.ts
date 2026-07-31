@@ -6,6 +6,7 @@
 import {
   DOCUMENTI_BUCKET,
   ERR_NOT_FOUND,
+  canCleanupStorage,
   documentoCapabilities,
   isCategoriaValida,
   scadenzaStato,
@@ -394,8 +395,6 @@ export function scadenziarioRange(q: any, filtro: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Cleanup tecnico: file Storage orfani (Sprint 7 — hardening finale)
 // ─────────────────────────────────────────────────────────────────────────────
-import { canCleanupStorage } from "@/lib/documenti-model";
-
 export function assertCleanup(ctx: DocContext) {
   if (!canCleanupStorage(ctx.roles)) throw new Error("Non autorizzato");
 }
