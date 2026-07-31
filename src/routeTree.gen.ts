@@ -18,6 +18,7 @@ import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authent
 import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
 import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
+import { Route as AuthenticatedNotificheRouteImport } from './routes/_authenticated/notifiche'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
 import { Route as AuthenticatedCostiPersonaleRouteImport } from './routes/_authenticated/costi-personale'
@@ -79,6 +80,11 @@ const AuthenticatedOrganizzazioneRoute =
     path: '/organizzazione',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedNotificheRoute = AuthenticatedNotificheRouteImport.update({
+  id: '/notifiche',
+  path: '/notifiche',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFornitoriRoute = AuthenticatedFornitoriRouteImport.update({
   id: '/fornitori',
   path: '/fornitori',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/notifiche': typeof AuthenticatedNotificheRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditRoute
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/notifiche': typeof AuthenticatedNotificheRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/_authenticated/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
+  '/_authenticated/notifiche': typeof AuthenticatedNotificheRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
   '/_authenticated/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/costi-personale'
     | '/documenti'
     | '/fornitori'
+    | '/notifiche'
     | '/organizzazione'
     | '/profilo'
     | '/rapportini'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/costi-personale'
     | '/fornitori'
+    | '/notifiche'
     | '/organizzazione'
     | '/profilo'
     | '/scadenziario'
@@ -290,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/costi-personale'
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
+    | '/_authenticated/notifiche'
     | '/_authenticated/organizzazione'
     | '/_authenticated/profilo'
     | '/_authenticated/rapportini'
@@ -377,6 +389,13 @@ declare module '@tanstack/react-router' {
       path: '/organizzazione'
       fullPath: '/organizzazione'
       preLoaderRoute: typeof AuthenticatedOrganizzazioneRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/notifiche': {
+      id: '/_authenticated/notifiche'
+      path: '/notifiche'
+      fullPath: '/notifiche'
+      preLoaderRoute: typeof AuthenticatedNotificheRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/fornitori': {
@@ -519,6 +538,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCostiPersonaleRoute: typeof AuthenticatedCostiPersonaleRoute
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRouteWithChildren
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
+  AuthenticatedNotificheRoute: typeof AuthenticatedNotificheRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
   AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRouteWithChildren
@@ -537,6 +557,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCostiPersonaleRoute: AuthenticatedCostiPersonaleRoute,
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRouteWithChildren,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
+  AuthenticatedNotificheRoute: AuthenticatedNotificheRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
   AuthenticatedRapportiniRoute: AuthenticatedRapportiniRouteWithChildren,
