@@ -197,7 +197,8 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
       }
 
       const docs = (docQ.data ?? []) as any[];
-      const docsScaduti = docs.filter((d) => String(d.data_scadenza).slice(0, 10) < todayIso);
+      const docsScaduti = docs.filter((d) => docScadenzaStato(d.data_scadenza, today) === "scaduto");
+
 
       return {
         periodo,
