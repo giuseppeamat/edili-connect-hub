@@ -165,13 +165,14 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold truncate">Dashboard operativa</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Dashboard operativa</h1>
           <p className="text-sm text-muted-foreground">
             Cosa richiede attenzione oggi · {PERIODO_LABEL[periodo]}
           </p>
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           {(["oggi", "7", "30", "mese"] as PeriodoKey[]).map((p) => (
             <Button
