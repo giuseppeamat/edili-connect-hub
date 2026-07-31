@@ -27,7 +27,9 @@ describe("rapportini nel periodo", () => {
   });
 
   it("conteggio solo su stato inviato", () => {
-    expect(countDaApprovare([{ stato: "approvato" }, { stato: "bozza" }, { stato: "inviato" }])).toBe(1);
+    expect(
+      countDaApprovare([{ stato: "approvato" }, { stato: "bozza" }, { stato: "inviato" }]),
+    ).toBe(1);
   });
 });
 

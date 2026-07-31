@@ -17,11 +17,7 @@ import {
   docScadenzaStato,
   type PeriodoKey,
 } from "@/lib/dashboard-model";
-import {
-  capabilitiesFor,
-  commesseSelect,
-  resolveDashboardContext,
-} from "@/lib/dashboard-authz";
+import { capabilitiesFor, commesseSelect, resolveDashboardContext } from "@/lib/dashboard-authz";
 
 function name(p: any): string {
   if (!p) return "—";
@@ -29,15 +25,15 @@ function name(p: any): string {
   return s || p.email || "Utente";
 }
 
-
 export const getDashboardOperativa = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
-    z.object({ periodo: z.string().optional() }).parse(d ?? {}),
-  )
+  .inputValidator((d: unknown) => z.object({ periodo: z.string().optional() }).parse(d ?? {}))
   .handler(async ({ data, context }) => {
     try {
-      const { organizationId: org, roles } = await resolveDashboardContext(context.supabase, context.userId);
+      const { organizationId: org, roles } = await resolveDashboardContext(
+        context.supabase,
+        context.userId,
+      );
       const {
         canViewEconomics: canEcon,
         canApprove,
@@ -57,11 +53,21 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
 
       const commesseSel = commesseSelect(canEcon);
 
-
       const [commQ, cantQ, prevQ, rappQ, mieiQ, docQ, attQ, auditQ] = await Promise.all([
-        context.supabase.from("commesse").select(commesseSel).eq("organization_id", org).is("archived_at", null),
-        context.supabase.from("cantieri").select("id, stato").eq("organization_id", org).is("archived_at", null),
-        context.supabase.from("preventivi").select("id, numero, oggetto, stato, data_validita, updated_at").eq("organization_id", org),
+        context.supabase
+          .from("commesse")
+          .select(commesseSel)
+          .eq("organization_id", org)
+          .is("archived_at", null),
+        context.supabase
+          .from("cantieri")
+          .select("id, stato")
+          .eq("organization_id", org)
+          .is("archived_at", null),
+        context.supabase
+          .from("preventivi")
+          .select("id, numero, oggetto, stato, data_validita, updated_at")
+          .eq("organization_id", org),
         context.supabase
           .from("rapportini")
           .select("id, data, ore, stato, user_id, commessa_id, submitted_at, created_at")
@@ -106,7 +112,9 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
       ]);
 
       const commesse = (commQ.data ?? []) as any[];
-      const attive = commesse.filter((c) => ["pianificata", "in_corso", "sospesa"].includes(c.stato));
+      const attive = commesse.filter((c) =>
+        ["pianificata", "in_corso", "sospesa"].includes(c.stato),
+      );
       const cantieri = (cantQ.data ?? []) as any[];
       const preventivi = (prevQ.data ?? []) as any[];
       const rapportini = (rappQ.data ?? []) as any[];
@@ -130,18 +138,36 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
       const daApprovare = rapportini.filter((r) => r.stato === "inviato");
       const rapportiniDaApprovareCount = countDaApprovare(rapportini);
       const orePeriodo = rapportini
-        .filter((r) => ["approvato", "inviato", "contabilizzato"].includes(r.stato) || r.stato === "bozza")
+        .filter(
+          (r) =>
+            ["approvato", "inviato", "contabilizzato"].includes(r.stato) || r.stato === "bozza",
+        )
         .reduce((s, r) => s + Number(r.ore ?? 0), 0);
       const oreApprovate = rapportini
         .filter((r) => ["approvato", "contabilizzato"].includes(r.stato))
         .reduce((s, r) => s + Number(r.ore ?? 0), 0);
 
-      const userIds = Array.from(new Set(daApprovare.slice(0, 8).map((r) => r.user_id).filter(Boolean)));
-      const commIds = Array.from(
-        new Set([...daApprovare.slice(0, 8), ...((mieiQ.data ?? []) as any[])].map((r) => r.commessa_id).filter(Boolean)),
+      const userIds = Array.from(
+        new Set(
+          daApprovare
+            .slice(0, 8)
+            .map((r) => r.user_id)
+            .filter(Boolean),
+        ),
       );
-      const auditUserIds = Array.from(new Set(((auditQ as any).data ?? []).map((a: any) => a.user_id).filter(Boolean)));
-      const clienteIds = Array.from(new Set(((attQ.data ?? []) as any[]).map((a) => a.cliente_id).filter(Boolean)));
+      const commIds = Array.from(
+        new Set(
+          [...daApprovare.slice(0, 8), ...((mieiQ.data ?? []) as any[])]
+            .map((r) => r.commessa_id)
+            .filter(Boolean),
+        ),
+      );
+      const auditUserIds = Array.from(
+        new Set(((auditQ as any).data ?? []).map((a: any) => a.user_id).filter(Boolean)),
+      );
+      const clienteIds = Array.from(
+        new Set(((attQ.data ?? []) as any[]).map((a) => a.cliente_id).filter(Boolean)),
+      );
 
       const [profsQ, commNamesQ, clientiQ] = await Promise.all([
         userIds.length || auditUserIds.length
@@ -151,10 +177,16 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
               .in("id", Array.from(new Set([...userIds, ...auditUserIds])) as any)
           : Promise.resolve({ data: [] as any[] }),
         commIds.length
-          ? context.supabase.from("commesse").select("id, codice, denominazione").in("id", commIds as any)
+          ? context.supabase
+              .from("commesse")
+              .select("id, codice, denominazione")
+              .in("id", commIds as any)
           : Promise.resolve({ data: [] as any[] }),
         clienteIds.length
-          ? context.supabase.from("clienti").select("id, denominazione").in("id", clienteIds as any)
+          ? context.supabase
+              .from("clienti")
+              .select("id, denominazione")
+              .in("id", clienteIds as any)
           : Promise.resolve({ data: [] as any[] }),
       ]);
       const pm = new Map(((profsQ.data ?? []) as any[]).map((p) => [p.id, p]));
@@ -170,10 +202,14 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
         manodoperaDaContabilizzare: number | null;
       } = null;
       if (canEcon) {
-        const valoreCommesse = attive.reduce((s, c) => s + Number(c.ricavi_previsti ?? c.importo ?? 0), 0);
+        const valoreCommesse = attive.reduce(
+          (s, c) => s + Number(c.ricavi_previsti ?? c.importo ?? 0),
+          0,
+        );
         const costiSostenuti = attive.reduce((s, c) => s + Number(c.costi_sostenuti ?? 0), 0);
         const marginePrevisto = attive.reduce((s, c) => {
-          if (c.margine_previsto !== null && c.margine_previsto !== undefined) return s + Number(c.margine_previsto);
+          if (c.margine_previsto !== null && c.margine_previsto !== undefined)
+            return s + Number(c.margine_previsto);
           const r = Number(c.ricavi_previsti ?? c.importo ?? 0);
           const cp = Number(c.costi_previsti ?? c.budget_costi ?? 0);
           return s + (r - cp);
@@ -198,8 +234,9 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
       }
 
       const docs = (docQ.data ?? []) as any[];
-      const docsScaduti = docs.filter((d) => docScadenzaStato(d.data_scadenza, today) === "scaduto");
-
+      const docsScaduti = docs.filter(
+        (d) => docScadenzaStato(d.data_scadenza, today) === "scaduto",
+      );
 
       return {
         periodo,
@@ -209,7 +246,9 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
           commesseAttive: attive.length,
           commesseInCorso: commesse.filter((c) => c.stato === "in_corso").length,
           commesseCritiche: conAlerts.length,
-          cantieriAttivi: cantieri.filter((k) => ["in_corso", "attivo", "aperto"].includes(String(k.stato))).length,
+          cantieriAttivi: cantieri.filter((k) =>
+            ["in_corso", "attivo", "aperto"].includes(String(k.stato)),
+          ).length,
           preventiviAperti: preventivi.filter((p) =>
             ["bozza", "inviato", "in_revisione", "pronto"].includes(p.stato),
           ).length,

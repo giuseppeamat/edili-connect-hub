@@ -22,7 +22,8 @@ export const APPROVER_ROLES = [
 export const AUDIT_ROLES = ["proprietario", "amministratore", "amministrazione"];
 export const COSTI_ROLES = ["proprietario", "amministratore", "amministrazione"];
 
-export const hasAnyRole = (roles: string[], allowed: string[]) => roles.some((r) => allowed.includes(r));
+export const hasAnyRole = (roles: string[], allowed: string[]) =>
+  roles.some((r) => allowed.includes(r));
 
 export type DashboardCapabilities = {
   canViewEconomics: boolean;
@@ -42,7 +43,8 @@ export function capabilitiesFor(roles: string[]): DashboardCapabilities {
 
 /** Colonne selezionate sulle commesse: mai colonne economiche senza permesso. */
 export function commesseSelect(canEcon: boolean): string {
-  const base = "id, codice, denominazione, stato, avanzamento_pct, data_fine_prevista, responsabile_id, archived_at";
+  const base =
+    "id, codice, denominazione, stato, avanzamento_pct, data_fine_prevista, responsabile_id, archived_at";
   return canEcon
     ? "id, codice, denominazione, stato, avanzamento_pct, data_fine_prevista, responsabile_id, costi_sostenuti, costi_previsti, budget_costi, ricavi_previsti, importo, margine_previsto, archived_at"
     : base;
@@ -54,7 +56,10 @@ export type DashboardContext = { organizationId: string; roles: string[] };
  * Deriva tenant e ruoli dell'utente autenticato. Nessun input dal client.
  * Il client `supabase` è quello RLS-scoped della middleware.
  */
-export async function resolveDashboardContext(supabase: any, userId: string): Promise<DashboardContext> {
+export async function resolveDashboardContext(
+  supabase: any,
+  userId: string,
+): Promise<DashboardContext> {
   const { data: prof } = await supabase
     .from("profiles")
     .select("organization_id, is_active")

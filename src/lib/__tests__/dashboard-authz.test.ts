@@ -31,7 +31,9 @@ function makeClient(db: { profiles: Row[]; user_roles: Row[]; commesse: Row[] })
     return api;
   };
   const apply = (table: string, filters: Record<string, any>) =>
-    ((db as any)[table] as Row[]).filter((r) => Object.entries(filters).every(([k, v]) => r[k] === v));
+    ((db as any)[table] as Row[]).filter((r) =>
+      Object.entries(filters).every(([k, v]) => r[k] === v),
+    );
   return { client: { from: (t: string) => q(t) }, calls };
 }
 
@@ -73,7 +75,9 @@ describe("resolveDashboardContext — tenant", () => {
 
   it("3b. organizzazione mancante viene negata", async () => {
     const { client } = makeClient(DB);
-    await expect(resolveDashboardContext(client, "u-noorg")).rejects.toThrow("Organizzazione non trovata");
+    await expect(resolveDashboardContext(client, "u-noorg")).rejects.toThrow(
+      "Organizzazione non trovata",
+    );
   });
 
   it("10. utente cross-tenant non riceve dati dell'altra organizzazione", async () => {
@@ -98,7 +102,12 @@ describe("resolveDashboardContext — tenant", () => {
 describe("capabilitiesFor — ruoli", () => {
   it("4. proprietario vede economia, audit e costi", () => {
     const c = capabilitiesFor(["proprietario"]);
-    expect(c).toEqual({ canViewEconomics: true, canApprove: true, canReadAudit: true, canReadCosti: true });
+    expect(c).toEqual({
+      canViewEconomics: true,
+      canApprove: true,
+      canReadAudit: true,
+      canReadCosti: true,
+    });
   });
 
   it("5. capocantiere non vede economia", () => {
@@ -110,7 +119,12 @@ describe("capabilitiesFor — ruoli", () => {
 
   it("6. operaio non vede economia né audit né approvazioni", () => {
     const c = capabilitiesFor(["operaio"]);
-    expect(c).toEqual({ canViewEconomics: false, canApprove: false, canReadAudit: false, canReadCosti: false });
+    expect(c).toEqual({
+      canViewEconomics: false,
+      canApprove: false,
+      canReadAudit: false,
+      canReadCosti: false,
+    });
   });
 
   it("7. ruolo non AUDIT non riceve il feed audit", () => {
@@ -128,7 +142,14 @@ describe("capabilitiesFor — ruoli", () => {
 
   it("9. nessuna colonna economica nel select senza permesso", () => {
     const sel = commesseSelect(false);
-    for (const col of ["costi_sostenuti", "costi_previsti", "budget_costi", "ricavi_previsti", "importo", "margine_previsto"]) {
+    for (const col of [
+      "costi_sostenuti",
+      "costi_previsti",
+      "budget_costi",
+      "ricavi_previsti",
+      "importo",
+      "margine_previsto",
+    ]) {
       expect(sel).not.toContain(col);
     }
     expect(commesseSelect(true)).toContain("margine_previsto");

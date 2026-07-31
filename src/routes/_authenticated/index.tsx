@@ -41,7 +41,8 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Dashboard operativa — CantiereOS" },
       {
         name: "description",
-        content: "Cosa richiede attenzione oggi: commesse critiche, rapportini da approvare, scadenze e attività.",
+        content:
+          "Cosa richiede attenzione oggi: commesse critiche, rapportini da approvare, scadenze e attività.",
       },
     ],
   }),
@@ -77,7 +78,9 @@ function KpiCard({
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{title}</div>
+        <div className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+          {title}
+        </div>
         <div className="text-2xl font-bold truncate">{value}</div>
         {hint && <div className="text-xs text-muted-foreground mt-0.5">{hint}</div>}
       </div>
@@ -91,7 +94,9 @@ function KpiCard({
         aria-label={`Vai a ${title}`}
         className="block rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <Card className="transition hover:shadow-md hover:border-primary/40 cursor-pointer h-full">{body}</Card>
+        <Card className="transition hover:shadow-md hover:border-primary/40 cursor-pointer h-full">
+          {body}
+        </Card>
       </Link>
     );
   }
@@ -127,7 +132,8 @@ function Empty({ text }: { text: string }) {
   return <div className="text-sm text-muted-foreground py-2">{text}</div>;
 }
 
-const sevVariant = (s: string) => (s === "critico" ? "destructive" : s === "attenzione" ? "secondary" : "outline");
+const sevVariant = (s: string) =>
+  s === "critico" ? "destructive" : s === "attenzione" ? "secondary" : "outline";
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -145,7 +151,6 @@ function Dashboard() {
     staleTime: 45_000,
     retry: 1,
   });
-
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -193,7 +198,11 @@ function Dashboard() {
       </header>
 
       {isPending ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-busy="true" aria-live="polite">
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          aria-busy="true"
+          aria-live="polite"
+        >
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
@@ -215,7 +224,6 @@ function Dashboard() {
           </CardContent>
         </Card>
       ) : (
-
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <KpiCard
@@ -249,7 +257,12 @@ function Dashboard() {
               hint={`${kpi?.documentiInScadenza ?? 0} in scadenza (30gg)`}
               to="/scadenziario"
             />
-            <KpiCard title="Preventivi aperti" value={String(kpi?.preventiviAperti ?? 0)} icon={FileText} to="/preventivi" />
+            <KpiCard
+              title="Preventivi aperti"
+              value={String(kpi?.preventiviAperti ?? 0)}
+              icon={FileText}
+              to="/preventivi"
+            />
             <KpiCard
               title="Cantieri attivi"
               value={String(kpi?.cantieriAttivi ?? 0)}
@@ -259,16 +272,31 @@ function Dashboard() {
             />
             {econ && (
               <>
-                <KpiCard title="Valore commesse attive" value={eur(econ.valoreCommesse)} icon={Coins} tone="success" to="/commesse" />
+                <KpiCard
+                  title="Valore commesse attive"
+                  value={eur(econ.valoreCommesse)}
+                  icon={Coins}
+                  tone="success"
+                  to="/commesse"
+                />
                 <KpiCard
                   title="Margine previsto"
                   value={eur(econ.marginePrevisto)}
                   icon={TrendingUp}
                   tone={econ.marginePrevisto >= 0 ? "success" : "destructive"}
-                  hint={econ.margineMediaPct !== null ? `${num(econ.margineMediaPct, 1)}% medio` : undefined}
+                  hint={
+                    econ.margineMediaPct !== null
+                      ? `${num(econ.margineMediaPct, 1)}% medio`
+                      : undefined
+                  }
                   to="/commesse"
                 />
-                <KpiCard title="Costi sostenuti" value={eur(econ.costiSostenuti)} icon={Wallet} to="/commesse" />
+                <KpiCard
+                  title="Costi sostenuti"
+                  value={eur(econ.costiSostenuti)}
+                  icon={Wallet}
+                  to="/commesse"
+                />
                 {econ.manodoperaDaContabilizzare !== null && (
                   <KpiCard
                     title="Manodopera da contabilizzare"
@@ -287,12 +315,17 @@ function Dashboard() {
               title="Commesse che richiedono attenzione"
               icon={AlertTriangle}
               action={
-                <Link to="/commesse" className="text-xs text-primary hover:underline whitespace-nowrap">
+                <Link
+                  to="/commesse"
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
                   Tutte <ArrowRight className="inline h-3 w-3" />
                 </Link>
               }
             >
-              {(data?.commesseCritiche ?? []).length === 0 && <Empty text="Nessuna criticità rilevata. Ottimo." />}
+              {(data?.commesseCritiche ?? []).length === 0 && (
+                <Empty text="Nessuna criticità rilevata. Ottimo." />
+              )}
               {(data?.commesseCritiche ?? []).map((c: any) => (
                 <Link
                   key={c.id}
@@ -303,20 +336,31 @@ function Dashboard() {
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
                     <div className="min-w-0">
                       <div className="font-medium truncate">
-                        <span className="font-mono text-xs text-muted-foreground mr-2">{c.codice}</span>
+                        <span className="font-mono text-xs text-muted-foreground mr-2">
+                          {c.codice}
+                        </span>
                         {c.denominazione}
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {c.alerts.map((a: any) => (
-                          <Badge key={a.code} variant={sevVariant(a.severity) as any} className="text-[11px]">
+                          <Badge
+                            key={a.code}
+                            variant={sevVariant(a.severity) as any}
+                            className="text-[11px]"
+                          >
                             {a.label}
                           </Badge>
                         ))}
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-xs text-muted-foreground">{dateIt(c.data_fine_prevista)}</div>
-                      <Progress value={Number(c.avanzamento_pct ?? 0)} className="mt-2 w-24 h-1.5" />
+                      <div className="text-xs text-muted-foreground">
+                        {dateIt(c.data_fine_prevista)}
+                      </div>
+                      <Progress
+                        value={Number(c.avanzamento_pct ?? 0)}
+                        className="mt-2 w-24 h-1.5"
+                      />
                     </div>
                   </div>
                 </Link>
@@ -327,15 +371,20 @@ function Dashboard() {
               title="Rapportini da approvare"
               icon={ClipboardCheck}
               action={
-                <Link to="/rapportini" search={{ stato: "inviato" } as any} className="text-xs text-primary hover:underline whitespace-nowrap">
+                <Link
+                  to="/rapportini"
+                  search={{ stato: "inviato" } as any}
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
                   Apri lista <ArrowRight className="inline h-3 w-3" />
                 </Link>
               }
             >
               {!data?.capabilities.canApprove && <Empty text="Non hai permessi di approvazione." />}
-              {data?.capabilities.canApprove && (data?.rapportiniDaApprovare ?? []).length === 0 && (
-                <Empty text="Nessun rapportino in attesa." />
-              )}
+              {data?.capabilities.canApprove &&
+                (data?.rapportiniDaApprovare ?? []).length === 0 && (
+                  <Empty text="Nessun rapportino in attesa." />
+                )}
               {(data?.rapportiniDaApprovare ?? []).map((r: any) => (
                 <Link
                   key={r.id}
@@ -346,7 +395,9 @@ function Dashboard() {
                   <div className="min-w-0">
                     <div className="font-medium truncate">{r.autore}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      {r.commessa ? `${r.commessa.codice} — ${r.commessa.denominazione}` : "Senza commessa"}
+                      {r.commessa
+                        ? `${r.commessa.codice} — ${r.commessa.denominazione}`
+                        : "Senza commessa"}
                     </div>
                   </div>
                   <div className="text-right shrink-0 text-sm">
@@ -371,7 +422,10 @@ function Dashboard() {
                       <span className="truncate">
                         {dateIt(r.data)} · {r.commessa?.codice ?? "—"}
                       </span>
-                      <Badge variant={r.stato === "respinto" ? "destructive" : "outline"} className="shrink-0">
+                      <Badge
+                        variant={r.stato === "respinto" ? "destructive" : "outline"}
+                        className="shrink-0"
+                      >
                         {r.stato === "respinto" ? "Respinto" : "Bozza"}
                       </Badge>
                     </Link>
@@ -384,17 +438,27 @@ function Dashboard() {
               title="Scadenze documentali"
               icon={CalendarClock}
               action={
-                <Link to="/scadenziario" className="text-xs text-primary hover:underline whitespace-nowrap">
+                <Link
+                  to="/scadenziario"
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
                   Scadenziario <ArrowRight className="inline h-3 w-3" />
                 </Link>
               }
             >
-              {(data?.documenti ?? []).length === 0 && <Empty text="Nessun documento in scadenza nei prossimi 30 giorni." />}
+              {(data?.documenti ?? []).length === 0 && (
+                <Empty text="Nessun documento in scadenza nei prossimi 30 giorni." />
+              )}
               {(data?.documenti ?? []).map((d: any) => (
-                <div key={d.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2">
+                <div
+                  key={d.id}
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2"
+                >
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{d.nome}</div>
-                    <div className="text-xs text-muted-foreground truncate">{d.categoria ?? "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {d.categoria ?? "—"}
+                    </div>
                   </div>
                   <Badge variant={d.scaduto ? "destructive" : "secondary"} className="shrink-0">
                     {dateIt(d.data_scadenza)}
@@ -404,7 +468,9 @@ function Dashboard() {
             </SectionCard>
 
             <SectionCard title="Attività CRM in scadenza" icon={PhoneCall}>
-              {(data?.attivita ?? []).length === 0 && <Empty text="Nessuna attività pianificata nei prossimi 7 giorni." />}
+              {(data?.attivita ?? []).length === 0 && (
+                <Empty text="Nessuna attività pianificata nei prossimi 7 giorni." />
+              )}
               {(data?.attivita ?? []).map((a: any) => (
                 <Link
                   key={a.id}
@@ -419,7 +485,9 @@ function Dashboard() {
                     </div>
                   </div>
                   <Badge
-                    variant={a.priorita === "urgente" || a.priorita === "alta" ? "destructive" : "outline"}
+                    variant={
+                      a.priorita === "urgente" || a.priorita === "alta" ? "destructive" : "outline"
+                    }
                     className="shrink-0"
                   >
                     {dateIt(a.scadenza)}
@@ -434,20 +502,30 @@ function Dashboard() {
               title="Ultime attività"
               icon={Activity}
               action={
-                <Link to="/audit" className="text-xs text-primary hover:underline whitespace-nowrap">
+                <Link
+                  to="/audit"
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
                   Audit log <ArrowRight className="inline h-3 w-3" />
                 </Link>
               }
             >
-              {(data?.attivitaRecenti ?? []).length === 0 && <Empty text="Nessuna attività registrata." />}
+              {(data?.attivitaRecenti ?? []).length === 0 && (
+                <Empty text="Nessuna attività registrata." />
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
                 {(data?.attivitaRecenti ?? []).map((a: any) => (
-                  <div key={a.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2">
+                  <div
+                    key={a.id}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b last:border-0 py-2"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm truncate">{a.label}</div>
                       <div className="text-xs text-muted-foreground truncate">{a.autore}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground shrink-0">{dateIt(a.created_at)}</div>
+                    <div className="text-xs text-muted-foreground shrink-0">
+                      {dateIt(a.created_at)}
+                    </div>
                   </div>
                 ))}
               </div>
