@@ -137,10 +137,15 @@ function Dashboard() {
   const [seeding, setSeeding] = useState(false);
 
   const dashFn = useServerFn(getDashboardOperativa);
-  const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-operativa", periodo],
+  const { data, isPending, isError, refetch, isFetching } = useQuery({
+    // La chiave inizia con "dashboard" così le invalidazioni esistenti
+    // (approvazione rapportino, budget, stato commessa) la raggiungono.
+    queryKey: ["dashboard", "operativa", periodo],
     queryFn: async () => await dashFn({ data: { periodo } }),
+    staleTime: 45_000,
+    retry: 1,
   });
+
 
   const handleSeed = async () => {
     setSeeding(true);
