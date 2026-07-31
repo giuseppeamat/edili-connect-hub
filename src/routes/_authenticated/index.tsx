@@ -168,7 +168,7 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {(Object.keys(PERIODO_LABEL) as PeriodoKey[]).map((p) => (
+          {(["oggi", "7", "30", "mese"] as PeriodoKey[]).map((p) => (
             <Button
               key={p}
               size="sm"
