@@ -24,6 +24,7 @@ import { Route as AuthenticatedCostiPersonaleRouteImport } from './routes/_authe
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedRapportiniIndexRouteImport } from './routes/_authenticated/rapportini.index'
 import { Route as AuthenticatedPreventiviIndexRouteImport } from './routes/_authenticated/preventivi.index'
+import { Route as AuthenticatedDocumentiIndexRouteImport } from './routes/_authenticated/documenti.index'
 import { Route as AuthenticatedCommesseIndexRouteImport } from './routes/_authenticated/commesse.index'
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
 import { Route as AuthenticatedRapportiniRapportinoIdRouteImport } from './routes/_authenticated/rapportini.$rapportinoId'
@@ -110,6 +111,12 @@ const AuthenticatedPreventiviIndexRoute =
     path: '/preventivi/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDocumentiIndexRoute =
+  AuthenticatedDocumentiIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDocumentiRoute,
+  } as any)
 const AuthenticatedCommesseIndexRoute =
   AuthenticatedCommesseIndexRouteImport.update({
     id: '/commesse/',
@@ -154,7 +161,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
-  '/documenti': typeof AuthenticatedDocumentiRoute
+  '/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/clienti/': typeof AuthenticatedClientiIndexRoute
   '/commesse/': typeof AuthenticatedCommesseIndexRoute
+  '/documenti/': typeof AuthenticatedDocumentiIndexRoute
   '/preventivi/': typeof AuthenticatedPreventiviIndexRoute
   '/rapportini/': typeof AuthenticatedRapportiniIndexRoute
 }
@@ -175,7 +183,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
-  '/documenti': typeof AuthenticatedDocumentiRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/clienti': typeof AuthenticatedClientiIndexRoute
   '/commesse': typeof AuthenticatedCommesseIndexRoute
+  '/documenti': typeof AuthenticatedDocumentiIndexRoute
   '/preventivi': typeof AuthenticatedPreventiviIndexRoute
   '/rapportini': typeof AuthenticatedRapportiniIndexRoute
 }
@@ -198,7 +206,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/costi-personale': typeof AuthenticatedCostiPersonaleRoute
-  '/_authenticated/documenti': typeof AuthenticatedDocumentiRoute
+  '/_authenticated/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/_authenticated/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
   '/_authenticated/commesse/': typeof AuthenticatedCommesseIndexRoute
+  '/_authenticated/documenti/': typeof AuthenticatedDocumentiIndexRoute
   '/_authenticated/preventivi/': typeof AuthenticatedPreventiviIndexRoute
   '/_authenticated/rapportini/': typeof AuthenticatedRapportiniIndexRoute
 }
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/rapportini/$rapportinoId'
     | '/clienti/'
     | '/commesse/'
+    | '/documenti/'
     | '/preventivi/'
     | '/rapportini/'
   fileRoutesByTo: FileRoutesByTo
@@ -244,7 +254,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/audit'
     | '/costi-personale'
-    | '/documenti'
     | '/fornitori'
     | '/organizzazione'
     | '/profilo'
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/rapportini/$rapportinoId'
     | '/clienti'
     | '/commesse'
+    | '/documenti'
     | '/preventivi'
     | '/rapportini'
   id:
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
     | '/_authenticated/rapportini/$rapportinoId'
     | '/_authenticated/clienti/'
     | '/_authenticated/commesse/'
+    | '/_authenticated/documenti/'
     | '/_authenticated/preventivi/'
     | '/_authenticated/rapportini/'
   fileRoutesById: FileRoutesById
@@ -397,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPreventiviIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documenti/': {
+      id: '/_authenticated/documenti/'
+      path: '/'
+      fullPath: '/documenti/'
+      preLoaderRoute: typeof AuthenticatedDocumentiIndexRouteImport
+      parentRoute: typeof AuthenticatedDocumentiRoute
+    }
     '/_authenticated/commesse/': {
       id: '/_authenticated/commesse/'
       path: '/commesse'
@@ -442,6 +460,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedDocumentiRouteChildren {
+  AuthenticatedDocumentiIndexRoute: typeof AuthenticatedDocumentiIndexRoute
+}
+
+const AuthenticatedDocumentiRouteChildren: AuthenticatedDocumentiRouteChildren =
+  {
+    AuthenticatedDocumentiIndexRoute: AuthenticatedDocumentiIndexRoute,
+  }
+
+const AuthenticatedDocumentiRouteWithChildren =
+  AuthenticatedDocumentiRoute._addFileChildren(
+    AuthenticatedDocumentiRouteChildren,
+  )
+
 interface AuthenticatedRapportiniRouteChildren {
   AuthenticatedRapportiniRapportinoIdRoute: typeof AuthenticatedRapportiniRapportinoIdRoute
   AuthenticatedRapportiniIndexRoute: typeof AuthenticatedRapportiniIndexRoute
@@ -462,7 +494,7 @@ const AuthenticatedRapportiniRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditRoute: typeof AuthenticatedAuditRoute
   AuthenticatedCostiPersonaleRoute: typeof AuthenticatedCostiPersonaleRoute
-  AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRoute
+  AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRouteWithChildren
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
@@ -480,7 +512,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditRoute: AuthenticatedAuditRoute,
   AuthenticatedCostiPersonaleRoute: AuthenticatedCostiPersonaleRoute,
-  AuthenticatedDocumentiRoute: AuthenticatedDocumentiRoute,
+  AuthenticatedDocumentiRoute: AuthenticatedDocumentiRouteWithChildren,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
