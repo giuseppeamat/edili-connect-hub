@@ -432,3 +432,32 @@ export const MSG_ARCHIVE_CHAIN =
   "Archiviando il documento verranno archiviate tutte le sue versioni.";
 export const MSG_RESTORE_CHAIN = "Verranno ripristinate tutte le versioni del documento.";
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Riconciliazione upload interrotti (regole pure — nessun cron in questo blocco)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Oltre questa soglia un record "preparato" senza file può passare a fallito. */
+export const PREPARATO_STALE_MS = 24 * 60 * 60 * 1000;
+
+export type UploadReconciliation =
+  | "nessuna_azione"
+  | "finalizzabile"
+  | "marca_fallito"
+  | "gia_disponibile";
+
+export function uploadReconciliation(input: {
+  upload_stato: string;
+  created_at: string | Date;
+  hasFile: boolean;
+  now?: Date;
+}): UploadReconciliation {
+  const { upload_stato, hasFile } = input;
+  if (upload_stato === "disponibile") return "gia_disponibile";
+  if (upload_stato !== "preparato") return "nessuna_azione";
+  if (hasFile) return "finalizzabile"; // finalize può sempre essere ritentato
+  const now = (input.now ?? new Date()).getTime();
+  const created = new Date(input.created_at).getTime();
+  if (!Number.isFinite(created)) return "nessuna_azione";
+  return now - created >= PREPARATO_STALE_MS ? "marca_fallito" : "nessuna_azione";
+}
