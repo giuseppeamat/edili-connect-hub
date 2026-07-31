@@ -20,8 +20,15 @@ import { listRapportini, listRapportinoAssignableCommesse, archiveRapportino } f
 import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
+import { z } from "zod";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+
+const searchSchema = z.object({
+  stato: fallback(z.string(), "").default(""),
+});
 
 export const Route = createFileRoute("/_authenticated/rapportini/")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
       { title: "Rapportini — CantiereOS" },
@@ -39,8 +46,12 @@ function fullName(r: any) {
 
 function RapportiniPage() {
   const qc = useQueryClient();
+  const { stato: statoParam } = Route.useSearch();
   const [open, setOpen] = useState(false);
-  const [filters, setFilters] = useState<RapportinoFilters>({ includeArchived: false });
+  const [filters, setFilters] = useState<RapportinoFilters>({
+    includeArchived: false,
+    stato: statoParam || null,
+  });
   const [archTarget, setArchTarget] = useState<any | null>(null);
   const [archMotivo, setArchMotivo] = useState("");
 
