@@ -1323,6 +1323,74 @@ export type Database = {
           },
         ]
       }
+      notifiche: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string
+          destinatario_user_id: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          messaggio: string | null
+          metadata: Json
+          organization_id: string
+          read_at: string | null
+          route: string | null
+          severita: string
+          source_event_id: string | null
+          tipo: string
+          titolo: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key: string
+          destinatario_user_id: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          messaggio?: string | null
+          metadata?: Json
+          organization_id: string
+          read_at?: string | null
+          route?: string | null
+          severita?: string
+          source_event_id?: string | null
+          tipo: string
+          titolo: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string
+          destinatario_user_id?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          messaggio?: string | null
+          metadata?: Json
+          organization_id?: string
+          read_at?: string | null
+          route?: string | null
+          severita?: string
+          source_event_id?: string | null
+          tipo?: string
+          titolo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifiche_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           cap: string | null
@@ -2407,6 +2475,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      archive_all_read_notifiche: { Args: never; Returns: number }
       archive_commessa_budget_voce: {
         Args: {
           _expected_updated_at: string
@@ -2463,6 +2532,7 @@ export type Database = {
         Args: { _archive: boolean; _id: string }
         Returns: Json
       }
+      archive_notifica: { Args: { _id: string }; Returns: string }
       archive_personale_costo_orario: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
@@ -2638,6 +2708,23 @@ export type Database = {
           updated_at: string
         }[]
       }
+      create_notifica_event: {
+        Args: {
+          _dedupe_scope?: string
+          _destinatari: string[]
+          _entity_id: string
+          _entity_type: string
+          _messaggio: string
+          _metadata?: Json
+          _org: string
+          _route: string
+          _severita: string
+          _source_event_id?: string
+          _tipo: string
+          _titolo: string
+        }
+        Returns: number
+      }
       create_personale_costo_orario: {
         Args: {
           _costo_orario: number
@@ -2763,7 +2850,24 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_all_notifiche_read: { Args: never; Returns: number }
       mark_expired_invites: { Args: never; Returns: undefined }
+      mark_notifica_read: {
+        Args: { _id: string; _read?: boolean }
+        Returns: string
+      }
+      notif_users_by_roles: {
+        Args: {
+          _org: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+        }
+        Returns: string[]
+      }
+      notif_users_commessa: {
+        Args: { _commessa_id: string }
+        Returns: string[]
+      }
+      notifiche_sweep: { Args: never; Returns: number }
       recalculate_commessa_avanzamento: {
         Args: { _commessa_id: string }
         Returns: number
@@ -2803,6 +2907,10 @@ export type Database = {
       reorder_commessa_fasi: {
         Args: { _commessa_id: string; _ordered_ids: string[] }
         Returns: undefined
+      }
+      resolve_notifiche: {
+        Args: { _entity_id: string; _org: string; _tipi: string[] }
+        Returns: number
       }
       restore_commessa_budget_voce: {
         Args: { _expected_updated_at: string; _voce_id: string }
