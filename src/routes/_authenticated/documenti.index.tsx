@@ -18,7 +18,7 @@ import {
 import { Upload, CalendarClock } from "lucide-react";
 import { listDocumenti } from "@/lib/documenti.functions";
 import { documentiKeys } from "@/lib/documenti.keys";
-import { CATEGORIE_DOCUMENTO } from "@/lib/documenti-model";
+import { CATEGORIA_FILTER_OPTIONS, categoriaLabel } from "@/lib/documenti-model";
 import { DocumentiTable } from "@/components/documenti/documenti-table";
 import { DocumentoUploadDialog } from "@/components/documenti/documento-upload-dialog";
 
@@ -113,8 +113,8 @@ function DocumentiPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>Tutte</SelectItem>
-                {CATEGORIE_DOCUMENTO.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                {CATEGORIA_FILTER_OPTIONS.map((c) => (
+                  <SelectItem key={c} value={c}>{categoriaLabel(c)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

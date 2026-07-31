@@ -27,9 +27,14 @@ import {
 } from "@/components/ui/select";
 import { Archive, ArchiveRestore, Download, Eye, FilePlus2, Pencil } from "lucide-react";
 import { ConfirmDialog } from "@/components/commesse/confirm-dialog";
-import { MSG_ARCHIVE_CHAIN, MSG_RESTORE_CHAIN, categoriaLabel } from "@/lib/documenti-model";
 import { dateIt } from "@/lib/format";
-import { CATEGORIE_DOCUMENTO, scadenzaLabel } from "@/lib/documenti-model";
+import {
+  MSG_ARCHIVE_CHAIN,
+  MSG_RESTORE_CHAIN,
+  categoriaLabel,
+  categorieSelezionabili,
+  scadenzaLabel,
+} from "@/lib/documenti-model";
 import {
   archiveDocumento,
   getDocumento,
@@ -398,7 +403,7 @@ function EditDialog({
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>—</SelectItem>
-                  {CATEGORIE_DOCUMENTO.map((c) => (
+                  {categorieSelezionabili(doc.categoria).map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>

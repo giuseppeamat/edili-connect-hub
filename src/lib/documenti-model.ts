@@ -353,6 +353,12 @@ export function categorieSelezionabili(categoriaCorrente?: string | null): strin
   return base;
 }
 
+/** Opzioni di filtro: whitelist stabile + categorie storiche ancora presenti. */
+export const CATEGORIA_FILTER_OPTIONS: string[] = [
+  ...CATEGORIE_DOCUMENTO,
+  ...CATEGORIE_LEGACY,
+];
+
 export const VISIBILITA = ["privato", "organizzazione"] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

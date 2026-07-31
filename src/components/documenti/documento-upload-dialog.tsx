@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import {
   CATEGORIE_DOCUMENTO,
+  categoriaLabel,
   DOCUMENTI_BUCKET,
   validateFile,
 } from "@/lib/documenti-model";
@@ -193,7 +194,7 @@ export function DocumentoUploadDialog({
                     <SelectContent>
                       <SelectItem value={NONE}>—</SelectItem>
                       {CATEGORIE_DOCUMENTO.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                        <SelectItem key={c} value={c}>{categoriaLabel(c)}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
