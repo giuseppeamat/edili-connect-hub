@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DocumentiEntityPanel } from "@/components/documenti/documenti-entity-panel";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Archive, Pencil, Phone, Mail, Plus, RotateCcw, Star, CheckCircle2, XCircle, FileText, HardHat, FolderOpen } from "lucide-react";
@@ -265,15 +266,7 @@ function ClienteDetailPage() {
         </TabsContent>
 
         <TabsContent value="documenti">
-          <Card><div className="divide-y">
-            {documenti.map((d: any) => (
-              <div key={d.id} className="p-3 flex justify-between text-sm">
-                <div><div className="font-medium">{d.descrizione || d.nome}</div><div className="text-xs text-muted-foreground">{d.categoria ?? "documento"} · scad. {dateIt(d.data_scadenza)}</div></div>
-                <Badge variant="outline">{d.stato}</Badge>
-              </div>
-            ))}
-            {documenti.length === 0 && <div className="p-6 text-center text-muted-foreground text-sm">Nessun documento.</div>}
-          </div></Card>
+          <DocumentiEntityPanel entityType="cliente" entityId={clienteId} canUpload canManage />
         </TabsContent>
 
         <TabsContent value="storico">
