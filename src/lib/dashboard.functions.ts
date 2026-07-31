@@ -128,6 +128,7 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
 
       // ── Rapportini
       const daApprovare = rapportini.filter((r) => r.stato === "inviato");
+      const rapportiniDaApprovareCount = countDaApprovare(rapportini);
       const orePeriodo = rapportini
         .filter((r) => ["approvato", "inviato", "contabilizzato"].includes(r.stato) || r.stato === "bozza")
         .reduce((s, r) => s + Number(r.ore ?? 0), 0);
@@ -212,7 +213,7 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
           preventiviAperti: preventivi.filter((p) =>
             ["bozza", "inviato", "in_revisione", "pronto"].includes(p.stato),
           ).length,
-          rapportiniDaApprovare: daApprovare.length,
+          rapportiniDaApprovare: rapportiniDaApprovareCount,
           orePeriodo,
           oreApprovate,
           documentiInScadenza: docs.length - docsScaduti.length,
