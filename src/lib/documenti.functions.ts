@@ -13,8 +13,10 @@ import {
   ERR_CONFLICT,
   ERR_FILE_MISSING,
   ERR_NOT_FOUND,
+  ERR_CLEANUP_REFERENCED,
   buildStoragePath,
   canPreview,
+  orphanCleanupAllowed,
   validateFile,
 } from "@/lib/documenti-model";
 import {
@@ -34,6 +36,9 @@ import {
   versionChain,
   applyScadenzaFilter,
   scadenziarioRange,
+  assertCleanup,
+  listStorageObjects,
+  referencedStoragePaths,
 } from "@/lib/documenti.server";
 
 const uuid = z.string().uuid();
@@ -144,13 +149,18 @@ export const finalizeDocumentoUpload = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertUpload(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.document_id);
+      const doc = await loadDocumentoInternal(
+        context.supabase,
+        ctx.organizationId,
+        data.document_id,
+      );
 
       if (doc.upload_stato === "disponibile") {
         return { document_id: doc.id, upload_stato: "disponibile", idempotent: true };
       }
       if (doc.upload_stato !== "preparato") throw new Error(ERR_FILE_MISSING);
-      if (doc.storage_bucket !== DOCUMENTI_BUCKET || !doc.storage_path) throw new Error(ERR_FILE_MISSING);
+      if (doc.storage_bucket !== DOCUMENTI_BUCKET || !doc.storage_path)
+        throw new Error(ERR_FILE_MISSING);
       if (!String(doc.storage_path).startsWith(`${ctx.organizationId}/${doc.id}/`)) {
         throw new Error(ERR_FILE_MISSING);
       }
@@ -193,7 +203,10 @@ export const finalizeDocumentoUpload = createServerFn({ method: "POST" })
 const listSchema = z.object({
   q: z.string().trim().max(120).nullable().optional(),
   categoria: z.string().trim().max(60).nullable().optional(),
-  stato_scadenza: z.enum(["scaduto", "in_scadenza", "valido", "senza_scadenza"]).nullable().optional(),
+  stato_scadenza: z
+    .enum(["scaduto", "in_scadenza", "valido", "senza_scadenza"])
+    .nullable()
+    .optional(),
   cliente_id: nullableUuid,
   fornitore_id: nullableUuid,
   commessa_id: nullableUuid,
@@ -237,7 +250,10 @@ export const listDocumenti = createServerFn({ method: "POST" })
       if (data.cantiere_id) q = q.eq("cantiere_id", data.cantiere_id);
       q = applyScadenzaFilter(q, data.stato_scadenza ?? null);
 
-      q = q.order(sort, { ascending: sort === "nome" || sort === "data_scadenza", nullsFirst: false });
+      q = q.order(sort, {
+        ascending: sort === "nome" || sort === "data_scadenza",
+        nullsFirst: false,
+      });
       q = q.range((page - 1) * pageSize, page * pageSize - 1);
 
       const { data: rows, error, count } = await q;
@@ -268,7 +284,11 @@ export const getDocumento = createServerFn({ method: "POST" })
         .eq("organization_id", ctx.organizationId)
         .maybeSingle();
       if (!row) throw new Error(ERR_NOT_FOUND);
-      if (row.upload_stato !== "disponibile" && !ctx.caps.canAdmin && row.created_by !== context.userId) {
+      if (
+        row.upload_stato !== "disponibile" &&
+        !ctx.caps.canAdmin &&
+        row.created_by !== context.userId
+      ) {
         throw new Error(ERR_NOT_FOUND);
       }
       const lookups = await buildLookups(context.supabase, ctx.organizationId, [row]);
@@ -346,6 +366,11 @@ export const updateDocumento = createServerFn({ method: "POST" })
     }
   });
 
+/**
+ * Archiviazione dell'intero documento logico (tutte le versioni della catena),
+ * in modo ATOMICO tramite RPC. Una versione storica non può essere archiviata
+ * isolatamente.
+ */
 export const archiveDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
@@ -353,26 +378,25 @@ export const archiveDocumento = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertManage(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (doc.archived_at) return { id: doc.id, archived: true, idempotent: true };
-      const { error } = await context.supabase
-        .from("documenti")
-        .update({
-          archived_at: new Date().toISOString(),
-          archived_by: context.userId,
-          stato: "archiviato",
-          updated_by: context.userId,
-        })
-        .eq("id", data.id)
-        .eq("organization_id", ctx.organizationId);
+      await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
+      const { data: res, error } = await context.supabase.rpc("archive_documento_chain", {
+        _id: data.id,
+        _archive: true,
+      });
       if (error) throw error;
-      await audit(ctx.organizationId, context.userId, "documento_archiviato", data.id, {});
-      return { id: data.id, archived: true, idempotent: false };
+      const r = (res ?? {}) as any;
+      return {
+        id: data.id,
+        archived: true,
+        versioni: Number(r.versioni ?? 0),
+        idempotent: !!r.idempotent,
+      };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
   });
 
+/** Ripristino atomico dell'intera catena versioni. */
 export const restoreDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
@@ -380,21 +404,19 @@ export const restoreDocumento = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertManage(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (!doc.archived_at) return { id: doc.id, archived: false, idempotent: true };
-      const { error } = await context.supabase
-        .from("documenti")
-        .update({
-          archived_at: null,
-          archived_by: null,
-          stato: "valido",
-          updated_by: context.userId,
-        })
-        .eq("id", data.id)
-        .eq("organization_id", ctx.organizationId);
+      await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
+      const { data: res, error } = await context.supabase.rpc("archive_documento_chain", {
+        _id: data.id,
+        _archive: false,
+      });
       if (error) throw error;
-      await audit(ctx.organizationId, context.userId, "documento_ripristinato", data.id, {});
-      return { id: data.id, archived: false, idempotent: false };
+      const r = (res ?? {}) as any;
+      return {
+        id: data.id,
+        archived: false,
+        versioni: Number(r.versioni ?? 0),
+        idempotent: !!r.idempotent,
+      };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
@@ -422,8 +444,13 @@ export const prepareDocumentoVersionUpload = createServerFn({ method: "POST" })
       });
       if (!check.ok) throw new Error(check.error);
 
-      const corrente = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.documento_id);
-      if (corrente.archived_at) throw new Error("Il documento è archiviato. Ripristinalo prima di modificarlo.");
+      const corrente = await loadDocumentoInternal(
+        context.supabase,
+        ctx.organizationId,
+        data.documento_id,
+      );
+      if (corrente.archived_at)
+        throw new Error("Il documento è archiviato. Ripristinalo prima di modificarlo.");
 
       const chain = await versionChain(context.supabase, ctx.organizationId, corrente.id);
       const maxVersione = Math.max(...chain.map((c: any) => Number(c.versione) || 1), 1);
@@ -494,7 +521,11 @@ export const finalizeDocumentoVersionUpload = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertUpload(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.document_id);
+      const doc = await loadDocumentoInternal(
+        context.supabase,
+        ctx.organizationId,
+        data.document_id,
+      );
 
       if (doc.upload_stato === "disponibile" && doc.is_versione_corrente) {
         return { document_id: doc.id, upload_stato: "disponibile", idempotent: true };
@@ -575,7 +606,8 @@ export const createDocumentoDownloadUrl = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (doc.upload_stato !== "disponibile" || !doc.storage_path) throw new Error(ERR_FILE_MISSING);
+      if (doc.upload_stato !== "disponibile" || !doc.storage_path)
+        throw new Error(ERR_FILE_MISSING);
       const { data: signed, error } = await context.supabase.storage
         .from(DOCUMENTI_BUCKET)
         .createSignedUrl(doc.storage_path, 120, {
@@ -595,8 +627,10 @@ export const createDocumentoPreviewUrl = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (doc.upload_stato !== "disponibile" || !doc.storage_path) throw new Error(ERR_FILE_MISSING);
-      if (!canPreview(doc.mime_type)) throw new Error("Anteprima non disponibile per questo formato.");
+      if (doc.upload_stato !== "disponibile" || !doc.storage_path)
+        throw new Error(ERR_FILE_MISSING);
+      if (!canPreview(doc.mime_type))
+        throw new Error("Anteprima non disponibile per questo formato.");
       const { data: signed, error } = await context.supabase.storage
         .from(DOCUMENTI_BUCKET)
         .createSignedUrl(doc.storage_path, 120);
@@ -642,6 +676,101 @@ export const listScadenziario = createServerFn({ method: "POST" })
         items: (rows ?? []).map((r: any) => toListDTO(r, lookups)),
         capabilities: ctx.caps,
       };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Strumenti tecnici: file Storage orfani (solo proprietario/amministratore)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Elenca gli oggetti Storage della PROPRIA organizzazione non referenziati da
+ * alcun documento. Non genera signed URL e non cancella nulla.
+ */
+export const listDocumentoStorageOrphans = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({}).parse(d ?? {}))
+  .handler(async ({ context }) => {
+    try {
+      const ctx = await resolveDocContext(context.supabase, context.userId);
+      assertCleanup(ctx);
+      const [objects, referenced] = await Promise.all([
+        listStorageObjects(context.supabase, ctx.organizationId),
+        referencedStoragePaths(context.supabase, ctx.organizationId),
+      ]);
+      const now = Date.now();
+      const items = objects
+        .filter((o) => !referenced.has(o.path))
+        .map((o) => ({
+          path: o.path,
+          size: o.size,
+          created_at: o.created_at,
+          eta_ore: o.created_at
+            ? Math.floor((now - new Date(o.created_at).getTime()) / 3600000)
+            : null,
+          cleanup_consentito: o.created_at ? orphanCleanupAllowed(o.created_at).ok : false,
+        }));
+      return { organization_id: ctx.organizationId, total: items.length, items };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+/**
+ * Rimozione tecnica e controllata di UN oggetto Storage orfano.
+ * Idempotente, verifica organizzazione, referenza e soglia temporale.
+ * Non è mai raggiungibile da capocantiere, operaio, responsabile commessa,
+ * ufficio tecnico o amministrazione.
+ */
+export const cleanupDocumentoStorageOrphan = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ path: z.string().trim().min(3).max(600), force: z.boolean().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const ctx = await resolveDocContext(context.supabase, context.userId);
+      assertCleanup(ctx);
+
+      if (!data.path.startsWith(`${ctx.organizationId}/`) || data.path.includes("..")) {
+        throw new Error(ERR_NOT_FOUND);
+      }
+
+      const { data: referenced, error: refErr } = await context.supabase.rpc(
+        "documento_storage_path_referenced",
+        { _org: ctx.organizationId, _path: data.path },
+      );
+      if (refErr) throw refErr;
+      if (referenced === true) throw new Error(ERR_CLEANUP_REFERENCED);
+
+      const dir = data.path.slice(0, data.path.lastIndexOf("/"));
+      const objects = await listStorageObjects(context.supabase, dir);
+      const found = objects.find((o) => o.path === data.path);
+      if (!found) {
+        return { path: data.path, removed: false, idempotent: true };
+      }
+
+      const allowed = orphanCleanupAllowed(found.created_at ?? "", new Date(), data.force === true);
+      if (!allowed.ok) throw new Error(allowed.error);
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin.storage.from(DOCUMENTI_BUCKET).remove([data.path]);
+      if (error) throw error;
+
+      await audit(
+        ctx.organizationId,
+        context.userId,
+        "storage_orfano_rimosso",
+        ctx.organizationId,
+        {
+          path: data.path,
+          size: found.size,
+          forzato: data.force === true,
+        },
+      );
+      return { path: data.path, removed: true, idempotent: false };
     } catch (e) {
       throw new Error(mapServerError(e));
     }

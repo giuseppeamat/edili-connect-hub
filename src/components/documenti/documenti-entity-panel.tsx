@@ -49,7 +49,7 @@ export function DocumentiEntityPanel({
   const listFn = useServerFn(listDocumenti);
 
   const filters = {
-    commessa_id: entityType === "commessa" ? entityId : commessaId ?? null,
+    commessa_id: entityType === "commessa" ? entityId : (commessaId ?? null),
     cantiere_id:
       entityType === "cantiere" ? entityId : cantiereFilter === ALL ? null : cantiereFilter,
     cliente_id: entityType === "cliente" ? entityId : null,
@@ -89,7 +89,9 @@ export function DocumentiEntityPanel({
         <div className="flex flex-wrap items-center gap-3">
           {entityType === "commessa" && cantieri.length > 0 && (
             <Select value={cantiereFilter} onValueChange={setCantiereFilter}>
-              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Tutti i cantieri" /></SelectTrigger>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Tutti i cantieri" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>Tutti i cantieri</SelectItem>
                 {cantieri.map((k) => (
@@ -102,11 +104,14 @@ export function DocumentiEntityPanel({
           )}
           <div className="flex items-center gap-2">
             <Switch id="doc-arch" checked={includeArchived} onCheckedChange={setIncludeArchived} />
-            <Label htmlFor="doc-arch" className="text-sm">Archiviati</Label>
+            <Label htmlFor="doc-arch" className="text-sm">
+              Archiviati
+            </Label>
           </div>
           {canUpload && (
             <Button size="sm" onClick={() => setOpen(true)}>
-              <Upload className="h-4 w-4 mr-1" />Carica
+              <Upload className="h-4 w-4 mr-1" />
+              Carica
             </Button>
           )}
         </div>
@@ -115,8 +120,12 @@ export function DocumentiEntityPanel({
         {isLoading && <div className="text-sm text-muted-foreground py-6">Caricamento…</div>}
         {isError && (
           <div className="py-6 text-sm">
-            <p className="text-destructive">{(error as any)?.message ?? "Errore di caricamento."}</p>
-            <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>Riprova</Button>
+            <p className="text-destructive">
+              {(error as any)?.message ?? "Errore di caricamento."}
+            </p>
+            <Button size="sm" variant="outline" className="mt-2" onClick={() => refetch()}>
+              Riprova
+            </Button>
           </div>
         )}
         {data && (
@@ -128,12 +137,7 @@ export function DocumentiEntityPanel({
           />
         )}
       </CardContent>
-      <DocumentoUploadDialog
-        open={open}
-        onOpenChange={setOpen}
-        preset={preset}
-        lockPreset
-      />
+      <DocumentoUploadDialog open={open} onOpenChange={setOpen} preset={preset} lockPreset />
     </Card>
   );
 }

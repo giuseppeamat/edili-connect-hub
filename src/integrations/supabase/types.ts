@@ -2459,6 +2459,10 @@ export type Database = {
         }
         Returns: string
       }
+      archive_documento_chain: {
+        Args: { _archive: boolean; _id: string }
+        Returns: Json
+      }
       archive_personale_costo_orario: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
@@ -2681,6 +2685,16 @@ export type Database = {
       documento_scadenza_stato: {
         Args: { _data_scadenza: string; _soglia_giorni?: number }
         Returns: string
+      }
+      documento_storage_path_referenced: {
+        Args: { _org: string; _path: string }
+        Returns: boolean
+      }
+      documento_version_chain: {
+        Args: { _id: string; _org: string }
+        Returns: {
+          id: string
+        }[]
       }
       get_personale_costo_orario_at_date: {
         Args: { _data: string; _org: string; _user_id: string }

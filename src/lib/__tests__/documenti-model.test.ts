@@ -74,22 +74,39 @@ describe("file", () => {
     expect(buildStoragePath("org1", "doc1", 2, "DURC 2026.pdf")).toBe("org1/doc1/2/durc-2026.pdf");
   });
   it("accetta MIME ammessi", () => {
-    expect(validateFile({ fileName: "a.pdf", mimeType: "application/pdf", fileSize: 1000 })).toEqual({ ok: true });
-    expect(validateFile({ fileName: "a.png", mimeType: "image/png", fileSize: 1000 })).toEqual({ ok: true });
+    expect(
+      validateFile({ fileName: "a.pdf", mimeType: "application/pdf", fileSize: 1000 }),
+    ).toEqual({ ok: true });
+    expect(validateFile({ fileName: "a.png", mimeType: "image/png", fileSize: 1000 })).toEqual({
+      ok: true,
+    });
   });
   it("rifiuta MIME vietati e incoerenti", () => {
-    expect(validateFile({ fileName: "a.svg", mimeType: "image/svg+xml", fileSize: 10 })).toEqual({ ok: false, error: ERR_MIME });
-    expect(validateFile({ fileName: "a.exe", mimeType: "application/pdf", fileSize: 10 })).toEqual({ ok: false, error: ERR_MIME });
-    expect(validateFile({ fileName: "a.pdf", mimeType: "image/png", fileSize: 10 })).toEqual({ ok: false, error: ERR_MIME });
+    expect(validateFile({ fileName: "a.svg", mimeType: "image/svg+xml", fileSize: 10 })).toEqual({
+      ok: false,
+      error: ERR_MIME,
+    });
+    expect(validateFile({ fileName: "a.exe", mimeType: "application/pdf", fileSize: 10 })).toEqual({
+      ok: false,
+      error: ERR_MIME,
+    });
+    expect(validateFile({ fileName: "a.pdf", mimeType: "image/png", fileSize: 10 })).toEqual({
+      ok: false,
+      error: ERR_MIME,
+    });
   });
   it("rifiuta file troppo grandi", () => {
-    expect(validateFile({ fileName: "a.pdf", mimeType: "application/pdf", fileSize: MAX_FILE_SIZE + 1 })).toEqual({
+    expect(
+      validateFile({ fileName: "a.pdf", mimeType: "application/pdf", fileSize: MAX_FILE_SIZE + 1 }),
+    ).toEqual({
       ok: false,
       error: ERR_SIZE,
     });
   });
   it("rifiuta doppia estensione sospetta", () => {
-    expect(validateFile({ fileName: "fattura.exe.pdf", mimeType: "application/pdf", fileSize: 10 })).toEqual({
+    expect(
+      validateFile({ fileName: "fattura.exe.pdf", mimeType: "application/pdf", fileSize: 10 }),
+    ).toEqual({
       ok: false,
       error: ERR_MIME,
     });
@@ -108,15 +125,31 @@ describe("file", () => {
 
 describe("capability ruoli", () => {
   it("proprietario ha tutti i permessi", () => {
-    expect(documentoCapabilities(["proprietario"])).toEqual({ canUpload: true, canManage: true, canAdmin: true });
+    expect(documentoCapabilities(["proprietario"])).toEqual({
+      canUpload: true,
+      canManage: true,
+      canAdmin: true,
+    });
   });
   it("capocantiere può caricare ma non gestire", () => {
-    expect(documentoCapabilities(["capocantiere"])).toEqual({ canUpload: true, canManage: false, canAdmin: false });
+    expect(documentoCapabilities(["capocantiere"])).toEqual({
+      canUpload: true,
+      canManage: false,
+      canAdmin: false,
+    });
   });
   it("operaio non può caricare", () => {
-    expect(documentoCapabilities(["operaio"])).toEqual({ canUpload: false, canManage: false, canAdmin: false });
+    expect(documentoCapabilities(["operaio"])).toEqual({
+      canUpload: false,
+      canManage: false,
+      canAdmin: false,
+    });
   });
   it("nessun ruolo = nessuna capability", () => {
-    expect(documentoCapabilities([])).toEqual({ canUpload: false, canManage: false, canAdmin: false });
+    expect(documentoCapabilities([])).toEqual({
+      canUpload: false,
+      canManage: false,
+      canAdmin: false,
+    });
   });
 });

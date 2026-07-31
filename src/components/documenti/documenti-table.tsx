@@ -14,6 +14,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Archive, ArchiveRestore, Download, Eye, FilePlus2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/commesse/confirm-dialog";
+import { MSG_ARCHIVE_CHAIN, MSG_RESTORE_CHAIN } from "@/lib/documenti-model";
 import { dateIt } from "@/lib/format";
 import { canPreview, scadenzaLabel } from "@/lib/documenti-model";
 import {
@@ -75,6 +77,7 @@ export function DocumentiTable({
   const qc = useQueryClient();
   const { download, preview } = useDocumentoFileActions();
   const [versionFor, setVersionFor] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; mode: "archive" | "restore" } | null>(null);
   const archiveFn = useServerFn(archiveDocumento);
   const restoreFn = useServerFn(restoreDocumento);
 
@@ -97,6 +100,20 @@ export function DocumentiTable({
 
   return (
     <>
+      <ConfirmDialog
+        open={!!confirm}
+        onOpenChange={(v) => !v && setConfirm(null)}
+        title={confirm?.mode === "restore" ? "Ripristina documento" : "Archivia documento"}
+        description={confirm?.mode === "restore" ? MSG_RESTORE_CHAIN : MSG_ARCHIVE_CHAIN}
+        confirmLabel={confirm?.mode === "restore" ? "Ripristina" : "Archivia"}
+        isPending={archive.isPending || restore.isPending}
+        onConfirm={async () => {
+          if (!confirm) return;
+          if (confirm.mode === "archive") await archive.mutateAsync(confirm.id);
+          else await restore.mutateAsync(confirm.id);
+          setConfirm(null);
+        }}
+      />
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
@@ -121,7 +138,9 @@ export function DocumentiTable({
                   >
                     {d.nome}
                   </Link>
-                  <div className="text-xs text-muted-foreground md:hidden">{d.categoria ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground md:hidden">
+                    {d.categoria ?? "—"}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{d.categoria ?? "—"}</TableCell>
                 {showCommessa && (
@@ -148,12 +167,22 @@ export function DocumentiTable({
                 <TableCell className="hidden lg:table-cell">v{d.versione}</TableCell>
                 <TableCell className="text-right whitespace-nowrap">
                   {d.upload_stato === "disponibile" && canPreview(d.mime_type) && (
-                    <Button size="icon" variant="ghost" aria-label="Anteprima" onClick={() => preview(d.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Anteprima"
+                      onClick={() => preview(d.id)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
                   {d.upload_stato === "disponibile" && (
-                    <Button size="icon" variant="ghost" aria-label="Scarica" onClick={() => download(d.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      aria-label="Scarica"
+                      onClick={() => download(d.id)}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   )}
@@ -172,7 +201,7 @@ export function DocumentiTable({
                       size="icon"
                       variant="ghost"
                       aria-label="Archivia"
-                      onClick={() => archive.mutate(d.id)}
+                      onClick={() => setConfirm({ id: d.id, mode: "archive" })}
                     >
                       <Archive className="h-4 w-4" />
                     </Button>
@@ -182,7 +211,7 @@ export function DocumentiTable({
                       size="icon"
                       variant="ghost"
                       aria-label="Ripristina"
-                      onClick={() => restore.mutate(d.id)}
+                      onClick={() => setConfirm({ id: d.id, mode: "restore" })}
                     >
                       <ArchiveRestore className="h-4 w-4" />
                     </Button>
@@ -192,7 +221,10 @@ export function DocumentiTable({
             ))}
             {items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={showCommessa ? 7 : 6} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={showCommessa ? 7 : 6}
+                  className="text-center text-muted-foreground py-8"
+                >
                   {emptyLabel}
                 </TableCell>
               </TableRow>

@@ -26,8 +26,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Archive, ArchiveRestore, Download, Eye, FilePlus2, Pencil } from "lucide-react";
+import { ConfirmDialog } from "@/components/commesse/confirm-dialog";
 import { dateIt } from "@/lib/format";
-import { CATEGORIE_DOCUMENTO, scadenzaLabel } from "@/lib/documenti-model";
+import {
+  MSG_ARCHIVE_CHAIN,
+  MSG_RESTORE_CHAIN,
+  categoriaLabel,
+  categorieSelezionabili,
+  scadenzaLabel,
+} from "@/lib/documenti-model";
 import {
   archiveDocumento,
   getDocumento,
@@ -87,7 +94,13 @@ function DocumentoDetailPage() {
   const [editing, setEditing] = useState(false);
   const [newVersion, setNewVersion] = useState(false);
 
-  const { data: doc, isLoading, isError, error, refetch } = useQuery({
+  const {
+    data: doc,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: documentiKeys.detail(documentoId),
     queryFn: () => getFn({ data: { id: documentoId } }),
     retry: false,
@@ -114,6 +127,8 @@ function DocumentoDetailPage() {
       ).data ?? [],
   });
 
+  const [confirm, setConfirm] = useState<"archive" | "restore" | null>(null);
+
   const archive = useMutation({
     mutationFn: () => archiveFn({ data: { id: documentoId } }),
     onSuccess: () => {
@@ -139,8 +154,12 @@ function DocumentoDetailPage() {
           {(error as any)?.message ?? "Elemento non trovato."}
         </p>
         <div className="flex gap-2 mt-3">
-          <Button size="sm" variant="outline" onClick={() => refetch()}>Riprova</Button>
-          <Button size="sm" asChild><Link to="/documenti">Torna ai documenti</Link></Button>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>
+            Riprova
+          </Button>
+          <Button size="sm" asChild>
+            <Link to="/documenti">Torna ai documenti</Link>
+          </Button>
         </div>
       </div>
     );
@@ -150,40 +169,61 @@ function DocumentoDetailPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={!!confirm}
+        onOpenChange={(v) => !v && setConfirm(null)}
+        title={confirm === "restore" ? "Ripristina documento" : "Archivia documento"}
+        description={confirm === "restore" ? MSG_RESTORE_CHAIN : MSG_ARCHIVE_CHAIN}
+        confirmLabel={confirm === "restore" ? "Ripristina" : "Archivia"}
+        isPending={archive.isPending || restore.isPending}
+        onConfirm={async () => {
+          if (confirm === "archive") await archive.mutateAsync();
+          else if (confirm === "restore") await restore.mutateAsync();
+          setConfirm(null);
+        }}
+      />
       <PageHeader
         title={doc.nome}
         description={`Versione ${doc.versione}${doc.archived_at ? " — archiviato" : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild size="sm"><Link to="/documenti">Elenco</Link></Button>
+            <Button variant="outline" asChild size="sm">
+              <Link to="/documenti">Elenco</Link>
+            </Button>
             {doc.upload_stato === "disponibile" && doc.preview_supportata && (
               <Button size="sm" variant="outline" onClick={() => preview(doc.id)}>
-                <Eye className="h-4 w-4 mr-1" />Anteprima
+                <Eye className="h-4 w-4 mr-1" />
+                Anteprima
               </Button>
             )}
             {doc.upload_stato === "disponibile" && (
               <Button size="sm" variant="outline" onClick={() => download(doc.id)}>
-                <Download className="h-4 w-4 mr-1" />Scarica
+                <Download className="h-4 w-4 mr-1" />
+                Scarica
               </Button>
             )}
             {caps.canManage && !doc.archived_at && (
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-                <Pencil className="h-4 w-4 mr-1" />Modifica
+                <Pencil className="h-4 w-4 mr-1" />
+                Modifica
               </Button>
             )}
             {caps.canNewVersion && (
               <Button size="sm" variant="outline" onClick={() => setNewVersion(true)}>
-                <FilePlus2 className="h-4 w-4 mr-1" />Nuova versione
+                <FilePlus2 className="h-4 w-4 mr-1" />
+                Nuova versione
               </Button>
             )}
             {caps.canArchive && (
-              <Button size="sm" variant="outline" onClick={() => archive.mutate()}>
-                <Archive className="h-4 w-4 mr-1" />Archivia
+              <Button size="sm" variant="outline" onClick={() => setConfirm("archive")}>
+                <Archive className="h-4 w-4 mr-1" />
+                Archivia
               </Button>
             )}
             {caps.canRestore && (
-              <Button size="sm" variant="outline" onClick={() => restore.mutate()}>
-                <ArchiveRestore className="h-4 w-4 mr-1" />Ripristina
+              <Button size="sm" variant="outline" onClick={() => setConfirm("restore")}>
+                <ArchiveRestore className="h-4 w-4 mr-1" />
+                Ripristina
               </Button>
             )}
           </div>
@@ -192,11 +232,16 @@ function DocumentoDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-base">Dati documento</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Dati documento</CardTitle>
+          </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <Field label="Categoria" value={doc.categoria ?? "—"} />
+            <Field label="Categoria" value={categoriaLabel(doc.categoria)} />
             <Field label="Visibilità" value={doc.visibilita} />
-            <Field label="Data documento" value={doc.data_documento ? dateIt(doc.data_documento) : "—"} />
+            <Field
+              label="Data documento"
+              value={doc.data_documento ? dateIt(doc.data_documento) : "—"}
+            />
             <Field
               label="Scadenza"
               value={
@@ -224,7 +269,9 @@ function DocumentoDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">File</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">File</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Field label="Nome file" value={doc.file_name_originale ?? "—"} />
             <Field label="Formato" value={doc.mime_type ?? "—"} />
@@ -232,7 +279,10 @@ function DocumentoDetailPage() {
               label="Dimensione"
               value={doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(2)} MB` : "—"}
             />
-            <Field label="Versione" value={`v${doc.versione}${doc.is_versione_corrente ? " (corrente)" : ""}`} />
+            <Field
+              label="Versione"
+              value={`v${doc.versione}${doc.is_versione_corrente ? " (corrente)" : ""}`}
+            />
             {doc.upload_stato === "preparato" && (
               <p className="text-muted-foreground">
                 Il file non è ancora stato caricato per questo documento.
@@ -248,13 +298,18 @@ function DocumentoDetailPage() {
         </Card>
 
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-base">Storico versioni</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Storico versioni</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {(versioni as any[]).length === 0 && (
               <div className="text-muted-foreground">Nessuna versione registrata.</div>
             )}
             {(versioni as any[]).map((v) => (
-              <div key={v.id} className="flex items-center justify-between border-b last:border-0 pb-2 last:pb-0">
+              <div
+                key={v.id}
+                className="flex items-center justify-between border-b last:border-0 pb-2 last:pb-0"
+              >
                 <div>
                   <Link
                     to="/documenti/$documentoId"
@@ -274,7 +329,9 @@ function DocumentoDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Storico attività</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Storico attività</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-2 text-sm">
             {(audit as any[]).length === 0 && (
               <div className="text-muted-foreground">Nessuna attività registrata.</div>
@@ -290,11 +347,7 @@ function DocumentoDetailPage() {
       </div>
 
       <EditDialog open={editing} onOpenChange={setEditing} doc={doc} />
-      <DocumentoUploadDialog
-        open={newVersion}
-        onOpenChange={setNewVersion}
-        documentoId={doc.id}
-      />
+      <DocumentoUploadDialog open={newVersion} onOpenChange={setNewVersion} documentoId={doc.id} />
     </div>
   );
 }
@@ -358,7 +411,9 @@ function EditDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Modifica documento</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>Modifica documento</DialogTitle>
+        </DialogHeader>
         <form
           className="space-y-3"
           onSubmit={(e) => {
@@ -372,17 +427,26 @@ function EditDialog({
           </div>
           <div>
             <Label htmlFor="ed-descr">Descrizione</Label>
-            <Textarea id="ed-descr" name="descrizione" rows={3} defaultValue={doc.descrizione ?? ""} />
+            <Textarea
+              id="ed-descr"
+              name="descrizione"
+              rows={3}
+              defaultValue={doc.descrizione ?? ""}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Categoria</Label>
               <Select value={categoria} onValueChange={setCategoria}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>—</SelectItem>
-                  {CATEGORIE_DOCUMENTO.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  {categorieSelezionabili(doc.categoria).map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -390,7 +454,9 @@ function EditDialog({
             <div>
               <Label>Visibilità</Label>
               <Select value={visibilita} onValueChange={setVisibilita}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="organizzazione">Organizzazione</SelectItem>
                   <SelectItem value="privato">Privato</SelectItem>
@@ -401,11 +467,21 @@ function EditDialog({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="ed-dd">Data documento</Label>
-              <Input id="ed-dd" name="data_documento" type="date" defaultValue={doc.data_documento ?? ""} />
+              <Input
+                id="ed-dd"
+                name="data_documento"
+                type="date"
+                defaultValue={doc.data_documento ?? ""}
+              />
             </div>
             <div>
               <Label htmlFor="ed-ds">Scadenza</Label>
-              <Input id="ed-ds" name="data_scadenza" type="date" defaultValue={doc.data_scadenza ?? ""} />
+              <Input
+                id="ed-ds"
+                name="data_scadenza"
+                type="date"
+                defaultValue={doc.data_scadenza ?? ""}
+              />
             </div>
           </div>
           <DialogFooter>

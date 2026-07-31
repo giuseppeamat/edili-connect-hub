@@ -6,6 +6,7 @@
 import {
   DOCUMENTI_BUCKET,
   ERR_NOT_FOUND,
+  canCleanupStorage,
   documentoCapabilities,
   isCategoriaValida,
   scadenzaStato,
@@ -41,7 +42,11 @@ export async function resolveDocContext(supabase: any, userId: string): Promise<
     .eq("user_id", userId)
     .eq("organization_id", prof.organization_id);
   const roles = (rr ?? []).map((r: any) => String(r.role));
-  return { organizationId: prof.organization_id as string, roles, caps: documentoCapabilities(roles) };
+  return {
+    organizationId: prof.organization_id as string,
+    roles,
+    caps: documentoCapabilities(roles),
+  };
 }
 
 export function assertUpload(ctx: DocContext) {
@@ -154,23 +159,49 @@ export async function buildLookups(supabase: any, org: string, rows: any[]): Pro
   const empty = Promise.resolve({ data: [] as any[] });
   const [c, f, m, k, p] = await Promise.all([
     cli.length
-      ? supabase.from("clienti").select("id, denominazione").eq("organization_id", org).in("id", cli)
+      ? supabase
+          .from("clienti")
+          .select("id, denominazione")
+          .eq("organization_id", org)
+          .in("id", cli)
       : empty,
     forn.length
-      ? supabase.from("fornitori").select("id, ragione_sociale").eq("organization_id", org).in("id", forn)
+      ? supabase
+          .from("fornitori")
+          .select("id, ragione_sociale")
+          .eq("organization_id", org)
+          .in("id", forn)
       : empty,
     comm.length
-      ? supabase.from("commesse").select("id, codice, denominazione").eq("organization_id", org).in("id", comm)
+      ? supabase
+          .from("commesse")
+          .select("id, codice, denominazione")
+          .eq("organization_id", org)
+          .in("id", comm)
       : empty,
     cant.length
-      ? supabase.from("cantieri").select("id, codice, nome").eq("organization_id", org).in("id", cant)
+      ? supabase
+          .from("cantieri")
+          .select("id, codice, nome")
+          .eq("organization_id", org)
+          .in("id", cant)
       : empty,
     users.length
-      ? supabase.from("profiles").select("id, nome, cognome, email").eq("organization_id", org).in("id", users)
+      ? supabase
+          .from("profiles")
+          .select("id, nome, cognome, email")
+          .eq("organization_id", org)
+          .in("id", users)
       : empty,
   ]);
   const map = (d: any) => new Map(((d?.data ?? []) as any[]).map((x: any) => [x.id, x]));
-  return { clienti: map(c), fornitori: map(f), commesse: map(m), cantieri: map(k), profili: map(p) };
+  return {
+    clienti: map(c),
+    fornitori: map(f),
+    commesse: map(m),
+    cantieri: map(k),
+    profili: map(p),
+  };
 }
 
 export function personName(p: any): string | null {
@@ -210,17 +241,22 @@ export function toListDTO(row: any, l: Lookups) {
     commessa: row.commessa_id
       ? {
           id: row.commessa_id,
-          label: [l.commesse.get(row.commessa_id)?.codice, l.commesse.get(row.commessa_id)?.denominazione]
-            .filter(Boolean)
-            .join(" — ") || "—",
+          label:
+            [
+              l.commesse.get(row.commessa_id)?.codice,
+              l.commesse.get(row.commessa_id)?.denominazione,
+            ]
+              .filter(Boolean)
+              .join(" — ") || "—",
         }
       : null,
     cantiere: row.cantiere_id
       ? {
           id: row.cantiere_id,
-          label: [l.cantieri.get(row.cantiere_id)?.codice, l.cantieri.get(row.cantiere_id)?.nome]
-            .filter(Boolean)
-            .join(" — ") || "—",
+          label:
+            [l.cantieri.get(row.cantiere_id)?.codice, l.cantieri.get(row.cantiere_id)?.nome]
+              .filter(Boolean)
+              .join(" — ") || "—",
         }
       : null,
   };
@@ -362,7 +398,8 @@ export function applyScadenzaFilter(q: any, stato: string | null) {
   if (!stato) return q;
   if (stato === "senza_scadenza") return q.is("data_scadenza", null);
   if (stato === "scaduto") return q.lt("data_scadenza", isoDay(0));
-  if (stato === "in_scadenza") return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(30));
+  if (stato === "in_scadenza")
+    return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(30));
   if (stato === "valido") return q.gt("data_scadenza", isoDay(30));
   return q;
 }
@@ -389,4 +426,64 @@ export function scadenziarioRange(q: any, filtro: string) {
     default:
       return q.not("data_scadenza", "is", null).lte("data_scadenza", isoDay(30));
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cleanup tecnico: file Storage orfani (Sprint 7 — hardening finale)
+// ─────────────────────────────────────────────────────────────────────────────
+export function assertCleanup(ctx: DocContext) {
+  if (!canCleanupStorage(ctx.roles)) throw new Error("Non autorizzato");
+}
+
+export type StorageObjectInfo = {
+  path: string;
+  size: number | null;
+  created_at: string | null;
+  mime_type: string | null;
+};
+
+/** Elenca ricorsivamente gli oggetti sotto un prefisso (max ~5 livelli). */
+export async function listStorageObjects(
+  supabase: any,
+  prefix: string,
+  depth = 0,
+): Promise<StorageObjectInfo[]> {
+  if (depth > 5) return [];
+  const { data, error } = await supabase.storage
+    .from(DOCUMENTI_BUCKET)
+    .list(prefix, { limit: 1000, sortBy: { column: "name", order: "asc" } });
+  if (error || !data) return [];
+  const out: StorageObjectInfo[] = [];
+  for (const entry of data as any[]) {
+    const full = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.id === null || entry.metadata == null) {
+      out.push(...(await listStorageObjects(supabase, full, depth + 1)));
+    } else {
+      out.push({
+        path: full,
+        size: entry.metadata?.size ?? null,
+        created_at: entry.created_at ?? null,
+        mime_type: entry.metadata?.mimetype ?? null,
+      });
+    }
+  }
+  return out;
+}
+
+/** Tutti i path referenziati da un documento dell'organizzazione (qualunque stato). */
+export async function referencedStoragePaths(supabase: any, org: string): Promise<Set<string>> {
+  const paths = new Set<string>();
+  const pageSize = 1000;
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await supabase
+      .from("documenti")
+      .select("storage_path")
+      .eq("organization_id", org)
+      .not("storage_path", "is", null)
+      .range(page * pageSize, page * pageSize + pageSize - 1);
+    if (error || !data || data.length === 0) break;
+    (data as any[]).forEach((r) => r.storage_path && paths.add(String(r.storage_path)));
+    if (data.length < pageSize) break;
+  }
+  return paths;
 }
