@@ -29,6 +29,7 @@ import { Route as AuthenticatedCommesseIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedClientiIndexRouteImport } from './routes/_authenticated/clienti.index'
 import { Route as AuthenticatedRapportiniRapportinoIdRouteImport } from './routes/_authenticated/rapportini.$rapportinoId'
 import { Route as AuthenticatedPreventiviIdRouteImport } from './routes/_authenticated/preventivi.$id'
+import { Route as AuthenticatedDocumentiDocumentoIdRouteImport } from './routes/_authenticated/documenti.$documentoId'
 import { Route as AuthenticatedCommesseCommessaIdRouteImport } from './routes/_authenticated/commesse.$commessaId'
 import { Route as AuthenticatedClientiClienteIdRouteImport } from './routes/_authenticated/clienti.$clienteId'
 
@@ -141,6 +142,12 @@ const AuthenticatedPreventiviIdRoute =
     path: '/preventivi/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedDocumentiDocumentoIdRoute =
+  AuthenticatedDocumentiDocumentoIdRouteImport.update({
+    id: '/$documentoId',
+    path: '/$documentoId',
+    getParentRoute: () => AuthenticatedDocumentiRoute,
+  } as any)
 const AuthenticatedCommesseCommessaIdRoute =
   AuthenticatedCommesseCommessaIdRouteImport.update({
     id: '/commesse/$commessaId',
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
+  '/documenti/$documentoId': typeof AuthenticatedDocumentiDocumentoIdRoute
   '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/clienti/': typeof AuthenticatedClientiIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
+  '/documenti/$documentoId': typeof AuthenticatedDocumentiDocumentoIdRoute
   '/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/clienti': typeof AuthenticatedClientiIndexRoute
@@ -215,6 +224,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/_authenticated/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
+  '/_authenticated/documenti/$documentoId': typeof AuthenticatedDocumentiDocumentoIdRoute
   '/_authenticated/preventivi/$id': typeof AuthenticatedPreventiviIdRoute
   '/_authenticated/rapportini/$rapportinoId': typeof AuthenticatedRapportiniRapportinoIdRoute
   '/_authenticated/clienti/': typeof AuthenticatedClientiIndexRoute
@@ -240,6 +250,7 @@ export interface FileRouteTypes {
     | '/scadenziario'
     | '/clienti/$clienteId'
     | '/commesse/$commessaId'
+    | '/documenti/$documentoId'
     | '/preventivi/$id'
     | '/rapportini/$rapportinoId'
     | '/clienti/'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/'
     | '/clienti/$clienteId'
     | '/commesse/$commessaId'
+    | '/documenti/$documentoId'
     | '/preventivi/$id'
     | '/rapportini/$rapportinoId'
     | '/clienti'
@@ -285,6 +297,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
     | '/_authenticated/commesse/$commessaId'
+    | '/_authenticated/documenti/$documentoId'
     | '/_authenticated/preventivi/$id'
     | '/_authenticated/rapportini/$rapportinoId'
     | '/_authenticated/clienti/'
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPreventiviIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/documenti/$documentoId': {
+      id: '/_authenticated/documenti/$documentoId'
+      path: '/$documentoId'
+      fullPath: '/documenti/$documentoId'
+      preLoaderRoute: typeof AuthenticatedDocumentiDocumentoIdRouteImport
+      parentRoute: typeof AuthenticatedDocumentiRoute
+    }
     '/_authenticated/commesse/$commessaId': {
       id: '/_authenticated/commesse/$commessaId'
       path: '/commesse/$commessaId'
@@ -461,11 +481,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedDocumentiRouteChildren {
+  AuthenticatedDocumentiDocumentoIdRoute: typeof AuthenticatedDocumentiDocumentoIdRoute
   AuthenticatedDocumentiIndexRoute: typeof AuthenticatedDocumentiIndexRoute
 }
 
 const AuthenticatedDocumentiRouteChildren: AuthenticatedDocumentiRouteChildren =
   {
+    AuthenticatedDocumentiDocumentoIdRoute:
+      AuthenticatedDocumentiDocumentoIdRoute,
     AuthenticatedDocumentiIndexRoute: AuthenticatedDocumentiIndexRoute,
   }
 
