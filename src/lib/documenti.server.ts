@@ -303,3 +303,90 @@ export async function loadDocumentoInternal(supabase: any, org: string, id: stri
   if (!data) throw new Error(ERR_NOT_FOUND);
   return data as any;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Versioni e filtri scadenza (server-side)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Catena di versioni cui appartiene il documento: risale ai precedenti e
+ * discende ai successivi restando sempre dentro l'organizzazione.
+ */
+export async function versionChain(
+  supabase: any,
+  org: string,
+  id: string,
+): Promise<Array<{ id: string; versione: number; is_versione_corrente: boolean }>> {
+  const seen = new Map<string, any>();
+  // Risalita
+  let currentId: string | null = id;
+  for (let i = 0; i < 50 && currentId; i++) {
+    const { data } = await supabase
+      .from("documenti")
+      .select("id, versione, is_versione_corrente, documento_precedente_id")
+      .eq("id", currentId)
+      .eq("organization_id", org)
+      .maybeSingle();
+    if (!data || seen.has(data.id)) break;
+    seen.set(data.id, data);
+    currentId = data.documento_precedente_id ?? null;
+  }
+  // Discesa
+  let frontier = Array.from(seen.keys());
+  for (let i = 0; i < 50 && frontier.length; i++) {
+    const { data } = await supabase
+      .from("documenti")
+      .select("id, versione, is_versione_corrente, documento_precedente_id")
+      .eq("organization_id", org)
+      .in("documento_precedente_id", frontier);
+    const next = (data ?? []).filter((r: any) => !seen.has(r.id));
+    next.forEach((r: any) => seen.set(r.id, r));
+    frontier = next.map((r: any) => r.id);
+  }
+  return Array.from(seen.values()).map((r: any) => ({
+    id: r.id,
+    versione: Number(r.versione) || 1,
+    is_versione_corrente: !!r.is_versione_corrente,
+  }));
+}
+
+function isoDay(offsetDays = 0): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Filtro stato scadenza sulla query (soglia 30 giorni, coerente con il DB). */
+export function applyScadenzaFilter(q: any, stato: string | null) {
+  if (!stato) return q;
+  if (stato === "senza_scadenza") return q.is("data_scadenza", null);
+  if (stato === "scaduto") return q.lt("data_scadenza", isoDay(0));
+  if (stato === "in_scadenza") return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(30));
+  if (stato === "valido") return q.gt("data_scadenza", isoDay(30));
+  return q;
+}
+
+/** Filtri dello Scadenziario. Default: scaduti + entro 30 giorni. */
+export function scadenziarioRange(q: any, filtro: string) {
+  switch (filtro) {
+    case "tutti":
+      return q;
+    case "scaduti":
+      return q.lt("data_scadenza", isoDay(0));
+    case "oggi":
+      return q.eq("data_scadenza", isoDay(0));
+    case "7":
+      return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(7));
+    case "30":
+      return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(30));
+    case "60":
+      return q.gte("data_scadenza", isoDay(0)).lte("data_scadenza", isoDay(60));
+    case "validi":
+      return q.gt("data_scadenza", isoDay(30));
+    case "senza_scadenza":
+      return q.is("data_scadenza", null);
+    default:
+      return q.not("data_scadenza", "is", null).lte("data_scadenza", isoDay(30));
+  }
+}
