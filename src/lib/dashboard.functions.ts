@@ -37,11 +37,13 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     try {
-      const { organizationId: org, roles } = await ctx(context);
-      const canEcon = has(roles, ECON_ROLES);
-      const canApprove = has(roles, APPROVER_ROLES);
-      const canAudit = has(roles, AUDIT_ROLES);
-      const canCosti = has(roles, COSTI_ROLES);
+      const { organizationId: org, roles } = await resolveDashboardContext(context.supabase, context.userId);
+      const {
+        canViewEconomics: canEcon,
+        canApprove,
+        canReadAudit: canAudit,
+        canReadCosti: canCosti,
+      } = capabilitiesFor(roles);
 
       const periodo: PeriodoKey = isPeriodo(data.periodo) ? data.periodo : "30";
       const today = new Date();
@@ -53,9 +55,8 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
       const in7 = new Date(today);
       in7.setDate(in7.getDate() + 7);
 
-      const commesseSel = canEcon
-        ? "id, codice, denominazione, stato, avanzamento_pct, data_fine_prevista, responsabile_id, costi_sostenuti, costi_previsti, budget_costi, ricavi_previsti, importo, margine_previsto, archived_at"
-        : "id, codice, denominazione, stato, avanzamento_pct, data_fine_prevista, responsabile_id, archived_at";
+      const commesseSel = commesseSelect(canEcon);
+
 
       const [commQ, cantQ, prevQ, rappQ, mieiQ, docQ, attQ, auditQ] = await Promise.all([
         context.supabase.from("commesse").select(commesseSel).eq("organization_id", org).is("archived_at", null),
