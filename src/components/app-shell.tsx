@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
 import { UserMenu } from "./user-menu";
+import { NotificheBell } from "./notifiche/notifiche-bell";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
