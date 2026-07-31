@@ -346,6 +346,11 @@ export const updateDocumento = createServerFn({ method: "POST" })
     }
   });
 
+/**
+ * Archiviazione dell'intero documento logico (tutte le versioni della catena),
+ * in modo ATOMICO tramite RPC. Una versione storica non può essere archiviata
+ * isolatamente.
+ */
 export const archiveDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
@@ -353,26 +358,25 @@ export const archiveDocumento = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertManage(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (doc.archived_at) return { id: doc.id, archived: true, idempotent: true };
-      const { error } = await context.supabase
-        .from("documenti")
-        .update({
-          archived_at: new Date().toISOString(),
-          archived_by: context.userId,
-          stato: "archiviato",
-          updated_by: context.userId,
-        })
-        .eq("id", data.id)
-        .eq("organization_id", ctx.organizationId);
+      await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
+      const { data: res, error } = await context.supabase.rpc("archive_documento_chain", {
+        _id: data.id,
+        _archive: true,
+      });
       if (error) throw error;
-      await audit(ctx.organizationId, context.userId, "documento_archiviato", data.id, {});
-      return { id: data.id, archived: true, idempotent: false };
+      const r = (res ?? {}) as any;
+      return {
+        id: data.id,
+        archived: true,
+        versioni: Number(r.versioni ?? 0),
+        idempotent: !!r.idempotent,
+      };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
   });
 
+/** Ripristino atomico dell'intera catena versioni. */
 export const restoreDocumento = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ id: uuid }).parse(d))
@@ -380,25 +384,24 @@ export const restoreDocumento = createServerFn({ method: "POST" })
     try {
       const ctx = await resolveDocContext(context.supabase, context.userId);
       assertManage(ctx);
-      const doc = await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
-      if (!doc.archived_at) return { id: doc.id, archived: false, idempotent: true };
-      const { error } = await context.supabase
-        .from("documenti")
-        .update({
-          archived_at: null,
-          archived_by: null,
-          stato: "valido",
-          updated_by: context.userId,
-        })
-        .eq("id", data.id)
-        .eq("organization_id", ctx.organizationId);
+      await loadDocumentoInternal(context.supabase, ctx.organizationId, data.id);
+      const { data: res, error } = await context.supabase.rpc("archive_documento_chain", {
+        _id: data.id,
+        _archive: false,
+      });
       if (error) throw error;
-      await audit(ctx.organizationId, context.userId, "documento_ripristinato", data.id, {});
-      return { id: data.id, archived: false, idempotent: false };
+      const r = (res ?? {}) as any;
+      return {
+        id: data.id,
+        archived: false,
+        versioni: Number(r.versioni ?? 0),
+        idempotent: !!r.idempotent,
+      };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
   });
+
 
 const versionSchema = z.object({
   documento_id: uuid,
