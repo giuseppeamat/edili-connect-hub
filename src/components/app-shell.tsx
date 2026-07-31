@@ -15,7 +15,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <SidebarTrigger />
               <span className="font-semibold text-sm md:text-base">CantiereOS</span>
             </div>
-            <UserMenu />
+            <div className="flex items-center gap-1">
+              <NotificheBell />
+              <UserMenu />
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
         </div>
