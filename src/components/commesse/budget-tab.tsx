@@ -415,6 +415,7 @@ function FilterSelect({
   onValueChange: (v: string | undefined) => void;
   options: { value: string; label: string }[];
 }) {
+  const opts = uniqueOptions(options ?? []);
   return (
     <div className="min-w-[140px]">
       <Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>
@@ -422,7 +423,7 @@ function FilterSelect({
         <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Tutti</SelectItem>
-          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          {opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>
