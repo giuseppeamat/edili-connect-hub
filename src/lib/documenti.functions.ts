@@ -729,7 +729,7 @@ export const cleanupDocumentoStorageOrphan = createServerFn({ method: "POST" })
         return { path: data.path, removed: false, idempotent: true };
       }
 
-      const allowed = orphanCleanupAllowed(found.created_at ?? 0, new Date(), data.force === true);
+      const allowed = orphanCleanupAllowed(found.created_at ?? "", new Date(), data.force === true);
       if (!allowed.ok) throw new Error(allowed.error);
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
