@@ -48,6 +48,11 @@ function isConflict(e: any) {
   return /modificato da un altro utente|conflitto di concorrenza/i.test(m);
 }
 
+import { NONE_VALUE, toNullable, uniqueOptions, uniqueEntities } from "@/lib/select-options";
+export { NONE_VALUE, toNullable };
+
+
+
 const COSTO_CAT_LABEL: Record<string, string> = {
   manodopera: "Manodopera", materiali: "Materiali", subappalti: "Subappalti",
   noleggi: "Noleggi", mezzi: "Mezzi", trasporti: "Trasporti",
@@ -394,6 +399,7 @@ function FilterSelect({
   onValueChange: (v: string | undefined) => void;
   options: { value: string; label: string }[];
 }) {
+  const opts = uniqueOptions(options ?? []);
   return (
     <div className="min-w-[140px]">
       <Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>
@@ -401,7 +407,7 @@ function FilterSelect({
         <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__all__">Tutti</SelectItem>
-          {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+          {opts.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
       </Select>
     </div>
@@ -724,31 +730,31 @@ function VoceFormDialog({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <Label>Cantiere</Label>
-              <Select value={f.cantiere_id || "__none__"} onValueChange={(v) => setF({ ...f, cantiere_id: v === "__none__" ? "" : v })}>
+              <Select value={f.cantiere_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, cantiere_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuno</SelectItem>
-                  {cantieri.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuno</SelectItem>
+                  {uniqueEntities(cantieri).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Fase</Label>
-              <Select value={f.fase_id || "__none__"} onValueChange={(v) => setF({ ...f, fase_id: v === "__none__" ? "" : v })}>
+              <Select value={f.fase_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, fase_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuna</SelectItem>
-                  {fasi.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuna</SelectItem>
+                  {uniqueEntities(fasi).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Fornitore</Label>
-              <Select value={f.fornitore_id || "__none__"} onValueChange={(v) => setF({ ...f, fornitore_id: v === "__none__" ? "" : v })}>
+              <Select value={f.fornitore_id || NONE_VALUE} onValueChange={(v) => setF({ ...f, fornitore_id: v === NONE_VALUE ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">Nessuno</SelectItem>
-                  {fornitori.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                  <SelectItem value={NONE_VALUE}>Nessuno</SelectItem>
+                  {uniqueEntities(fornitori).map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
