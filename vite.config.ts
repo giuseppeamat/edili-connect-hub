@@ -23,6 +23,15 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
         process.env.VITE_SUPABASE_PUBLISHABLE_KEY || cloudPublicConfig.publishableKey,
       ),
+      // The generated client retains these SSR fallbacks in browser chunks.
+      // Defining their browser-safe equivalents covers builds where the
+      // platform's VITE env transform runs after user Vite configuration.
+      "process.env.SUPABASE_URL": JSON.stringify(
+        process.env.SUPABASE_URL || cloudPublicConfig.url,
+      ),
+      "process.env.SUPABASE_PUBLISHABLE_KEY": JSON.stringify(
+        process.env.SUPABASE_PUBLISHABLE_KEY || cloudPublicConfig.publishableKey,
+      ),
     },
   },
   tanstackStart: {
