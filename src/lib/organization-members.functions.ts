@@ -108,11 +108,11 @@ export const createOrganizationMember = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { data: res, error } = await context.supabase.rpc("create_organization_member", {
       _nome: data.nome,
-      _cognome: data.cognome,
-      _email: data.email,
-      _telefono: data.telefono,
+      _cognome: data.cognome ?? undefined,
+      _email: data.email ?? undefined,
+      _telefono: data.telefono ?? undefined,
       _ruolo: data.ruolo_organizzativo,
-      _qualifica: data.qualifica,
+      _qualifica: data.qualifica ?? undefined,
     });
     if (error) throw new Error(mapDbError(error.message));
     const row = Array.isArray(res) ? res[0] : res;
@@ -149,11 +149,11 @@ export const updateOrganizationMember = createServerFn({ method: "POST" })
       _id: data.id,
       _expected_updated_at: data.expected_updated_at,
       _nome: data.nome,
-      _cognome: data.cognome,
-      _email: data.email,
-      _telefono: data.telefono,
-      _ruolo: data.ruolo_organizzativo ?? null,
-      _qualifica: data.qualifica,
+      _cognome: data.cognome ?? undefined,
+      _email: data.email ?? undefined,
+      _telefono: data.telefono ?? undefined,
+      _ruolo: data.ruolo_organizzativo ?? undefined,
+      _qualifica: data.qualifica ?? undefined,
     });
     if (error) throw new Error(mapDbError(error.message));
     const row = Array.isArray(res) ? res[0] : res;
