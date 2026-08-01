@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 const searchSchema = z.object({
-  periodo: fallback(z.string(), "30").default("30"),
+  periodo: fallback(z.string(), "30").optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -143,7 +143,7 @@ function Dashboard() {
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
-    if (!isPeriodo(search.periodo)) {
+    if (search.periodo !== undefined && (!isPeriodo(search.periodo) || search.periodo === "30")) {
       void navigate({ to: "/", search: {}, replace: true });
     }
   }, [navigate, search.periodo]);
