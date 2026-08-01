@@ -184,7 +184,13 @@ function Dashboard() {
               key={p}
               size="sm"
               variant={p === periodo ? "default" : "outline"}
-              onClick={() => navigate({ to: "/", search: { periodo: p } })}
+              onClick={() =>
+                navigate({
+                  to: "/",
+                  search: p === "30" ? {} : { periodo: p },
+                  replace: true,
+                })
+              }
             >
               {PERIODO_LABEL[p]}
             </Button>
