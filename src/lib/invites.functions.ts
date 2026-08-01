@@ -349,7 +349,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invites")
-      .select("id, organization_id, email, role, status, expires_at")
+      .select("id, organization_id, email, role, status, expires_at, member_id")
       .eq("token_hash", token_hash)
       .maybeSingle();
     if (!inv) throw new Error("Invito non valido");
@@ -428,6 +428,15 @@ export const acceptInvite = createServerFn({ method: "POST" })
         { onConflict: "user_id,organization_id,role" },
       );
     if (roleErr) throw new Error(roleErr.message);
+
+    // Collega il membro dell'anagrafica all'account appena autenticato
+    await linkMemberOnAcceptance(
+      inv.organization_id,
+      inv.email,
+      context.userId,
+      inv.role as AppRole,
+      (inv as any).member_id ?? null,
+    );
 
     // Marca l'invito come accettato
     await supabaseAdmin
@@ -581,7 +590,7 @@ export const acceptInviteAsNewUser = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invites")
-      .select("id, organization_id, email, role, status, expires_at")
+      .select("id, organization_id, email, role, status, expires_at, member_id")
       .eq("token_hash", token_hash)
       .maybeSingle();
     if (!inv) throw new Error("Invito non valido");
@@ -636,6 +645,15 @@ export const acceptInviteAsNewUser = createServerFn({ method: "POST" })
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
       throw new Error(roleErr.message);
     }
+
+    // Collega il membro dell'anagrafica al nuovo account
+    await linkMemberOnAcceptance(
+      inv.organization_id,
+      inv.email,
+      newUserId,
+      inv.role as AppRole,
+      (inv as any).member_id ?? null,
+    );
 
     // Marca l'invito accettato
     await supabaseAdmin
