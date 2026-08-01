@@ -1,19 +1,38 @@
-# Verifica errore su mobile
+# Correzione definitiva del caricamento pubblico
 
-## Risposta breve
-No, non è un problema legato al mobile. Il sito pubblicato risponde correttamente anche simulando un iPhone (HTTP 200, nessun "Errore di caricamento" nell'HTML). L'errore che vedi arriva dal browser dopo il caricamento, ed è lo stesso problema già affrontato: la vecchia versione dell'app resta in cache e l'URL della dashboard porta un parametro `periodo` malformato.
+## Diagnosi confermata
 
-## Cosa propongo
-1. Verifica reale su viewport mobile (iPhone) con login autenticato sul sito pubblicato: apertura `/auth`, accesso, arrivo in dashboard, cattura di eventuali errori console/rete.
-2. Pulizia dell'URL lato client: se arriva `periodo` con virgolette o valore non valido, riscrivere l'indirizzo senza il parametro prima di eseguire la query, sia in dashboard sia nel redirect post-login.
-3. Rimozione dei parametri tecnici `__lovable_*` dal redirect salvato, così l'indirizzo finale resta pulito.
-4. Se dai test emerge ancora la schermata di errore, isolare la causa (sessione, server function, cache) e correggerla nello stesso passaggio.
-5. Ripubblicazione e nuova verifica su mobile.
+- Il sito pubblicato risponde correttamente via HTTP, quindi hosting e routing sono attivi.
+- Lovable Cloud è operativo e raggiungibile.
+- Il crash avviene nel browser prima del caricamento dell’app: il bundle pubblicato non contiene `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- Il client prova quindi il fallback server-only `process.env`, non disponibile nel browser, e la root error boundary mostra “Errore di caricamento”.
 
-## Nota tecnica
-- Controllo mirato su `src/routes/auth.tsx` (`safeRedirect`) e `src/routes/_authenticated/index.tsx` (normalizzazione `periodo` e stato di errore).
-- Test con Playwright a viewport 390x844 e user agent iOS, contro l'URL pubblicato.
-- Nessuna modifica al database o alle policy.
+## Intervento
 
-## Da fare comunque sul tuo telefono
-Svuota la cache del browser o apri il sito in una scheda anonima: la versione vecchia dell'app resta memorizzata e continua a mostrare l'errore anche dopo la ripubblicazione.
+1. **Rendere deterministica la configurazione pubblica del client**
+   - Aggiungere nella configurazione Vite un fallback di build per URL e chiave pubblicabile del backend.
+   - Usare prima le variabili gestite da Lovable Cloud e ricorrere ai valori pubblici del progetto solo se l’iniezione automatica non è disponibile.
+   - Non includere né esporre la chiave amministrativa o altri segreti server-side.
+
+2. **Rimuovere il fallback browser verso `process.env`**
+   - Lasciare il client browser dipendente esclusivamente dalla configurazione `VITE_*` incorporata in fase di build.
+   - Mantenere la configurazione server separata, così un errore di pubblicazione non viene mascherato da un percorso incompatibile con il browser.
+
+3. **Rafforzare l’avvio e la diagnostica**
+   - Verificare che `/auth`, `/` e il controllo sessione non possano mandare in crash l’intera applicazione per una configurazione client assente.
+   - Conservare un messaggio di errore utile nei log, evitando dettagli tecnici nell’interfaccia utente.
+
+4. **Validazione completa**
+   - Verificare il bundle di produzione e confermare che contenga la configurazione pubblica necessaria.
+   - Testare da sessione pulita: apertura link pubblico, redirect al login, login, dashboard e refresh diretto.
+   - Ripetere i test con viewport desktop e mobile, controllando console ed eventuali richieste fallite.
+
+5. **Rilascio**
+   - Ricollegare le variabili gestite del backend.
+   - Pubblicare la revisione corretta e verificare direttamente `https://edili-connect-hub.lovable.app` dopo la distribuzione, senza fare affidamento sulla cache esistente.
+
+## Dettagli tecnici
+
+- File principali: `vite.config.ts` e configurazione del client backend.
+- Le credenziali privilegiate rimangono esclusivamente nel runtime server.
+- Criterio di accettazione: nessun errore `Missing Supabase environment variable(s)` in una nuova sessione browser e caricamento funzionante sia da desktop sia da mobile.
