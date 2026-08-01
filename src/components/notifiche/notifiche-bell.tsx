@@ -45,15 +45,19 @@ export function NotificheBell() {
   const markRead = useServerFn(markNotificaRead);
   const markAll = useServerFn(markAllNotificheRead);
 
-  // Nessun polling aggressivo: refetch su focus finestra + staleTime 90s.
+  // Polling contenuto: la sintesi esegue anche lo sweep (~150 ms lato DB),
+  // quindi intervallo 5 min + refetch su focus finestra. Nessun polling in
+  // background quando la scheda non è visibile.
   const q = useQuery({
     queryKey: notificheKeys.preview(),
     queryFn: () => summaryFn({ data: undefined as any }),
-    staleTime: 90_000,
-    refetchInterval: 120_000,
+    staleTime: 240_000,
+    refetchInterval: 300_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     retry: 1,
   });
+
 
   const readMut = useMutation({
     mutationFn: (id: string) => markRead({ data: { id } }),
