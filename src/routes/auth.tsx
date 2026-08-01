@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,21 +15,15 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/auth")({
-  ssr: false,
   validateSearch: searchSchema,
-  beforeLoad: async ({ search }) => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user && !data.user.is_anonymous) {
-      const target = safeRedirect(search.redirect) ?? "/";
-      throw redirect({ to: target });
-    }
-  },
   head: () => ({
     meta: [
       { title: "Accedi — CantiereOS" },
       { name: "description", content: "Accedi o registra la tua impresa edile su CantiereOS." },
       { property: "og:title", content: "Accedi — CantiereOS" },
       { property: "og:description", content: "Accedi al gestionale della tua impresa edile." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,
@@ -40,7 +34,13 @@ function safeRedirect(value: string | undefined): string | null {
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   if (value.startsWith("/auth")) return null;
   if (value.startsWith("/reset-password")) return null;
-  return value;
+
+  const target = new URL(value, "https://cantiereos.local");
+  for (const key of Array.from(target.searchParams.keys())) {
+    if (key.startsWith("__lovable_")) target.searchParams.delete(key);
+  }
+
+  return `${target.pathname}${target.search}${target.hash}`;
 }
 
 function friendlyAuthError(message: string): string {
@@ -71,6 +71,19 @@ function logAuthEvent(op: string, result: "success" | "error", extra?: Record<st
 function AuthPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+
+  useEffect(() => {
+    let active = true;
+
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!active || !data.user || data.user.is_anonymous) return;
+      void navigate({ to: safeRedirect(search.redirect) ?? "/", replace: true });
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [navigate, search.redirect]);
 
   // Stati separati per Login, Signup e Reset
   const [loginEmail, setLoginEmail] = useState("");
