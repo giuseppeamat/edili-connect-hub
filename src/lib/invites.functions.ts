@@ -209,6 +209,13 @@ export const createInvite = createServerFn({ method: "POST" })
       .eq("status", "pending")
       .ilike("email", data.email);
 
+    const memberId = await ensureMemberForInvite(
+      organizationId,
+      data.email,
+      data.role as AppRole,
+      context.userId,
+    );
+
     const { data: inv, error } = await supabaseAdmin
       .from("invites")
       .insert({
@@ -218,10 +225,12 @@ export const createInvite = createServerFn({ method: "POST" })
         token_hash,
         expires_at,
         created_by: context.userId,
+        member_id: memberId,
       })
       .select("id, expires_at")
       .single();
     if (error) throw new Error(error.message);
+
 
     await logAudit(context, organizationId, "invite.create", "invites", inv.id, {
       email: data.email,
