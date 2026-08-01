@@ -3,13 +3,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  createInvite,
-  regenerateInvite,
-  revokeInvite,
-  changeMemberRole,
-  setMemberActive,
-} from "@/lib/invites.functions";
+import { createInvite, regenerateInvite, revokeInvite } from "@/lib/invites.functions";
+import { MembriTab } from "@/components/organizzazione/membri-tab";
 import { useCurrentUser, ROLE_LABELS, type AppRole } from "@/hooks/use-current-user";
 import { getPublicAppUrl } from "@/lib/app-url";
 import { PageHeader } from "@/components/page-header";
@@ -94,7 +89,7 @@ function OrganizzazionePage() {
           <OrgDataCard organizationId={organizationId!} canEdit={isAdmin} />
         </TabsContent>
         <TabsContent value="membri">
-          <MembriTab organizationId={organizationId!} isProprietario={isProprietario} />
+          <MembriTab isProprietario={isProprietario} />
         </TabsContent>
         <TabsContent value="inviti">
           <InvitiTab organizationId={organizationId!} isProprietario={isProprietario} />
@@ -171,145 +166,6 @@ function Field(props: { name: string; label: string; defaultValue?: string; type
       <Label htmlFor={props.name}>{props.label}</Label>
       <Input id={props.name} name={props.name} type={props.type ?? "text"} defaultValue={props.defaultValue} required={props.required} />
     </div>
-  );
-}
-
-// ---------------- MEMBRI ----------------
-type MemberRow = {
-  id: string;
-  nome: string | null;
-  cognome: string | null;
-  email: string | null;
-  is_active: boolean;
-  role: AppRole | null;
-};
-
-function MembriTab({ organizationId, isProprietario }: { organizationId: string; isProprietario: boolean }) {
-  const qc = useQueryClient();
-  const changeRole = useServerFn(changeMemberRole);
-  const setActive = useServerFn(setMemberActive);
-
-  const { data: members = [] } = useQuery<MemberRow[]>({
-    queryKey: ["members", organizationId],
-    queryFn: async () => {
-      const [{ data: profs }, { data: roles }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("id, nome, cognome, email, is_active")
-          .eq("organization_id", organizationId),
-        supabase
-          .from("user_roles")
-          .select("user_id, role")
-          .eq("organization_id", organizationId),
-      ]);
-      const roleByUser = new Map<string, AppRole>();
-      (roles ?? []).forEach((r: any) => roleByUser.set(r.user_id, r.role));
-      return (profs ?? []).map((p: any) => ({
-        id: p.id,
-        nome: p.nome,
-        cognome: p.cognome,
-        email: p.email,
-        is_active: p.is_active,
-        role: roleByUser.get(p.id) ?? null,
-      }));
-    },
-  });
-
-  const mRole = useMutation({
-    mutationFn: async (v: { user_id: string; role: AppRole }) =>
-      changeRole({ data: v as any }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["members"] });
-      toast.success("Ruolo aggiornato");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  const mActive = useMutation({
-    mutationFn: async (v: { user_id: string; active: boolean }) => setActive({ data: v }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["members"] });
-      toast.success("Membro aggiornato");
-    },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  return (
-    <Card className="mt-4">
-      <CardHeader><CardTitle>Membri ({members.length})</CardTitle></CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Ruolo</TableHead>
-              <TableHead>Stato</TableHead>
-              <TableHead className="text-right">Azioni</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((m) => {
-              const isOwner = m.role === "proprietario";
-              const allowed = INVITABLE.filter((r) => (isProprietario ? true : r !== "amministratore"));
-              return (
-                <TableRow key={m.id}>
-                  <TableCell>{[m.nome, m.cognome].filter(Boolean).join(" ") || "—"}</TableCell>
-                  <TableCell className="text-xs">{m.email}</TableCell>
-                  <TableCell>
-                    {isOwner ? (
-                      <Badge>Proprietario</Badge>
-                    ) : (
-                      <Select
-                        value={m.role ?? undefined}
-                        onValueChange={(v) => mRole.mutate({ user_id: m.id, role: v as AppRole })}
-                      >
-                        <SelectTrigger className="w-52"><SelectValue placeholder="—" /></SelectTrigger>
-                        <SelectContent>
-                          {allowed.map((r) => (
-                            <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {m.is_active ? (
-                      <Badge variant="outline" className="text-green-700 border-green-700">Attivo</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-muted-foreground">Disattivato</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {!isOwner &&
-                      (m.is_active ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => confirm("Disattivare questo membro?") && mActive.mutate({ user_id: m.id, active: false })}
-                        >
-                          <Ban className="h-4 w-4 mr-1" /> Disattiva
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => mActive.mutate({ user_id: m.id, active: true })}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" /> Riattiva
-                        </Button>
-                      ))}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {members.length === 0 && (
-              <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nessun membro.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
   );
 }
 
