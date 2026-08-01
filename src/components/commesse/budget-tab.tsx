@@ -635,7 +635,9 @@ function VoceFormDialog({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return; // anti doppio invio: evita raffiche di RPC in conflitto
     setErr(null);
+    setBusy(true);
     try {
       if (isEdit) {
         await updateFn({ data: {
