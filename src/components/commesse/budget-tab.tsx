@@ -687,8 +687,11 @@ function VoceFormDialog({
     } catch (e: any) {
       setErr(isConflict(e) ? CONFLICT_MSG : (e.message ?? "Errore"));
       if (isConflict(e)) onDone();
+    } finally {
+      setBusy(false);
     }
   };
+
 
   const cats = f.tipo === "ricavo" ? RICAVO_CAT : COSTO_CAT;
   const catLabels = f.tipo === "ricavo" ? RICAVO_CAT_LABEL : COSTO_CAT_LABEL;
@@ -786,9 +789,10 @@ function VoceFormDialog({
           <div><Label>Note</Label><Textarea rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></div>
           {err && <div className="text-sm text-destructive">{err}</div>}
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>Annulla</Button>
-            <Button type="submit">{isEdit ? "Salva" : "Crea voce"}</Button>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>Annulla</Button>
+            <Button type="submit" disabled={busy}>{isEdit ? "Salva" : "Crea voce"}</Button>
           </DialogFooter>
+
         </form>
       </DialogContent>
     </Dialog>
