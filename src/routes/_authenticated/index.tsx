@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 
 const searchSchema = z.object({
-  periodo: fallback(z.string(), "30").default("30"),
+  periodo: fallback(z.string(), "30").optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -142,6 +142,12 @@ function Dashboard() {
   const periodo: PeriodoKey = isPeriodo(search.periodo) ? search.periodo : "30";
   const [seeding, setSeeding] = useState(false);
 
+  useEffect(() => {
+    if (search.periodo !== undefined && (!isPeriodo(search.periodo) || search.periodo === "30")) {
+      void navigate({ to: "/", search: {}, replace: true });
+    }
+  }, [navigate, search.periodo]);
+
   const dashFn = useServerFn(getDashboardOperativa);
   const { data, isPending, isError, refetch, isFetching } = useQuery({
     // La chiave inizia con "dashboard" così le invalidazioni esistenti
@@ -184,7 +190,13 @@ function Dashboard() {
               key={p}
               size="sm"
               variant={p === periodo ? "default" : "outline"}
-              onClick={() => navigate({ to: "/", search: { periodo: p } })}
+              onClick={() =>
+                navigate({
+                  to: "/",
+                  search: p === "30" ? {} : { periodo: p },
+                  replace: true,
+                })
+              }
             >
               {PERIODO_LABEL[p]}
             </Button>
