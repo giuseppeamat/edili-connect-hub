@@ -622,6 +622,8 @@ function VoceFormDialog({
     note: voce?.note ?? "",
   }));
   const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
   const locked = !!voce?.is_locked;
 
   const nOrNull = (v: any) => (v === "" || v === null || v === undefined ? null : Number(v));
