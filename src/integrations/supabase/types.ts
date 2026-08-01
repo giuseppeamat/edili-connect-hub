@@ -60,6 +60,7 @@ export type Database = {
           archived_at: string | null
           cap: string | null
           capocantiere_id: string | null
+          capocantiere_membro_id: string | null
           citta: string | null
           codice: string
           commessa_id: string
@@ -85,6 +86,7 @@ export type Database = {
           referente_nome: string | null
           referente_telefono: string | null
           responsabile_id: string | null
+          responsabile_membro_id: string | null
           stato: string
           updated_at: string
         }
@@ -92,6 +94,7 @@ export type Database = {
           archived_at?: string | null
           cap?: string | null
           capocantiere_id?: string | null
+          capocantiere_membro_id?: string | null
           citta?: string | null
           codice: string
           commessa_id: string
@@ -117,6 +120,7 @@ export type Database = {
           referente_nome?: string | null
           referente_telefono?: string | null
           responsabile_id?: string | null
+          responsabile_membro_id?: string | null
           stato?: string
           updated_at?: string
         }
@@ -124,6 +128,7 @@ export type Database = {
           archived_at?: string | null
           cap?: string | null
           capocantiere_id?: string | null
+          capocantiere_membro_id?: string | null
           citta?: string | null
           codice?: string
           commessa_id?: string
@@ -149,10 +154,18 @@ export type Database = {
           referente_nome?: string | null
           referente_telefono?: string | null
           responsabile_id?: string | null
+          responsabile_membro_id?: string | null
           stato?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cantieri_capo_membro_fk"
+            columns: ["capocantiere_membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "cantieri_commessa_fk"
             columns: ["commessa_id", "organization_id"]
@@ -166,6 +179,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cantieri_resp_membro_fk"
+            columns: ["responsabile_membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
           },
         ]
       }
@@ -623,11 +643,12 @@ export type Database = {
           data_inizio: string
           id: string
           is_active: boolean
+          membro_id: string | null
           note: string | null
           organization_id: string
           ruolo_operativo: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           archived_at?: string | null
@@ -639,11 +660,12 @@ export type Database = {
           data_inizio?: string
           id?: string
           is_active?: boolean
+          membro_id?: string | null
           note?: string | null
           organization_id: string
           ruolo_operativo: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           archived_at?: string | null
@@ -655,11 +677,12 @@ export type Database = {
           data_inizio?: string
           id?: string
           is_active?: boolean
+          membro_id?: string | null
           note?: string | null
           organization_id?: string
           ruolo_operativo?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -674,6 +697,13 @@ export type Database = {
             columns: ["commessa_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "commesse"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commessa_membri_membro_fk"
+            columns: ["membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
             referencedColumns: ["id", "organization_id"]
           },
           {
@@ -736,6 +766,7 @@ export type Database = {
           preventivo_id: string | null
           priorita: string | null
           responsabile_id: string | null
+          responsabile_membro_id: string | null
           ricavi_acquisiti: number | null
           ricavi_aggiornati: number | null
           ricavi_previsti: number | null
@@ -797,6 +828,7 @@ export type Database = {
           preventivo_id?: string | null
           priorita?: string | null
           responsabile_id?: string | null
+          responsabile_membro_id?: string | null
           ricavi_acquisiti?: number | null
           ricavi_aggiornati?: number | null
           ricavi_previsti?: number | null
@@ -858,6 +890,7 @@ export type Database = {
           preventivo_id?: string | null
           priorita?: string | null
           responsabile_id?: string | null
+          responsabile_membro_id?: string | null
           ricavi_acquisiti?: number | null
           ricavi_aggiornati?: number | null
           ricavi_previsti?: number | null
@@ -910,6 +943,13 @@ export type Database = {
             columns: ["preventivo_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "preventivi"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "commesse_resp_membro_fk"
+            columns: ["responsabile_membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
             referencedColumns: ["id", "organization_id"]
           },
         ]
@@ -1273,6 +1313,7 @@ export type Database = {
           email: string
           expires_at: string
           id: string
+          member_id: string | null
           organization_id: string
           revoked_at: string | null
           revoked_by: string | null
@@ -1289,6 +1330,7 @@ export type Database = {
           email: string
           expires_at: string
           id?: string
+          member_id?: string | null
           organization_id: string
           revoked_at?: string | null
           revoked_by?: string | null
@@ -1305,6 +1347,7 @@ export type Database = {
           email?: string
           expires_at?: string
           id?: string
+          member_id?: string | null
           organization_id?: string
           revoked_at?: string | null
           revoked_by?: string | null
@@ -1314,6 +1357,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invites_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invites_organization_id_fkey"
             columns: ["organization_id"]
@@ -1391,6 +1441,74 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          cognome: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          nome: string
+          organization_id: string
+          qualifica: string | null
+          ruolo_organizzativo: Database["public"]["Enums"]["app_role"]
+          stato_accesso: Database["public"]["Enums"]["member_access_state"]
+          telefono: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cognome?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          nome: string
+          organization_id: string
+          qualifica?: string | null
+          ruolo_organizzativo?: Database["public"]["Enums"]["app_role"]
+          stato_accesso?: Database["public"]["Enums"]["member_access_state"]
+          telefono?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          cognome?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          nome?: string
+          organization_id?: string
+          qualifica?: string | null
+          ruolo_organizzativo?: Database["public"]["Enums"]["app_role"]
+          stato_accesso?: Database["public"]["Enums"]["member_access_state"]
+          telefono?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           cap: string | null
@@ -1456,10 +1574,11 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          membro_id: string | null
           note: string | null
           organization_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           valido_al: string | null
           valido_dal: string
         }
@@ -1470,10 +1589,11 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
+          membro_id?: string | null
           note?: string | null
           organization_id: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           valido_al?: string | null
           valido_dal: string
         }
@@ -1484,14 +1604,22 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
+          membro_id?: string | null
           note?: string | null
           organization_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           valido_al?: string | null
           valido_dal?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pco_membro_fk"
+            columns: ["membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
+          },
           {
             foreignKeyName: "personale_costi_orari_organization_id_fkey"
             columns: ["organization_id"]
@@ -2031,6 +2159,7 @@ export type Database = {
           foto_urls: string[] | null
           id: string
           lavorazione: string | null
+          membro_id: string | null
           note: string | null
           ora_fine: string | null
           ora_inizio: string | null
@@ -2044,7 +2173,7 @@ export type Database = {
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -2064,6 +2193,7 @@ export type Database = {
           foto_urls?: string[] | null
           id?: string
           lavorazione?: string | null
+          membro_id?: string | null
           note?: string | null
           ora_fine?: string | null
           ora_inizio?: string | null
@@ -2077,7 +2207,7 @@ export type Database = {
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -2097,6 +2227,7 @@ export type Database = {
           foto_urls?: string[] | null
           id?: string
           lavorazione?: string | null
+          membro_id?: string | null
           note?: string | null
           ora_fine?: string | null
           ora_inizio?: string | null
@@ -2110,7 +2241,7 @@ export type Database = {
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2142,6 +2273,13 @@ export type Database = {
             referencedColumns: ["fase_id", "organization_id"]
           },
           {
+            foreignKeyName: "rapportini_membro_fk"
+            columns: ["membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
             foreignKeyName: "rapportini_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -2163,6 +2301,7 @@ export type Database = {
           created_at: string
           fase_id: string | null
           id: string
+          membro_id: string | null
           motivo_storno: string | null
           ore: number
           organization_id: string
@@ -2172,7 +2311,7 @@ export type Database = {
           stornato_at: string | null
           stornato_by: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           budget_voce_id?: string | null
@@ -2186,6 +2325,7 @@ export type Database = {
           created_at?: string
           fase_id?: string | null
           id?: string
+          membro_id?: string | null
           motivo_storno?: string | null
           ore: number
           organization_id: string
@@ -2195,7 +2335,7 @@ export type Database = {
           stornato_at?: string | null
           stornato_by?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           budget_voce_id?: string | null
@@ -2209,6 +2349,7 @@ export type Database = {
           created_at?: string
           fase_id?: string | null
           id?: string
+          membro_id?: string | null
           motivo_storno?: string | null
           ore?: number
           organization_id?: string
@@ -2218,7 +2359,7 @@ export type Database = {
           stornato_at?: string | null
           stornato_by?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2227,6 +2368,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "personale_costi_orari"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_costi_membro_fk"
+            columns: ["membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
           },
           {
             foreignKeyName: "rapportini_costi_organization_id_fkey"
@@ -2413,6 +2561,7 @@ export type Database = {
           preventivo_id: string | null
           priorita: string | null
           responsabile_id: string | null
+          responsabile_membro_id: string | null
           ricavi_acquisiti: number | null
           ricavi_aggiornati: number | null
           ricavi_previsti: number | null
@@ -2445,6 +2594,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      _om_assert_manager: { Args: { _org: string }; Returns: undefined }
       _rap_current_profile: {
         Args: never
         Returns: {
@@ -2533,6 +2683,7 @@ export type Database = {
         Returns: Json
       }
       archive_notifica: { Args: { _id: string }; Returns: string }
+      archive_organization_member: { Args: { _id: string }; Returns: undefined }
       archive_personale_costo_orario: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
@@ -2708,6 +2859,19 @@ export type Database = {
           updated_at: string
         }[]
       }
+      create_costo_orario_membro: {
+        Args: {
+          _costo_orario: number
+          _membro_id: string
+          _note?: string
+          _valido_al?: string
+          _valido_dal: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
+      }
       create_notifica_event: {
         Args: {
           _dedupe_scope?: string
@@ -2724,6 +2888,20 @@ export type Database = {
           _titolo: string
         }
         Returns: number
+      }
+      create_organization_member: {
+        Args: {
+          _cognome?: string
+          _email?: string
+          _nome: string
+          _qualifica?: string
+          _ruolo?: Database["public"]["Enums"]["app_role"]
+          _telefono?: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
       }
       create_personale_costo_orario: {
         Args: {
@@ -2764,6 +2942,28 @@ export type Database = {
           updated_at: string
         }[]
       }
+      create_rapportino_membro: {
+        Args: {
+          _cantiere_id?: string
+          _commessa_id: string
+          _data: string
+          _descrizione_lavori: string
+          _fase_id?: string
+          _foto_urls?: string[]
+          _membro_id: string
+          _note?: string
+          _ora_fine?: string
+          _ora_inizio?: string
+          _ore: number
+          _override_motivo?: string
+          _override_ore?: boolean
+          _pausa_minuti?: number
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
+      }
       current_organization_id: { Args: never; Returns: string }
       distribuisci_pesi_equamente: {
         Args: { _commessa_id: string }
@@ -2783,6 +2983,30 @@ export type Database = {
           id: string
         }[]
       }
+      get_costo_orario_membro_at_date: {
+        Args: { _data: string; _membro_id: string; _org: string }
+        Returns: {
+          archived_at: string | null
+          archived_by: string | null
+          costo_orario: number
+          created_at: string
+          created_by: string
+          id: string
+          membro_id: string | null
+          note: string | null
+          organization_id: string
+          updated_at: string
+          user_id: string | null
+          valido_al: string | null
+          valido_dal: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "personale_costi_orari"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_personale_costo_orario_at_date: {
         Args: { _data: string; _org: string; _user_id: string }
         Returns: {
@@ -2792,10 +3016,11 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          membro_id: string | null
           note: string | null
           organization_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           valido_al: string | null
           valido_dal: string
         }
@@ -2849,6 +3074,10 @@ export type Database = {
           _user: string
         }
         Returns: boolean
+      }
+      link_member_to_user: {
+        Args: { _member_id: string; _org: string; _user_id: string }
+        Returns: undefined
       }
       mark_all_notifiche_read: { Args: never; Returns: number }
       mark_expired_invites: { Args: never; Returns: undefined }
@@ -2956,6 +3185,7 @@ export type Database = {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
       }
+      restore_organization_member: { Args: { _id: string }; Returns: undefined }
       restore_personale_costo_orario: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
@@ -2992,6 +3222,13 @@ export type Database = {
           _motivazione?: string
         }
         Returns: string
+      }
+      set_organization_member_access: {
+        Args: {
+          _id: string
+          _stato: Database["public"]["Enums"]["member_access_state"]
+        }
+        Returns: undefined
       }
       submit_rapportino: {
         Args: { _expected_updated_at: string; _id: string }
@@ -3115,6 +3352,22 @@ export type Database = {
         }
         Returns: string
       }
+      update_organization_member: {
+        Args: {
+          _cognome?: string
+          _email?: string
+          _expected_updated_at: string
+          _id: string
+          _nome: string
+          _qualifica?: string
+          _ruolo?: Database["public"]["Enums"]["app_role"]
+          _telefono?: string
+        }
+        Returns: {
+          id: string
+          updated_at: string
+        }[]
+      }
       update_personale_costo_orario: {
         Args: {
           _costo_orario: number
@@ -3188,6 +3441,12 @@ export type Database = {
       documento_stato: "valido" | "in_scadenza" | "scaduto" | "archiviato"
       documento_visibilita: "privato" | "organizzazione" | "pubblico"
       invite_status: "pending" | "accepted" | "revoked" | "expired"
+      member_access_state:
+        | "senza_accesso"
+        | "invitato"
+        | "attivo"
+        | "invito_scaduto"
+        | "disabilitato"
       preventivo_stato:
         | "bozza"
         | "inviato"
@@ -3373,6 +3632,13 @@ export const Constants = {
       documento_stato: ["valido", "in_scadenza", "scaduto", "archiviato"],
       documento_visibilita: ["privato", "organizzazione", "pubblico"],
       invite_status: ["pending", "accepted", "revoked", "expired"],
+      member_access_state: [
+        "senza_accesso",
+        "invitato",
+        "attivo",
+        "invito_scaduto",
+        "disabilitato",
+      ],
       preventivo_stato: [
         "bozza",
         "inviato",
