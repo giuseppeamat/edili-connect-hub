@@ -149,14 +149,26 @@ function Dashboard() {
   }, [navigate, search.periodo]);
 
   const dashFn = useServerFn(getDashboardOperativa);
-  const { data, isPending, isError, refetch, isFetching } = useQuery({
+  const { data, error, isPending, isError, refetch, isFetching } = useQuery({
     // La chiave inizia con "dashboard" così le invalidazioni esistenti
     // (approvazione rapportino, budget, stato commessa) la raggiungono.
     queryKey: ["dashboard", "operativa", periodo],
     queryFn: async () => await dashFn({ data: { periodo } }),
     staleTime: 45_000,
-    retry: 1,
+    retry: (failureCount, queryError) =>
+      failureCount < 1 &&
+      !/unauthorized|non autenticato|sessione scaduta|organizzazione non trovata/i.test(
+        String(queryError instanceof Error ? queryError.message : queryError),
+      ),
   });
+
+  const dashboardErrorMessage = String(error instanceof Error ? error.message : error ?? "");
+  const sessionExpired = /unauthorized|non autenticato|sessione scaduta/i.test(
+    dashboardErrorMessage,
+  );
+  const organizationUnavailable = /organizzazione non trovata|utente disattivato/i.test(
+    dashboardErrorMessage,
+  );
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -224,15 +236,30 @@ function Dashboard() {
           <CardContent className="flex flex-col items-start gap-3 p-6">
             <div className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
-              <span className="font-semibold">Non è stato possibile caricare la Dashboard.</span>
+              <span className="font-semibold">
+                {sessionExpired
+                  ? "La sessione è scaduta."
+                  : organizationUnavailable
+                    ? "L'organizzazione non è disponibile."
+                    : "Non è stato possibile caricare la Dashboard."}
+              </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Controlla la connessione e riprova. Se il problema persiste, contatta l'amministratore
-              dell'organizzazione.
+              {sessionExpired
+                ? "Accedi nuovamente per continuare."
+                : organizationUnavailable
+                  ? "Contatta l'amministratore per verificare il tuo profilo."
+                  : "Controlla la connessione e riprova. Se il problema persiste, contatta l'amministratore dell'organizzazione."}
             </p>
-            <Button onClick={() => refetch()} disabled={isFetching} className="min-h-11">
-              {isFetching ? "Nuovo tentativo..." : "Riprova"}
-            </Button>
+            {sessionExpired ? (
+              <Button onClick={() => navigate({ to: "/auth", replace: true })} className="min-h-11">
+                Accedi di nuovo
+              </Button>
+            ) : (
+              <Button onClick={() => refetch()} disabled={isFetching} className="min-h-11">
+                {isFetching ? "Nuovo tentativo..." : "Riprova"}
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
