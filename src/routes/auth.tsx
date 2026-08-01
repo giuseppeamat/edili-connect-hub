@@ -40,6 +40,16 @@ function safeRedirect(value: string | undefined): string | null {
     if (key.startsWith("__lovable_")) target.searchParams.delete(key);
   }
 
+  if (target.pathname === "/") {
+    const rawPeriodo = target.searchParams.get("periodo");
+    const periodo = rawPeriodo?.replace(/^['\"]+|['\"]+$/g, "");
+    if (periodo === "30" || !["oggi", "7", "mese"].includes(periodo ?? "")) {
+      target.searchParams.delete("periodo");
+    } else if (periodo) {
+      target.searchParams.set("periodo", periodo);
+    }
+  }
+
   return `${target.pathname}${target.search}${target.hash}`;
 }
 

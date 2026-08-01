@@ -3,9 +3,6 @@
  * Un'unica server function aggregata, role-aware: i dati economici sono
  * inclusi solo per i ruoli abilitati. organization_id non arriva mai dal client.
  */
-import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { mapServerError } from "@/lib/server-error-mapper";
 import {
   commessaAlerts,
@@ -25,10 +22,13 @@ function name(p: any): string {
   return s || p.email || "Utente";
 }
 
-export const getDashboardOperativa = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ periodo: z.string().optional() }).parse(d ?? {}))
-  .handler(async ({ data, context }) => {
+export async function runDashboardOperativa({
+  data,
+  context,
+}: {
+  data: { periodo?: string };
+  context: { supabase: any; userId: string };
+}) {
     try {
       const { organizationId: org, roles } = await resolveDashboardContext(
         context.supabase,
@@ -308,4 +308,4 @@ export const getDashboardOperativa = createServerFn({ method: "POST" })
     } catch (e) {
       throw new Error(mapServerError(e));
     }
-  });
+}
