@@ -94,6 +94,70 @@ async function logAudit(
   });
 }
 
+/**
+ * Trova (o crea) il MEMBRO dell'organizzazione corrispondente all'email
+ * dell'invito. Il membro è l'anagrafica persona: esiste anche senza account.
+ */
+async function ensureMemberForInvite(
+  organizationId: string,
+  email: string,
+  role: AppRole,
+  createdBy: string | null,
+): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const mail = email.trim().toLowerCase();
+
+  const { data: existing } = await supabaseAdmin
+    .from("organization_members")
+    .select("id, archived_at")
+    .eq("organization_id", organizationId)
+    .eq("email", mail)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (existing?.id) {
+    await supabaseAdmin
+      .from("organization_members")
+      .update({ stato_accesso: "invitato" })
+      .eq("id", existing.id);
+    return existing.id;
+  }
+
+  const { data: created, error } = await supabaseAdmin
+    .from("organization_members")
+    .insert({
+      organization_id: organizationId,
+      nome: mail.split("@")[0],
+      email: mail,
+      ruolo_organizzativo: role,
+      stato_accesso: "invitato",
+      created_by: createdBy,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return created.id;
+}
+
+/** Collega l'account Auth appena autenticato al membro dell'organizzazione. */
+async function linkMemberOnAcceptance(
+  organizationId: string,
+  email: string,
+  userId: string,
+  role: AppRole,
+  memberId: string | null,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const id = memberId ?? (await ensureMemberForInvite(organizationId, email, role, userId));
+  const { error } = await supabaseAdmin.rpc("link_member_to_user" as any, {
+    _member_id: id,
+    _user_id: userId,
+    _org: organizationId,
+  } as any);
+  if (error) throw new Error(error.message);
+  return id;
+}
+
+
 // ---------------------- CREATE INVITE ----------------------
 export const createInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
