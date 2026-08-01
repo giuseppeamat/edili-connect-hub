@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -141,6 +141,12 @@ function Dashboard() {
   const search = Route.useSearch();
   const periodo: PeriodoKey = isPeriodo(search.periodo) ? search.periodo : "30";
   const [seeding, setSeeding] = useState(false);
+
+  useEffect(() => {
+    if (!isPeriodo(search.periodo)) {
+      void navigate({ to: "/", search: {}, replace: true });
+    }
+  }, [navigate, search.periodo]);
 
   const dashFn = useServerFn(getDashboardOperativa);
   const { data, isPending, isError, refetch, isFetching } = useQuery({
