@@ -94,6 +94,70 @@ async function logAudit(
   });
 }
 
+/**
+ * Trova (o crea) il MEMBRO dell'organizzazione corrispondente all'email
+ * dell'invito. Il membro è l'anagrafica persona: esiste anche senza account.
+ */
+async function ensureMemberForInvite(
+  organizationId: string,
+  email: string,
+  role: AppRole,
+  createdBy: string | null,
+): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const mail = email.trim().toLowerCase();
+
+  const { data: existing } = await supabaseAdmin
+    .from("organization_members")
+    .select("id, archived_at")
+    .eq("organization_id", organizationId)
+    .eq("email", mail)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (existing?.id) {
+    await supabaseAdmin
+      .from("organization_members")
+      .update({ stato_accesso: "invitato" })
+      .eq("id", existing.id);
+    return existing.id;
+  }
+
+  const { data: created, error } = await supabaseAdmin
+    .from("organization_members")
+    .insert({
+      organization_id: organizationId,
+      nome: mail.split("@")[0],
+      email: mail,
+      ruolo_organizzativo: role,
+      stato_accesso: "invitato",
+      created_by: createdBy,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return created.id;
+}
+
+/** Collega l'account Auth appena autenticato al membro dell'organizzazione. */
+async function linkMemberOnAcceptance(
+  organizationId: string,
+  email: string,
+  userId: string,
+  role: AppRole,
+  memberId: string | null,
+) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const id = memberId ?? (await ensureMemberForInvite(organizationId, email, role, userId));
+  const { error } = await supabaseAdmin.rpc("link_member_to_user" as any, {
+    _member_id: id,
+    _user_id: userId,
+    _org: organizationId,
+  } as any);
+  if (error) throw new Error(error.message);
+  return id;
+}
+
+
 // ---------------------- CREATE INVITE ----------------------
 export const createInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -145,6 +209,13 @@ export const createInvite = createServerFn({ method: "POST" })
       .eq("status", "pending")
       .ilike("email", data.email);
 
+    const memberId = await ensureMemberForInvite(
+      organizationId,
+      data.email,
+      data.role as AppRole,
+      context.userId,
+    );
+
     const { data: inv, error } = await supabaseAdmin
       .from("invites")
       .insert({
@@ -154,10 +225,12 @@ export const createInvite = createServerFn({ method: "POST" })
         token_hash,
         expires_at,
         created_by: context.userId,
+        member_id: memberId,
       })
       .select("id, expires_at")
       .single();
     if (error) throw new Error(error.message);
+
 
     await logAudit(context, organizationId, "invite.create", "invites", inv.id, {
       email: data.email,
@@ -276,7 +349,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invites")
-      .select("id, organization_id, email, role, status, expires_at")
+      .select("id, organization_id, email, role, status, expires_at, member_id")
       .eq("token_hash", token_hash)
       .maybeSingle();
     if (!inv) throw new Error("Invito non valido");
@@ -355,6 +428,15 @@ export const acceptInvite = createServerFn({ method: "POST" })
         { onConflict: "user_id,organization_id,role" },
       );
     if (roleErr) throw new Error(roleErr.message);
+
+    // Collega il membro dell'anagrafica all'account appena autenticato
+    await linkMemberOnAcceptance(
+      inv.organization_id,
+      inv.email,
+      context.userId,
+      inv.role as AppRole,
+      (inv as any).member_id ?? null,
+    );
 
     // Marca l'invito come accettato
     await supabaseAdmin
@@ -508,7 +590,7 @@ export const acceptInviteAsNewUser = createServerFn({ method: "POST" })
 
     const { data: inv } = await supabaseAdmin
       .from("invites")
-      .select("id, organization_id, email, role, status, expires_at")
+      .select("id, organization_id, email, role, status, expires_at, member_id")
       .eq("token_hash", token_hash)
       .maybeSingle();
     if (!inv) throw new Error("Invito non valido");
@@ -563,6 +645,15 @@ export const acceptInviteAsNewUser = createServerFn({ method: "POST" })
       await supabaseAdmin.auth.admin.deleteUser(newUserId);
       throw new Error(roleErr.message);
     }
+
+    // Collega il membro dell'anagrafica al nuovo account
+    await linkMemberOnAcceptance(
+      inv.organization_id,
+      inv.email,
+      newUserId,
+      inv.role as AppRole,
+      (inv as any).member_id ?? null,
+    );
 
     // Marca l'invito accettato
     await supabaseAdmin
