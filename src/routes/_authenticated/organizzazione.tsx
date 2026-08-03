@@ -110,11 +110,18 @@ function OrgDataCard({ organizationId, canEdit }: { organizationId: string; canE
 
   const save = useMutation({
     mutationFn: async (payload: any) => {
-      const { error } = await supabase.from("organizations").update(payload).eq("id", organizationId);
+      const { data, error } = await supabase
+        .from("organizations")
+        .update(payload)
+        .eq("id", organizationId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Modifica non consentita: permessi insufficienti.");
+      }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organization"] });
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["organization"] });
       qc.invalidateQueries({ queryKey: ["current-user"] });
       toast.success("Dati aziendali aggiornati");
     },
@@ -135,7 +142,11 @@ function OrgDataCard({ organizationId, canEdit }: { organizationId: string; canE
     <Card className="mt-4">
       <CardHeader><CardTitle>Dati azienda</CardTitle></CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <form
+          key={String(org.updated_at ?? "")}
+          onSubmit={onSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
           <Field name="nome" label="Ragione sociale *" defaultValue={org.nome ?? ""} required />
           <Field name="nome_commerciale" label="Nome commerciale" defaultValue={org.nome_commerciale ?? ""} />
           <Field name="partita_iva" label="P.IVA" defaultValue={org.partita_iva ?? ""} />
