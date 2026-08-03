@@ -2595,6 +2595,7 @@ export type Database = {
         Returns: undefined
       }
       _om_assert_manager: { Args: { _org: string }; Returns: undefined }
+      _om_sync_user_roles: { Args: { _member: string }; Returns: undefined }
       _rap_current_profile: {
         Args: never
         Returns: {
@@ -3053,6 +3054,10 @@ export type Database = {
           _strategy: string
         }
         Returns: Json
+      }
+      is_access_active: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
       }
       is_capocantiere_di: { Args: { _cantiere_id: string }; Returns: boolean }
       is_commessa_budget_locked: {
