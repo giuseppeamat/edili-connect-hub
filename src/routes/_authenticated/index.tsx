@@ -536,7 +536,7 @@ function Dashboard() {
             </SectionCard>
           </div>
 
-          {data?.capabilities.canReadAudit && (
+          {false && (
             <SectionCard
               title="Ultime attività"
               icon={Activity}
@@ -570,6 +570,7 @@ function Dashboard() {
               </div>
             </SectionCard>
           )}
+
         </>
       )}
     </div>
