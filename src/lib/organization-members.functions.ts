@@ -30,14 +30,11 @@ function mapDbError(message: string): string {
 }
 
 async function callerOrganizationId(context: any): Promise<string> {
-  const { data, error } = await context.supabase
-    .from("profiles")
-    .select("organization_id")
-    .eq("id", context.userId)
-    .maybeSingle();
-  if (error || !data?.organization_id) throw new Error("Organizzazione non trovata");
-  return data.organization_id as string;
+  const { requireActiveOrganizationMember } = await import("@/lib/access-guard");
+  const ctx = await requireActiveOrganizationMember(context.supabase, context.userId);
+  return ctx.organizationId;
 }
+
 
 // ---------------------- LIST ----------------------
 export const listOrganizationMembers = createServerFn({ method: "POST" })
@@ -191,30 +188,22 @@ export const setOrganizationMemberAccess = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    // La RPC aggiorna in modo atomico stato_accesso, profilo applicativo e
+    // (in riattivazione) la sincronizzazione dei ruoli effettivi.
     const { error } = await context.supabase.rpc("set_organization_member_access", {
       _id: data.id,
       _stato: data.stato,
     });
     if (error) throw new Error(mapDbError(error.message));
 
-    // Se il membro ha un account collegato, allinea anche l'accesso reale.
     const { data: member } = await context.supabase
       .from("organization_members")
-      .select("user_id, organization_id")
+      .select("id, user_id, stato_accesso, archived_at")
       .eq("id", data.id)
       .maybeSingle();
 
-    if (member?.user_id) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { error: rpcErr } = await supabaseAdmin.rpc("admin_set_member_active" as any, {
-        _user: member.user_id,
-        _org: member.organization_id,
-        _active: data.stato === "attivo",
-        _actor: context.userId,
-      } as any);
-      if (rpcErr) throw new Error(rpcErr.message);
-    }
-    return { ok: true };
+    return { ok: true, member: member ?? null };
+
   });
 
 // ---------------------- MEMBRI ASSEGNABILI ----------------------

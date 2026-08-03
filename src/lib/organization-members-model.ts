@@ -140,16 +140,25 @@ export function isAssignableMember(m: MemberLike): boolean {
   return !m.archived_at && m.is_active !== false;
 }
 
-/** Stato di accesso derivato, tenendo conto della scadenza dell'invito. */
+/**
+ * Stato di accesso derivato. La sorgente autorevole è
+ * `organization_members.stato_accesso`: non si deduce mai "attivo" dalla sola
+ * presenza di `user_id`, di un profilo o dal flag `is_active` della persona.
+ */
 export function deriveAccessState(
   m: MemberLike,
   invite?: { status: string; expires_at: string } | null,
   now: Date = new Date(),
 ): MemberAccessState {
-  if (m.user_id) return m.is_active === false ? "disabilitato" : "attivo";
+  if (m.stato_accesso === "disabilitato") return "disabilitato";
+  if (m.archived_at) return m.user_id ? "disabilitato" : "senza_accesso";
+  if (m.user_id) return "attivo";
   if (invite && invite.status === "pending") {
     return new Date(invite.expires_at).getTime() < now.getTime() ? "invito_scaduto" : "invitato";
   }
   if (m.stato_accesso === "invito_scaduto") return "invito_scaduto";
+  if (m.stato_accesso === "invitato") return "invitato";
+
   return "senza_accesso";
 }
+

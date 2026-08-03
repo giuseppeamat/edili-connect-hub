@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
+import { isAccessAllowed } from "@/lib/access-guard";
+
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -19,7 +21,11 @@ export type CurrentUserData = {
   } | null;
   organization: { id: string; nome: string | null } | null;
   roles: AppRole[];
+  accessAllowed: boolean;
+  memberId: string | null;
+  statoAccesso: string | null;
 };
+
 
 const ROLE_PRIORITY: AppRole[] = [
   "proprietario",
@@ -65,8 +71,25 @@ export function useCurrentUser() {
       const orgId = profile?.organization_id ?? null;
       const isActive = (profile as any)?.is_active !== false;
 
+      // Sorgente autorevole dello stato accesso: organization_members.
+      let member: { id: string; stato_accesso: string | null; archived_at: string | null } | null = null;
+      if (orgId) {
+        const { data: m } = await supabase
+          .from("organization_members")
+          .select("id, stato_accesso, archived_at")
+          .eq("organization_id", orgId)
+          .eq("user_id", u.user.id)
+          .maybeSingle();
+        member = (m as any) ?? null;
+      }
+      const accessAllowed = isAccessAllowed({
+        profileActive: (profile as any)?.is_active,
+        statoAccesso: member?.stato_accesso ?? null,
+        archivedAt: member?.archived_at ?? null,
+      });
+
       let roles: AppRole[] = [];
-      if (orgId && isActive) {
+      if (orgId && isActive && accessAllowed) {
         const { data: rolesRows } = await supabase
           .from("user_roles")
           .select("role")
@@ -74,6 +97,7 @@ export function useCurrentUser() {
           .eq("organization_id", orgId);
         roles = ((rolesRows ?? []) as { role: AppRole }[]).map((r) => r.role);
       }
+
 
       const organization = (profile as any)?.organizations
         ? { id: (profile as any).organizations.id, nome: (profile as any).organizations.nome }
@@ -96,7 +120,11 @@ export function useCurrentUser() {
           : null,
         organization,
         roles,
+        accessAllowed,
+        memberId: member?.id ?? null,
+        statoAccesso: (member?.stato_accesso as any) ?? null,
       };
+
     },
 
   });
@@ -116,8 +144,14 @@ export function useCurrentUser() {
     organization: data?.organization ?? null,
     organizationId: data?.profile?.organization_id ?? null,
     roles,
+    accessAllowed: data ? data.accessAllowed : true,
+    accessDisabled: data ? !data.accessAllowed : false,
+    statoAccesso: data?.statoAccesso ?? null,
+    memberId: data?.memberId ?? null,
     primaryRole,
     has,
+
+
     isProprietario: has("proprietario"),
     isAdmin: has("proprietario", "amministratore"),
     canManageAnagrafiche: has("proprietario", "amministratore", "ufficio_tecnico", "amministrazione"),

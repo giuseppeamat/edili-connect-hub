@@ -107,7 +107,18 @@ export function MembriTab({ isProprietario }: { isProprietario: boolean }) {
     queryFn: async () => (await listFn({ data: { includeArchived: showArchived } })) as any,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["organization-members"] });
+  /**
+   * Invalidazione mirata: elenco membri + risoluzione permessi/identità.
+   * Cambi di ruolo o di stato accesso devono riflettersi subito su menu e route.
+   */
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["organization-members"] });
+    qc.invalidateQueries({ queryKey: ["current-user"] });
+    qc.invalidateQueries({ queryKey: ["current-role"] });
+    qc.invalidateQueries({ queryKey: ["assignable-members"] });
+    qc.invalidateQueries({ queryKey: ["notifiche"] });
+  };
+
 
   const save = useMutation({
     mutationFn: async (v: any) =>

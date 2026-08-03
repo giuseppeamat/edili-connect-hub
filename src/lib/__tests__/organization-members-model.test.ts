@@ -9,6 +9,8 @@ import {
   normalizeEmail,
   validateMemberInput,
 } from "../organization-members-model";
+import { isAccessAllowed } from "../access-guard";
+
 
 describe("permessi membri", () => {
   it("solo proprietario e amministratore gestiscono i membri", () => {
@@ -92,11 +94,48 @@ describe("stato accesso", () => {
     expect(state).toBe("invito_scaduto");
   });
 
-  it("account collegato = attivo, disattivato = disabilitato", () => {
-    expect(deriveAccessState({ ...base, user_id: "u1", is_active: true })).toBe("attivo");
-    expect(deriveAccessState({ ...base, user_id: "u1", is_active: false })).toBe("disabilitato");
+  it("lo stato accesso autorevole vince su user_id e is_active", () => {
+    expect(deriveAccessState({ ...base, user_id: "u1", stato_accesso: "attivo" })).toBe("attivo");
+    // is_active della persona NON determina lo stato accesso
+    expect(deriveAccessState({ ...base, user_id: "u1", is_active: false, stato_accesso: "attivo" })).toBe(
+      "attivo",
+    );
+    expect(
+      deriveAccessState({ ...base, user_id: "u1", is_active: true, stato_accesso: "disabilitato" }),
+    ).toBe("disabilitato");
+  });
+
+  it("un invito pendente non riattiva un membro disabilitato", () => {
+    expect(
+      deriveAccessState(
+        { ...base, user_id: "u1", stato_accesso: "disabilitato" },
+        { status: "pending", expires_at: new Date(Date.now() + 86400000).toISOString() },
+      ),
+    ).toBe("disabilitato");
+  });
+
+  it("membro archiviato con account = disabilitato", () => {
+    expect(
+      deriveAccessState({ ...base, user_id: "u1", stato_accesso: "attivo", archived_at: new Date().toISOString() }),
+    ).toBe("disabilitato");
   });
 });
+
+describe("guardia accesso", () => {
+  it("nega quando il profilo è disattivato, il membro è disabilitato o archiviato", () => {
+    expect(isAccessAllowed({ profileActive: true, statoAccesso: "attivo" })).toBe(true);
+    expect(isAccessAllowed({ profileActive: false, statoAccesso: "attivo" })).toBe(false);
+    expect(isAccessAllowed({ profileActive: true, statoAccesso: "disabilitato" })).toBe(false);
+    expect(isAccessAllowed({ profileActive: true, statoAccesso: "attivo", archivedAt: "2026-01-01" })).toBe(
+      false,
+    );
+  });
+
+  it("un membro senza accesso ma non disabilitato non è bloccato a livello di app", () => {
+    expect(isAccessAllowed({ profileActive: true, statoAccesso: "senza_accesso" })).toBe(true);
+  });
+});
+
 
 describe("invitabilità", () => {
   it("un membro senza email non è invitabile", () => {
