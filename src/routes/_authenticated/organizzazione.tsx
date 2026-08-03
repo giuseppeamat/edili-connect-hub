@@ -110,11 +110,18 @@ function OrgDataCard({ organizationId, canEdit }: { organizationId: string; canE
 
   const save = useMutation({
     mutationFn: async (payload: any) => {
-      const { error } = await supabase.from("organizations").update(payload).eq("id", organizationId);
+      const { data, error } = await supabase
+        .from("organizations")
+        .update(payload)
+        .eq("id", organizationId)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error("Modifica non consentita: permessi insufficienti.");
+      }
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organization"] });
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["organization"] });
       qc.invalidateQueries({ queryKey: ["current-user"] });
       toast.success("Dati aziendali aggiornati");
     },
