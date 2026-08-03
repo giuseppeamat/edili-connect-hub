@@ -135,7 +135,11 @@ function OrgDataCard({ organizationId, canEdit }: { organizationId: string; canE
     <Card className="mt-4">
       <CardHeader><CardTitle>Dati azienda</CardTitle></CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <form
+          key={String(org.updated_at ?? "")}
+          onSubmit={onSubmit}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
           <Field name="nome" label="Ragione sociale *" defaultValue={org.nome ?? ""} required />
           <Field name="nome_commerciale" label="Nome commerciale" defaultValue={org.nome_commerciale ?? ""} />
           <Field name="partita_iva" label="P.IVA" defaultValue={org.partita_iva ?? ""} />
