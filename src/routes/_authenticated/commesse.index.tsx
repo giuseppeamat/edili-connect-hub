@@ -105,7 +105,17 @@ function CommessePage() {
 
   const { data: clienti = [] } = useQuery({
     queryKey: ["clienti-lite"],
-    queryFn: async () => (await supabase.from("clienti").select("id, ragione_sociale").order("ragione_sociale")).data ?? [],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clienti")
+        .select("id, denominazione, ragione_sociale")
+        .is("archived_at", null)
+        .order("denominazione");
+      return (data ?? []).map((c: any) => ({
+        id: c.id,
+        label: (c.denominazione || c.ragione_sociale || "Cliente senza nome") as string,
+      }));
+    },
   });
 
   const { data: responsabili = [] } = useQuery({
@@ -251,7 +261,7 @@ function CommessePage() {
                           <Label>Cliente *</Label>
                           <Select name="cliente_id" required>
                             <SelectTrigger><SelectValue placeholder="Seleziona cliente" /></SelectTrigger>
-                            <SelectContent>{clienti.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.ragione_sociale}</SelectItem>)}</SelectContent>
+                            <SelectContent>{clienti.length === 0 ? <div className="px-2 py-3 text-sm text-muted-foreground">Nessun cliente disponibile</div> : clienti.map((c) => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}</SelectContent>
                           </Select>
                         </div>
                         <div>
