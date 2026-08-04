@@ -241,11 +241,36 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
     enabled: !!selCommessa,
   });
 
-  const oreNum = Number(oreValue.replace(",", "."));
+  // ── Personale impiegato (autore ≠ lavoratori) ────────────────────────────
+  const membriFn = useServerFn(listAssignableMembers);
+  const savePersonaleFn = useServerFn(saveRapportinoPersonale);
+  const { data: membri = [] } = useQuery({
+    queryKey: ["organization-members", "assignable"],
+    queryFn: async () => await membriFn(),
+  });
+  const orePersonale = personale.reduce((s, p) => s + (Number(p.ore) || 0), 0);
+  const personaleError = personale.length
+    ? validaRighe(personale.map((p) => ({ membro_id: p.membro_id, ore: Number(p.ore) })))
+    : null;
+  const membriUsati = new Set(personale.map((p) => p.membro_id));
+
+  const oreEffettive = personale.length ? orePersonale : Number(oreValue.replace(",", "."));
+  const oreNum = oreEffettive;
   const needsOverride = !isNaN(oreNum) && oreNum > 16;
 
   const create = useMutation({
-    mutationFn: async (payload: any) => await createFn({ data: payload }),
+    mutationFn: async (payload: any) => {
+      const res: any = await createFn({ data: payload });
+      if (personale.length && res?.id) {
+        await savePersonaleFn({
+          data: {
+            rapportino_id: res.id,
+            righe: personale.map((p) => ({ membro_id: p.membro_id, ore: Number(p.ore), nota: null })),
+          },
+        });
+      }
+      return res;
+    },
     onSuccess: () => {
       toast.success("Rapportino creato");
       qc.invalidateQueries({ queryKey: rapportiniKeys.all });
