@@ -210,7 +210,7 @@ function TariffaDialog({
   const updateFn = useServerFn(updatePersonaleCostoOrario);
   const isEdit = !!edit;
 
-  const [userId, setUserId] = useState<string>(edit?.user_id ?? "");
+  const [membroId, setMembroId] = useState<string>(edit?.membro_id ?? "");
   const [costo, setCosto] = useState<string>(edit?.costo_orario?.toString() ?? "");
   const [dal, setDal] = useState<string>(edit?.valido_dal ?? new Date().toISOString().slice(0, 10));
   const [al, setAl] = useState<string>(edit?.valido_al ?? "");
@@ -219,7 +219,7 @@ function TariffaDialog({
   // Reset when opening (fix S5B3.5: precedente `useState(cb)` non ricaricava i valori originali)
   useEffect(() => {
     if (open) {
-      setUserId(edit?.user_id ?? "");
+      setMembroId(edit?.membro_id ?? "");
       setCosto(edit?.costo_orario?.toString() ?? "");
       setDal(edit?.valido_dal ?? new Date().toISOString().slice(0, 10));
       setAl(edit?.valido_al ?? "");
@@ -231,7 +231,7 @@ function TariffaDialog({
     mutationFn: async () => {
       const costoNum = Number(costo.replace(",", "."));
       if (!Number.isFinite(costoNum) || costoNum < 0) throw new Error("Costo orario non valido");
-      if (!isEdit && !userId) throw new Error("Seleziona un utente");
+      if (!isEdit && !membroId) throw new Error("Seleziona un membro");
       if (!dal) throw new Error("Data inizio obbligatoria");
       if (isEdit) {
         return updateFn({ data: {
@@ -239,7 +239,7 @@ function TariffaDialog({
           costo_orario: costoNum, valido_dal: dal, valido_al: al || null, note: note || null,
         }});
       }
-      return createFn({ data: { user_id: userId, costo_orario: costoNum, valido_dal: dal, valido_al: al || null, note: note || null } });
+      return createFn({ data: { membro_id: membroId, costo_orario: costoNum, valido_dal: dal, valido_al: al || null, note: note || null } });
     },
     onSuccess: () => { toast.success(isEdit ? "Tariffa aggiornata" : "Tariffa creata"); onOpenChange(false); onSaved(); },
     onError: (e: any) => toast.error(e.message),
