@@ -375,7 +375,11 @@ function PanoramicaTab({ d, canEdit, canAssignResp, onDone }: any) {
               <dt className="text-muted-foreground">Ricavi previsti</dt><dd>{eur(c.ricavi_previsti)}</dd>
               <dt className="text-muted-foreground">Costi previsti</dt><dd>{eur(c.costi_previsti ?? c.budget_costi)}</dd>
               <dt className="text-muted-foreground">Costi impegnati</dt><dd>{eur(c.costi_impegnati)}</dd>
-              <dt className="text-muted-foreground">Costi sostenuti</dt><dd>{eur(c.costi_sostenuti)}</dd>
+              <dt className="text-muted-foreground">Costi sostenuti</dt>
+              <dd>{eur(d.manodopera?.costiSostenutiTotali ?? c.costi_sostenuti)}</dd>
+              <dt className="text-muted-foreground">di cui manodopera</dt>
+              <dd>{eur(d.manodopera?.totale ?? 0)}</dd>
+
               <dt className="text-muted-foreground">Margine previsto</dt><dd className="font-medium">{eur(c.margine_previsto)}</dd>
               <dt className="text-muted-foreground">Margine aggiornato</dt><dd>{eur(c.margine_aggiornato)}</dd>
               <dt className="text-muted-foreground">Margine %</dt><dd>{c.margine_percentuale != null ? `${Number(c.margine_percentuale).toFixed(2)}%` : "—"}</dd>

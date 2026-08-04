@@ -334,6 +334,11 @@ function Dashboard() {
                   title="Costi sostenuti"
                   value={eur(econ.costiSostenuti)}
                   icon={Wallet}
+                  hint={
+                    econ.manodoperaContabilizzata
+                      ? `${eur(econ.manodoperaContabilizzata)} di manodopera`
+                      : undefined
+                  }
                   to="/commesse"
                 />
                 {econ.manodoperaDaContabilizzare !== null && (
@@ -342,9 +347,15 @@ function Dashboard() {
                     value={String(econ.manodoperaDaContabilizzare)}
                     icon={Coins}
                     tone={econ.manodoperaDaContabilizzare > 0 ? "warning" : "default"}
+                    hint={
+                      econ.manodoperaPendente && econ.manodoperaPendente.righe > 0
+                        ? `${econ.manodoperaPendente.rapportini} rapportini · ${econ.manodoperaPendente.persone} persone`
+                        : undefined
+                    }
                     to="/costi-personale"
                   />
                 )}
+
               </>
             )}
           </div>

@@ -5,6 +5,14 @@
  */
 import { mapServerError } from "@/lib/server-error-mapper";
 import {
+  costiSostenutiTotali,
+  manodoperaPerCommessa,
+  normalizzaPendente,
+  type CostoManodoperaRow,
+  type ManodoperaPendente,
+} from "@/lib/costi-propagazione";
+
+import {
   commessaAlerts,
   periodRange,
   sortByCriticita,
@@ -203,13 +211,14 @@ export async function runDashboardOperativa({
         marginePrevisto: number;
         margineMediaPct: number | null;
         manodoperaDaContabilizzare: number | null;
+        manodoperaPendente: ManodoperaPendente | null;
+        manodoperaContabilizzata: number | null;
       } = null;
       if (canEcon) {
         const valoreCommesse = attive.reduce(
           (s, c) => s + Number(c.ricavi_previsti ?? c.importo ?? 0),
           0,
         );
-        const costiSostenuti = attive.reduce((s, c) => s + Number(c.costi_sostenuti ?? 0), 0);
         const marginePrevisto = attive.reduce((s, c) => {
           if (c.margine_previsto !== null && c.margine_previsto !== undefined)
             return s + Number(c.margine_previsto);
@@ -217,24 +226,41 @@ export async function runDashboardOperativa({
           const cp = Number(c.costi_previsti ?? c.budget_costi ?? 0);
           return s + (r - cp);
         }, 0);
+
         let manodoperaDaContabilizzare: number | null = null;
+        let manodoperaPendente: ManodoperaPendente | null = null;
+        let manodoperaContabilizzata: number | null = null;
+        let costiSostenuti = attive.reduce((s, c) => s + Number(c.costi_sostenuti ?? 0), 0);
+
         if (canCosti) {
-          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-          const { count } = await supabaseAdmin
-            .from("rapportini_costi")
-            .select("id", { count: "exact", head: true })
-            .eq("organization_id", org)
-            .eq("stato", "non_contabilizzato");
-          manodoperaDaContabilizzare = count ?? 0;
+          const ids = attive.map((c) => c.id);
+          const [pendQ, costiQ] = await Promise.all([
+            context.supabase.rpc("get_kpi_manodopera_pendente"),
+            ids.length
+              ? context.supabase.rpc("get_costi_manodopera", { _commessa_ids: ids })
+              : Promise.resolve({ data: [] as any[] }),
+          ]);
+          manodoperaPendente = normalizzaPendente((pendQ as any).data);
+          manodoperaDaContabilizzare = manodoperaPendente.righe;
+          const rows = ((costiQ as any).data ?? []) as CostoManodoperaRow[];
+          manodoperaContabilizzata = Object.values(manodoperaPerCommessa(rows)).reduce(
+            (s, v) => s + v,
+            0,
+          );
+          costiSostenuti = costiSostenutiTotali(attive, rows);
         }
+
         economia = {
           valoreCommesse,
           costiSostenuti,
           marginePrevisto,
           margineMediaPct: valoreCommesse > 0 ? (marginePrevisto / valoreCommesse) * 100 : null,
           manodoperaDaContabilizzare,
+          manodoperaPendente,
+          manodoperaContabilizzata,
         };
       }
+
 
       const docs = (docQ.data ?? []) as any[];
       const docsScaduti = docs.filter(
