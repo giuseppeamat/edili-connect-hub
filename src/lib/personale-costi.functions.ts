@@ -62,13 +62,20 @@ export const listPersonaleCostiOrari = createServerFn({ method: "POST" })
       const { data: rows, error } = await q;
       if (error) throw error;
 
-      // enrich con profili
-      const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
-      const { data: profs } = userIds.length
-        ? await context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
-        : { data: [] as any[] };
-      const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      return (rows ?? []).map((r: any) => ({ ...r, user: pm.get(r.user_id) ?? null }));
+      // enrich con membri organizzazione (sorgente autorevole dell'anagrafica)
+      const membroIds = Array.from(new Set((rows ?? []).map((r: any) => r.membro_id).filter(Boolean)));
+      const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+      const { data: membri } = await context.supabase
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email")
+        .eq("organization_id", org);
+      const byId = new Map((membri ?? []).map((m: any) => [m.id, m]));
+      const byUser = new Map((membri ?? []).filter((m: any) => m.user_id).map((m: any) => [m.user_id, m]));
+      void membroIds; void userIds;
+      return (rows ?? []).map((r: any) => ({
+        ...r,
+        user: byId.get(r.membro_id) ?? byUser.get(r.user_id) ?? null,
+      }));
     } catch (e) {
       throw new Error(mapServerError(e));
     }
