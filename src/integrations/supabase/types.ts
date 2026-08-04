@@ -3108,6 +3108,18 @@ export type Database = {
           id: string
         }[]
       }
+      get_costi_manodopera: {
+        Args: { _commessa_ids?: string[] }
+        Returns: {
+          cantiere_id: string
+          commessa_id: string
+          costo: number
+          gia_nel_budget: boolean
+          persone: number
+          rapportini: number
+          righe: number
+        }[]
+      }
       get_costo_orario_membro_at_date: {
         Args: { _data: string; _membro_id: string; _org: string }
         Returns: {
@@ -3131,6 +3143,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      get_kpi_manodopera_pendente: {
+        Args: never
+        Returns: {
+          persone: number
+          rapportini: number
+          righe: number
+        }[]
       }
       get_personale_costo_orario_at_date: {
         Args: { _data: string; _org: string; _user_id: string }
