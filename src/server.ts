@@ -28,12 +28,10 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   const body = await response.clone().text();
   if (!isH3SwallowedErrorBody(body)) return response;
 
-  const cap = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
-  console.error(cap);
-
-  return new Response("DEBUG_H3 " + String((cap as any)?.stack ?? cap), {
+  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
+  return new Response(renderErrorPage(), {
     status: 500,
-    headers: { "content-type": "text/plain; charset=utf-8" },
+    headers: { "content-type": "text/html; charset=utf-8" },
   });
 }
 
@@ -54,7 +52,6 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-
       return new Response(renderErrorPage(), {
         status: 500,
         headers: { "content-type": "text/html; charset=utf-8" },
