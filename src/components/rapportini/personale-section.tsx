@@ -99,9 +99,7 @@ export function PersonaleSection({
       toast.success("Personale del rapportino aggiornato");
       setDirty(false);
       setConfermaRicalcolo(null);
-      qc.invalidateQueries({ queryKey: personaleKey });
-      qc.invalidateQueries({ queryKey: rapportiniKeys.all });
-      qc.invalidateQueries({ queryKey: ["rapportino", rapportinoId, "costi"] });
+      invalidaAggregati();
     },
     onError: (e: any) => {
       if (String(e?.message ?? "").includes("ricalcolo controllato")) {
@@ -119,12 +117,12 @@ export function PersonaleSection({
       setAnteprima(rows ?? []);
       if (!dryRun) {
         toast.success("Ricalcolo eseguito");
-        qc.invalidateQueries({ queryKey: personaleKey });
-        qc.invalidateQueries({ queryKey: ["rapportino", rapportinoId, "costi"] });
+        invalidaAggregati();
       }
     },
     onError: (e: any) => toast.error(e.message),
   });
+
 
   const membriUsati = new Set(drafts.map((d) => d.membro_id));
   const errore = drafts.length ? validaRighe(drafts.map((d) => ({ membro_id: d.membro_id, ore: Number(d.ore) }))) : null;
