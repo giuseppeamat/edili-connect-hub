@@ -92,9 +92,8 @@ export function PersonaleSection({
     qc.invalidateQueries({ queryKey: ["dashboard"] });
     qc.invalidateQueries({ queryKey: ["commessa-budget-summary"] });
     qc.invalidateQueries({ queryKey: ["commessa-budget-voci"] });
-
-    qc.invalidateQueries({ queryKey: ["commessa-budget"] });
   };
+
 
   const save = useMutation({
     mutationFn: async (allowRecalc: boolean) =>
