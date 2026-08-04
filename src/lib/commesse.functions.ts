@@ -582,6 +582,26 @@ export const getCommessaDetail = createServerFn({ method: "POST" })
     }
 
 
+    // Manodopera contabilizzata (ledger autorevole), inclusa una sola volta
+    let manodopera: {
+      totale: number;
+      giaNelBudget: boolean;
+      costiSostenutiTotali: number;
+      perCantiere: Record<string, number>;
+    } | null = null;
+    if (canEcon) {
+      const { data: rows } = await context.supabase.rpc("get_costi_manodopera" as any, {
+        _commessa_ids: [c.id],
+      });
+      const list = ((rows ?? []) as CostoManodoperaRow[]).filter((r) => r.commessa_id === c.id);
+      manodopera = {
+        totale: manodoperaPerCommessa(list)[c.id] ?? 0,
+        giaNelBudget: list.some((r) => r.gia_nel_budget === true),
+        costiSostenutiTotali: costiSostenutiCommessa(c as any, list),
+        perCantiere: manodoperaPerCantiere(list, c.id),
+      };
+    }
+
     return {
       commessa: c,
       cliente: cliente ?? null,
@@ -589,8 +609,10 @@ export const getCommessaDetail = createServerFn({ method: "POST" })
       cantieriCount: (cantieriCount as any) ?? 0,
       membriCount: (membriCount as any) ?? 0,
       canViewEconomics: canEcon,
+      manodopera,
     };
   });
+
 
 // ============= LIST MEMBERS =============
 export const listCommessaMembers = createServerFn({ method: "POST" })
