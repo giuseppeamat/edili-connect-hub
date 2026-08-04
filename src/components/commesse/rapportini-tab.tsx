@@ -304,13 +304,14 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
     } else if (data > tomorrowIso) {
       setDataError("La data del rapportino non può essere successiva a domani."); hasError = true;
     }
+    if (personaleError) { toast.error(personaleError); hasError = true; }
     if (hasError) return;
 
     const payload: any = {
       commessa_id: selCommessa,
       user_id: user.userId,
       data,
-      ore: Number(oreValue.replace(",", ".") || "0"),
+      ore: personale.length ? orePersonale : Number(oreValue.replace(",", ".") || "0"),
       descrizione_lavori: descr,
       cantiere_id: cantiereId ?? null,
       fase_id: faseId ?? null,
