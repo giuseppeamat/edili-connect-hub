@@ -82,6 +82,17 @@ export function PersonaleSection({
   const canSeeCosts = (righe as any[])[0]?.can_see_costs === true;
   const totali = totaliPersonale(righe as RigaPersonale[]);
 
+  /** I costi personale alimentano rapportino, commessa, budget e dashboard. */
+  const invalidaAggregati = () => {
+    qc.invalidateQueries({ queryKey: personaleKey });
+    qc.invalidateQueries({ queryKey: rapportiniKeys.all });
+    qc.invalidateQueries({ queryKey: ["rapportino", rapportinoId, "costi"] });
+    qc.invalidateQueries({ queryKey: ["commesse"] });
+    qc.invalidateQueries({ queryKey: ["commessa"] });
+    qc.invalidateQueries({ queryKey: ["dashboard"] });
+    qc.invalidateQueries({ queryKey: ["commessa-budget"] });
+  };
+
   const save = useMutation({
     mutationFn: async (allowRecalc: boolean) =>
       await saveFn({
