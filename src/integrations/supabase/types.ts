@@ -2603,6 +2603,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      _rap_membro_effettivo: {
+        Args: { _membro_id: string; _org: string; _user_id: string }
+        Returns: string
+      }
       _recalculate_labor_budget_voce: {
         Args: {
           _cantiere_id: string
@@ -2611,6 +2615,10 @@ export type Database = {
           _periodo: string
         }
         Returns: string
+      }
+      _tariffe_valide_membro: {
+        Args: { _data: string; _membro_id: string; _org: string }
+        Returns: number
       }
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
@@ -3198,6 +3206,37 @@ export type Database = {
       restore_rapportino: {
         Args: { _expected_updated_at: string; _id: string }
         Returns: string
+      }
+      ricalcola_costi_rapportini_mancanti: {
+        Args: {
+          _date_from?: string
+          _date_to?: string
+          _dry_run?: boolean
+          _limit?: number
+          _membro_id?: string
+          _rapportino_ids?: string[]
+        }
+        Returns: {
+          costo: number
+          data: string
+          esito: string
+          membro_id: string
+          membro_nome: string
+          motivo: string
+          ore: number
+          rapportino_id: string
+          tariffa: number
+        }[]
+      }
+      ricalcola_costo_storico_rapportino: {
+        Args: { _motivo: string; _rapportino_id: string }
+        Returns: {
+          costo_nuovo: number
+          costo_precedente: number
+          stato: string
+          tariffa_nuova: number
+          tariffa_precedente: number
+        }[]
       }
       set_commessa_baseline: {
         Args: {

@@ -13,7 +13,7 @@ import { ArrowLeft } from "lucide-react";
 import { dateIt } from "@/lib/format";
 import { rapportiniKeys } from "@/lib/rapportini.keys";
 import { getRapportino, archiveRapportino } from "@/lib/rapportini.functions";
-import { getRapportinoCosto } from "@/lib/personale-costi.functions";
+import { getRapportinoCosto, ricalcolaCostoStoricoRapportino } from "@/lib/personale-costi.functions";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { useMutation } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -75,6 +75,23 @@ function RapportinoDetailPage() {
     onSuccess: () => {
       toast.success("Rapportino archiviato");
       setArchOpen(false); setMotivo("");
+      qc.invalidateQueries({ queryKey: rapportiniKeys.all });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Fase 6 — ricalcolo del costo storico (solo proprietario/amministratore)
+  const storicoFn = useServerFn(ricalcolaCostoStoricoRapportino);
+  const [storicoOpen, setStoricoOpen] = useState(false);
+  const [storicoMotivo, setStoricoMotivo] = useState("");
+  const [storicoEsito, setStoricoEsito] = useState<any>(null);
+  const storicoMut = useMutation({
+    mutationFn: async () =>
+      await storicoFn({ data: { rapportino_id: rapportinoId, motivo: storicoMotivo.trim() } }),
+    onSuccess: (res: any) => {
+      setStoricoEsito(res);
+      toast.success("Costo storico ricalcolato");
+      qc.invalidateQueries({ queryKey: ["rapportino", rapportinoId, "costi"] });
       qc.invalidateQueries({ queryKey: rapportiniKeys.all });
     },
     onError: (e: any) => toast.error(e.message),
@@ -210,7 +227,14 @@ function RapportinoDetailPage() {
       {canViewEcon && (
         <Card className="mt-4">
           <CardContent className="p-4">
-            <div className="text-sm font-medium mb-3">Contabilizzazione manodopera</div>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="text-sm font-medium">Contabilizzazione manodopera</div>
+              {activeCost && user.has("proprietario", "amministratore") && (
+                <Button size="sm" variant="outline" onClick={() => setStoricoOpen(true)}>
+                  Ricalcola costo storico
+                </Button>
+              )}
+            </div>
             {activeCost ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <Field label="Costo orario">€ {Number(activeCost.costo_orario_applicato ?? 0).toFixed(2)}</Field>
@@ -228,6 +252,52 @@ function RapportinoDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={storicoOpen} onOpenChange={setStoricoOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Ricalcola costo storico</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Il costo attualmente congelato verrà stornato e ricalcolato con la tariffa valida alla data del
+              rapportino. Operazione registrata nel registro attività.
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <Field label="Costo attuale">€ {Number(activeCost?.costo_totale ?? 0).toFixed(2)}</Field>
+              <Field label="Tariffa attuale">€ {Number(activeCost?.costo_orario_applicato ?? 0).toFixed(2)}</Field>
+            </div>
+            {storicoEsito && (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <Field label="Nuovo costo">
+                  {storicoEsito.costo_nuovo === null ? "—" : `€ ${Number(storicoEsito.costo_nuovo).toFixed(2)}`}
+                </Field>
+                <Field label="Nuova tariffa">
+                  {storicoEsito.tariffa_nuova === null ? "—" : `€ ${Number(storicoEsito.tariffa_nuova).toFixed(2)}`}
+                </Field>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label>Motivazione (obbligatoria)</Label>
+              <Textarea
+                value={storicoMotivo}
+                onChange={(e) => setStoricoMotivo(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="Es. tariffa corretta a posteriori dopo verifica amministrativa"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStoricoOpen(false)}>Annulla</Button>
+            <Button
+              onClick={() => storicoMut.mutate()}
+              disabled={storicoMut.isPending || storicoMotivo.trim().length < 5}
+            >
+              {storicoMut.isPending ? "Ricalcolo…" : "Conferma ricalcolo"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Dialog open={archOpen} onOpenChange={setArchOpen}>
         <DialogContent>
