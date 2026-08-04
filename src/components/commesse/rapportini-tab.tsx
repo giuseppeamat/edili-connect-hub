@@ -381,9 +381,80 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
           <div><Label>Ora fine</Label><Input type="time" value={oraFine} onChange={(e) => setOraFine(e.target.value)} /></div>
           <div><Label>Pausa (min)</Label><Input type="number" min={0} value={pausaMin} onChange={(e) => setPausaMin(e.target.value)} /></div>
         </div>
+        <div className="rounded border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <Label>Personale impiegato</Label>
+              <p className="text-xs text-muted-foreground">
+                Le ore vengono attribuite alle persone selezionate, non a chi compila il rapportino.
+              </p>
+            </div>
+            <Button
+              type="button" size="sm" variant="outline"
+              onClick={() => setPersonale((p) => [...p, { membro_id: "", ore: "8" }])}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Aggiungi persona
+            </Button>
+          </div>
+          {personale.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nessuna persona: le ore totali indicate sotto restano sul rapportino e potrai aggiungere il personale dal dettaglio.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {personale.map((p, i) => (
+                <div key={`${p.membro_id || "new"}-${i}`} className="grid grid-cols-12 gap-2 items-center">
+                  <div className="col-span-7">
+                    <Select
+                      value={p.membro_id || undefined}
+                      onValueChange={(v) => setPersonale((arr) => arr.map((x, j) => (j === i ? { ...x, membro_id: v } : x)))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Seleziona persona" /></SelectTrigger>
+                      <SelectContent>
+                        {(membri as any[])
+                          .filter((m) => m.id === p.membro_id || !membriUsati.has(m.id))
+                          .map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {[m.nome, m.cognome].filter(Boolean).join(" ")}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-4">
+                    <Input
+                      type="number" step="0.25" min={0.25} max={24} value={p.ore}
+                      onChange={(e) => setPersonale((arr) => arr.map((x, j) => (j === i ? { ...x, ore: e.target.value } : x)))}
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-end">
+                    <Button
+                      type="button" size="icon" variant="ghost" aria-label="Rimuovi persona"
+                      onClick={() => setPersonale((arr) => arr.filter((_, j) => j !== i))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <div className="text-xs text-muted-foreground">
+                Totale personale: {personale.length} persone · {orePersonale.toFixed(2)} ore
+              </div>
+              {personaleError && <p className="text-xs text-destructive">{personaleError}</p>}
+            </div>
+          )}
+        </div>
         <div>
           <Label>Ore totali *</Label>
-          <Input type="number" step="0.25" min={0.25} max={24} required value={oreValue} onChange={(e) => setOreValue(e.target.value)} />
+          <Input
+            type="number" step="0.25" min={0.25} max={24} required
+            value={personale.length ? String(orePersonale) : oreValue}
+            readOnly={personale.length > 0}
+            onChange={(e) => setOreValue(e.target.value)}
+          />
+          {personale.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-1">Somma delle ore del personale impiegato.</p>
+          )}
           {needsOverride && (
             <div className="mt-2 space-y-2 rounded border border-amber-400 bg-amber-50 p-3 text-sm">
               <div className="font-medium text-amber-800">Ore oltre 16h/giorno</div>
