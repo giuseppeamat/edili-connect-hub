@@ -202,6 +202,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
   const [pausaMin, setPausaMin] = useState<string>("0");
   const [descrizione, setDescrizione] = useState<string>("");
   const [noteVal, setNoteVal] = useState<string>("");
+  const [personale, setPersonale] = useState<{ membro_id: string; ore: string }[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
   const [descError, setDescError] = useState<string | null>(null);
   const [commessaError, setCommessaError] = useState<string | null>(null);
