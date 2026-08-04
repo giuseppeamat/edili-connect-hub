@@ -126,7 +126,7 @@ export const getPersonaleCostoAttuale = createServerFn({ method: "POST" })
 // MUTAZIONI TARIFFA
 // ─────────────────────────────────────────────────────────────────────────────
 const createSchema = z.object({
-  user_id: uuid,
+  membro_id: uuid,
   costo_orario: z.number().min(0).max(10000),
   valido_dal: z.string().min(10),
   valido_al: z.string().nullable().optional(),
@@ -138,8 +138,8 @@ export const createPersonaleCostoOrario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: res, error } = await context.supabase.rpc("create_personale_costo_orario" as any, {
-        _user_id: data.user_id,
+      const { data: res, error } = await context.supabase.rpc("create_costo_orario_membro" as any, {
+        _membro_id: data.membro_id,
         _costo_orario: data.costo_orario,
         _valido_dal: data.valido_dal,
         _valido_al: data.valido_al ?? null,
