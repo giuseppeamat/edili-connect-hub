@@ -379,7 +379,6 @@ export const recalculateMissingRapportiniCosts = createServerFn({ method: "POST"
       );
       if (error) throw error;
       const righe = (rows ?? []) as any[];
-      return { ok: true, n: righe.length } as any;
       const conta = (e: string) => righe.filter((r) => r.esito === e).length;
       const ok = righe.filter((r) => r.esito === "contabilizzabile" || r.esito === "contabilizzato");
       return {
