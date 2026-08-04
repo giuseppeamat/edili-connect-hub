@@ -11,10 +11,10 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
       throw error;
     }
     console.error(error);
-    try { (await import("node:fs")).appendFileSync("/tmp/srv-err.log", String((error as any)?.stack ?? error) + "\n---\n"); } catch {}
-    return new Response(renderErrorPage(), {
+
+    return new Response("DEBUG_ERR " + String((error as any)?.stack ?? error), {
       status: 500,
-      headers: { "content-type": "text/html; charset=utf-8" },
+      headers: { "content-type": "text/plain; charset=utf-8" },
     });
   }
 });
