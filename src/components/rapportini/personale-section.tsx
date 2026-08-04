@@ -87,9 +87,12 @@ export function PersonaleSection({
     qc.invalidateQueries({ queryKey: personaleKey });
     qc.invalidateQueries({ queryKey: rapportiniKeys.all });
     qc.invalidateQueries({ queryKey: ["rapportino", rapportinoId, "costi"] });
-    qc.invalidateQueries({ queryKey: ["commesse"] });
-    qc.invalidateQueries({ queryKey: ["commessa"] });
+    qc.invalidateQueries({ queryKey: ["commesse-board"] });
+    qc.invalidateQueries({ queryKey: ["commessa-detail"] });
     qc.invalidateQueries({ queryKey: ["dashboard"] });
+    qc.invalidateQueries({ queryKey: ["commessa-budget-summary"] });
+    qc.invalidateQueries({ queryKey: ["commessa-budget-voci"] });
+
     qc.invalidateQueries({ queryKey: ["commessa-budget"] });
   };
 
