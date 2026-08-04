@@ -15,6 +15,7 @@ import { rapportiniKeys } from "@/lib/rapportini.keys";
 import { getRapportino, archiveRapportino } from "@/lib/rapportini.functions";
 import { getRapportinoCosto, ricalcolaCostoStoricoRapportino } from "@/lib/personale-costi.functions";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
+import { PersonaleSection } from "@/components/rapportini/personale-section";
 import { useMutation } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
@@ -165,6 +166,11 @@ function RapportinoDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <PersonaleSection
+        rapportinoId={rapportinoId}
+        readOnly={!!r.archived_at || r.stato === "annullato"}
+      />
 
       <Card className="mt-4">
         <CardContent className="p-4 space-y-4">

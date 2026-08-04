@@ -2307,6 +2307,7 @@ export type Database = {
           organization_id: string
           periodo_riferimento: string
           rapportino_id: string
+          rapportino_personale_id: string | null
           stato: string
           stornato_at: string | null
           stornato_by: string | null
@@ -2331,6 +2332,7 @@ export type Database = {
           organization_id: string
           periodo_riferimento: string
           rapportino_id: string
+          rapportino_personale_id?: string | null
           stato: string
           stornato_at?: string | null
           stornato_by?: string | null
@@ -2355,6 +2357,7 @@ export type Database = {
           organization_id?: string
           periodo_riferimento?: string
           rapportino_id?: string
+          rapportino_personale_id?: string | null
           stato?: string
           stornato_at?: string | null
           stornato_by?: string | null
@@ -2420,6 +2423,102 @@ export type Database = {
           },
           {
             foreignKeyName: "rc_rap_fk"
+            columns: ["rapportino_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rc_rp_fk"
+            columns: ["rapportino_personale_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini_personale"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rapportini_personale: {
+        Row: {
+          annullato_at: string | null
+          contabilizzato_at: string | null
+          costo_congelato: number | null
+          created_at: string
+          created_by: string | null
+          errore_contabilizzazione: string | null
+          id: string
+          membro_id: string
+          nota: string | null
+          ore: number
+          organization_id: string
+          rapportino_id: string
+          stato_contabilizzazione: string
+          tariffa_id: string | null
+          tariffa_oraria_congelata: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          annullato_at?: string | null
+          contabilizzato_at?: string | null
+          costo_congelato?: number | null
+          created_at?: string
+          created_by?: string | null
+          errore_contabilizzazione?: string | null
+          id?: string
+          membro_id: string
+          nota?: string | null
+          ore: number
+          organization_id: string
+          rapportino_id: string
+          stato_contabilizzazione?: string
+          tariffa_id?: string | null
+          tariffa_oraria_congelata?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          annullato_at?: string | null
+          contabilizzato_at?: string | null
+          costo_congelato?: number | null
+          created_at?: string
+          created_by?: string | null
+          errore_contabilizzazione?: string | null
+          id?: string
+          membro_id?: string
+          nota?: string | null
+          ore?: number
+          organization_id?: string
+          rapportino_id?: string
+          stato_contabilizzazione?: string
+          tariffa_id?: string | null
+          tariffa_oraria_congelata?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapportini_personale_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_personale_tariffa_id_fkey"
+            columns: ["tariffa_id"]
+            isOneToOne: false
+            referencedRelation: "personale_costi_orari"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rp_membro_fk"
+            columns: ["membro_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_members"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "rp_rap_fk"
             columns: ["rapportino_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "rapportini"
@@ -2584,6 +2683,10 @@ export type Database = {
         Args: { _action: string; _entity_id: string; _meta: Json; _org: string }
         Returns: undefined
       }
+      _contabilizza_riga_personale: {
+        Args: { _riga_id: string }
+        Returns: string
+      }
       _log_audit: {
         Args: {
           _action: string
@@ -2615,6 +2718,11 @@ export type Database = {
           _periodo: string
         }
         Returns: string
+      }
+      _rp_can_see_costs: { Args: { _org: string }; Returns: boolean }
+      _storna_riga_personale: {
+        Args: { _annulla?: boolean; _motivo: string; _riga_id: string }
+        Returns: undefined
       }
       _tariffe_valide_membro: {
         Args: { _data: string; _membro_id: string; _org: string }
@@ -2779,6 +2887,14 @@ export type Database = {
           rapportino_costo_id: string
           stato: string
           warning: string
+        }[]
+      }
+      contabilizza_rapportino_personale: {
+        Args: { _rapportino_id: string }
+        Returns: {
+          conflitto: number
+          contabilizzate: number
+          tariffa_mancante: number
         }[]
       }
       convert_preventivo_to_commessa: {
@@ -3040,6 +3156,24 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_rapportino_personale: {
+        Args: { _rapportino_id: string }
+        Returns: {
+          annullato_at: string
+          can_see_costs: boolean
+          contabilizzato_at: string
+          costo_congelato: number
+          errore_contabilizzazione: string
+          id: string
+          membro_id: string
+          membro_nome: string
+          membro_qualifica: string
+          nota: string
+          ore: number
+          stato_contabilizzazione: string
+          tariffa_oraria_congelata: number
+        }[]
+      }
       has_any_role: {
         Args: {
           _org: string
@@ -3236,6 +3370,40 @@ export type Database = {
           stato: string
           tariffa_nuova: number
           tariffa_precedente: number
+        }[]
+      }
+      ricalcola_righe_personale_mancanti: {
+        Args: {
+          _date_from?: string
+          _date_to?: string
+          _dry_run?: boolean
+          _limit?: number
+          _membro_id?: string
+          _rapportino_id?: string
+          _riga_ids?: string[]
+        }
+        Returns: {
+          costo: number
+          data: string
+          esito: string
+          membro_id: string
+          membro_nome: string
+          motivo: string
+          ore: number
+          rapportino_id: string
+          riga_id: string
+          tariffa: number
+        }[]
+      }
+      save_rapportino_personale: {
+        Args: { _allow_recalc?: boolean; _rapportino_id: string; _righe: Json }
+        Returns: {
+          conflitto: number
+          contabilizzate: number
+          ore_totali: number
+          righe_totali: number
+          rimosse: number
+          tariffa_mancante: number
         }[]
       }
       set_commessa_baseline: {
