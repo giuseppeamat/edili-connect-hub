@@ -11,7 +11,8 @@ import {
   restorePersonaleCostoOrario,
   listRapportiniCostiPendenti,
   contabilizzaRapportinoManodopera,
-  contabilizzaRapportiniPendenti,
+  recalculateMissingRapportiniCosts,
+  countRapportiniSenzaCostoPeriodo,
 } from "@/lib/personale-costi.functions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { PageHeader } from "@/components/page-header";
@@ -50,6 +51,8 @@ const fullName = (p: any) => (p ? [p.nome, p.cognome].filter(Boolean).join(" ") 
 function CostiPersonalePage() {
   const { roles, isLoading: userLoading } = useCurrentUser();
   const canManage = roles.some((r) => ["proprietario", "amministratore", "amministrazione"].includes(r));
+  const [tab, setTab] = useState("tariffe");
+  const [retro, setRetro] = useState<number | null>(null);
 
   if (userLoading) return <div className="p-6 text-muted-foreground">Caricamento…</div>;
   if (!canManage) {
@@ -77,12 +80,27 @@ function CostiPersonalePage() {
           Valore utilizzato per il controllo economico interno delle commesse. Non sostituisce i dati elaborati dal consulente del lavoro.
         </AlertDescription>
       </Alert>
-      <Tabs defaultValue="tariffe" className="w-full">
+      {retro !== null && retro > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Tariffa con validità retroattiva</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-3">
+            <span>
+              Esistono {retro} rapportini senza costo nel periodo selezionato. Vuoi eseguire un'anteprima del ricalcolo?
+            </span>
+            <Button size="sm" onClick={() => { setTab("pendenti"); setRetro(null); }}>
+              Vai all'anteprima
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setRetro(null)}>Ignora</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+      <Tabs value={tab} onValueChange={setTab} className="w-full">
         <TabsList>
           <TabsTrigger value="tariffe">Tariffe personale</TabsTrigger>
           <TabsTrigger value="pendenti">Rapportini pendenti</TabsTrigger>
         </TabsList>
-        <TabsContent value="tariffe"><TariffeTab /></TabsContent>
+        <TabsContent value="tariffe"><TariffeTab onRetroattiva={setRetro} /></TabsContent>
         <TabsContent value="pendenti"><PendentiTab /></TabsContent>
       </Tabs>
     </div>
@@ -92,7 +110,7 @@ function CostiPersonalePage() {
 // ─────────────────────────────────────────────────────────────────────────────
 // TARIFFE
 // ─────────────────────────────────────────────────────────────────────────────
-function TariffeTab() {
+function TariffeTab({ onRetroattiva }: { onRetroattiva: (n: number) => void }) {
   const [includeArchived, setIncludeArchived] = useState(false);
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
@@ -195,19 +213,21 @@ function TariffeTab() {
         edit={edit}
         users={users.data ?? []}
         onSaved={invalidate}
+        onRetroattiva={onRetroattiva}
       />
     </Card>
   );
 }
 
 function TariffaDialog({
-  open, onOpenChange, edit, users, onSaved,
+  open, onOpenChange, edit, users, onSaved, onRetroattiva,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void; edit: any;
-  users: any[]; onSaved: () => void;
+  users: any[]; onSaved: () => void; onRetroattiva: (n: number) => void;
 }) {
   const createFn = useServerFn(createPersonaleCostoOrario);
   const updateFn = useServerFn(updatePersonaleCostoOrario);
+  const countFn = useServerFn(countRapportiniSenzaCostoPeriodo);
   const isEdit = !!edit;
 
   const [membroId, setMembroId] = useState<string>(edit?.membro_id ?? "");
@@ -241,7 +261,21 @@ function TariffaDialog({
       }
       return createFn({ data: { membro_id: membroId, costo_orario: costoNum, valido_dal: dal, valido_al: al || null, note: note || null } });
     },
-    onSuccess: () => { toast.success(isEdit ? "Tariffa aggiornata" : "Tariffa creata"); onOpenChange(false); onSaved(); },
+    onSuccess: async () => {
+      toast.success(isEdit ? "Tariffa aggiornata" : "Tariffa creata");
+      onOpenChange(false);
+      onSaved();
+      // Fase 7: tariffa con validità retroattiva → solo avviso, nessun ricalcolo automatico.
+      const oggi = new Date().toISOString().slice(0, 10);
+      if (dal < oggi) {
+        try {
+          const res: any = await countFn({
+            data: { membro_id: (isEdit ? edit?.membro_id : membroId) || null, date_from: dal, date_to: al || oggi },
+          });
+          if ((res?.count ?? 0) > 0) onRetroattiva(res.count);
+        } catch { /* avviso non bloccante */ }
+      }
+    },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -306,15 +340,35 @@ function TariffaDialog({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PENDENTI
+// PENDENTI + RICALCOLO CON ANTEPRIMA
 // ─────────────────────────────────────────────────────────────────────────────
+const ESITO_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
+  contabilizzabile: { label: "Contabilizzabile", variant: "default" },
+  contabilizzato: { label: "Contabilizzato", variant: "default" },
+  gia_contabilizzato: { label: "Già contabilizzato", variant: "secondary" },
+  tariffa_mancante: { label: "Tariffa mancante", variant: "destructive" },
+  conflitto_tariffa: { label: "Conflitto tariffa", variant: "destructive" },
+  escluso: { label: "Escluso", variant: "outline" },
+  annullato: { label: "Annullato", variant: "outline" },
+  errore: { label: "Errore", variant: "destructive" },
+};
+
 function PendentiTab() {
   const qc = useQueryClient();
   const listFn = useServerFn(listRapportiniCostiPendenti);
   const singleFn = useServerFn(contabilizzaRapportinoManodopera);
-  const bulkFn = useServerFn(contabilizzaRapportiniPendenti);
+  const ricalcoloFn = useServerFn(recalculateMissingRapportiniCosts);
+  const usersFn = useServerFn(listUtentiGestibiliCostoOrario);
+
+  const [membroId, setMembroId] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [soloTariffaMancante, setSoloTariffaMancante] = useState(false);
+  const [soloNonContabilizzati, setSoloNonContabilizzati] = useState(true);
+  const [preview, setPreview] = useState<any>(null);
 
   const list = useQuery({ queryKey: ["rapportini-pendenti"], queryFn: () => listFn() });
+  const users = useQuery({ queryKey: ["gestibili-costi"], queryFn: () => usersFn() });
 
   const singleMut = useMutation({
     mutationFn: (rapportino_id: string) => singleFn({ data: { rapportino_id } }),
@@ -327,66 +381,198 @@ function PendentiTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const bulkMut = useMutation({
-    mutationFn: () => bulkFn({ data: { limit: 200 } }),
+  const filtri = () => ({
+    membro_id: membroId || null,
+    date_from: dateFrom || null,
+    date_to: dateTo || null,
+  });
+
+  const previewMut = useMutation({
+    mutationFn: () => ricalcoloFn({ data: { ...filtri(), dry_run: true } }),
+    onSuccess: (res: any) => { setPreview(res); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const confirmMut = useMutation({
+    mutationFn: () => ricalcoloFn({ data: { ...filtri(), dry_run: false } }),
     onSuccess: (res: any) => {
+      setPreview(res);
       toast.success(
-        `Elaborati ${res?.processati ?? 0}: ${res?.contabilizzati ?? 0} contabilizzati, ${res?.senza_tariffa ?? 0} senza tariffa, ${res?.budget_manuale ?? 0} in budget manuale`,
+        `Contabilizzati ${res.riepilogo.contabilizzabili} · senza tariffa ${res.riepilogo.senza_tariffa} · conflitti ${res.riepilogo.conflitti}`,
       );
       qc.invalidateQueries({ queryKey: ["rapportini-pendenti"] });
+      qc.invalidateQueries({ queryKey: ["rapportini"] });
+      qc.invalidateQueries({ queryKey: ["notifiche"] });
     },
     onError: (e: any) => toast.error(e.message),
   });
 
+  const righe = (preview?.righe ?? []).filter((r: any) => {
+    if (soloTariffaMancante && r.esito !== "tariffa_mancante") return false;
+    if (soloNonContabilizzati && r.esito === "gia_contabilizzato") return false;
+    return true;
+  });
+  const riepilogo = preview?.riepilogo;
+  const puoConfermare = !!preview?.dry_run && (riepilogo?.contabilizzabili ?? 0) > 0;
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div>
+    <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Ricalcola costi mancanti</CardTitle>
+          <CardDescription>
+            Contabilizza i rapportini approvati rimasti senza costo, ad esempio perché la tariffa è stata
+            inserita dopo. L'anteprima non modifica nulla: la contabilizzazione avviene solo dopo conferma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-1">
+              <Label>Persona</Label>
+              <Select value={membroId || "ALL"} onValueChange={(v) => setMembroId(v === "ALL" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Tutte" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">Tutte le persone</SelectItem>
+                  {(users.data ?? []).map((u: any) => (
+                    <SelectItem key={u.id} value={u.id}>{fullName(u)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1">
+              <Label>Dal</Label>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div className="grid gap-1">
+              <Label>Al</Label>
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+            <div className="flex flex-col justify-end gap-2">
+              <div className="flex items-center gap-2">
+                <Switch id="f-tar" checked={soloTariffaMancante} onCheckedChange={setSoloTariffaMancante} />
+                <Label htmlFor="f-tar">Solo tariffa mancante</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch id="f-nc" checked={soloNonContabilizzati} onCheckedChange={setSoloNonContabilizzati} />
+                <Label htmlFor="f-nc">Solo non contabilizzati</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => previewMut.mutate()} disabled={previewMut.isPending || confirmMut.isPending}>
+              <Play className="h-4 w-4 mr-2" />
+              {previewMut.isPending ? "Analisi…" : "Anteprima ricalcolo"}
+            </Button>
+            <Button
+              variant="default"
+              onClick={() => confirmMut.mutate()}
+              disabled={!puoConfermare || confirmMut.isPending}
+            >
+              {confirmMut.isPending
+                ? "Contabilizzazione…"
+                : `Conferma contabilizzazione${puoConfermare ? ` (${riepilogo.contabilizzabili})` : ""}`}
+            </Button>
+            {preview && !preview.dry_run && (
+              <span className="text-sm text-muted-foreground">Operazione completata.</span>
+            )}
+          </div>
+
+          {riepilogo && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{preview.dry_run ? "Anteprima" : "Risultato ricalcolo"}</AlertTitle>
+              <AlertDescription>
+                Analizzati {riepilogo.analizzati} · {preview.dry_run ? "contabilizzabili" : "contabilizzati"}{" "}
+                {riepilogo.contabilizzabili} · senza tariffa {riepilogo.senza_tariffa} · conflitti{" "}
+                {riepilogo.conflitti} · già contabilizzati {riepilogo.gia_contabilizzati} · esclusi{" "}
+                {riepilogo.esclusi} · annullati {riepilogo.annullati} · totale costo{" "}
+                {eur2.format(riepilogo.totale_costo)}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {preview && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Persona</TableHead>
+                  <TableHead className="text-right">Ore</TableHead>
+                  <TableHead className="text-right">Tariffa</TableHead>
+                  <TableHead className="text-right">Costo</TableHead>
+                  <TableHead>Esito</TableHead>
+                  <TableHead>Motivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {righe.length === 0 && (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nessun rapportino corrisponde ai filtri.</TableCell></TableRow>
+                )}
+                {righe.map((r: any) => {
+                  const badge = ESITO_BADGE[r.esito] ?? { label: r.esito, variant: "outline" as const };
+                  return (
+                    <TableRow key={r.rapportino_id}>
+                      <TableCell>{dateFmt(r.data)}</TableCell>
+                      <TableCell>{r.membro_nome ?? "—"}</TableCell>
+                      <TableCell className="text-right font-mono">{Number(r.ore).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-mono">{r.tariffa === null ? "—" : eur.format(r.tariffa)}</TableCell>
+                      <TableCell className="text-right font-mono">{r.costo === null ? "—" : eur2.format(r.costo)}</TableCell>
+                      <TableCell><Badge variant={badge.variant}>{badge.label}</Badge></TableCell>
+                      <TableCell className="max-w-xs text-sm text-muted-foreground">{r.motivo ?? "—"}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Rapportini approvati non contabilizzati</CardTitle>
           <CardDescription>
             Rapportini approvati che non hanno una contabilizzazione attiva (tariffa mancante o mai processati).
           </CardDescription>
-        </div>
-        <Button onClick={() => bulkMut.mutate()} disabled={bulkMut.isPending || !(list.data ?? []).length}>
-          <Play className="h-4 w-4 mr-2" /> Contabilizza tutti
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ore</TableHead>
-              <TableHead>Stato contabilizzazione</TableHead>
-              <TableHead className="text-right">Azioni</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {list.isLoading && (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Caricamento…</TableCell></TableRow>
-            )}
-            {list.data && list.data.length === 0 && (
-              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nessun rapportino pendente.</TableCell></TableRow>
-            )}
-            {(list.data ?? []).map((r: any) => (
-              <TableRow key={r.id}>
-                <TableCell>{dateFmt(r.data)}</TableCell>
-                <TableCell className="text-right font-mono">{Number(r.ore).toFixed(2)}</TableCell>
-                <TableCell>
-                  {r.stato_contabilizzazione === "non_contabilizzato"
-                    ? <Badge variant="destructive">tariffa mancante</Badge>
-                    : <Badge variant="outline">mai contabilizzato</Badge>}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" onClick={() => singleMut.mutate(r.id)} disabled={singleMut.isPending}>
-                    Riprova
-                  </Button>
-                </TableCell>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead className="text-right">Ore</TableHead>
+                <TableHead>Stato contabilizzazione</TableHead>
+                <TableHead className="text-right">Azioni</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {list.isLoading && (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Caricamento…</TableCell></TableRow>
+              )}
+              {list.data && list.data.length === 0 && (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Nessun rapportino pendente.</TableCell></TableRow>
+              )}
+              {(list.data ?? []).map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell>{dateFmt(r.data)}</TableCell>
+                  <TableCell className="text-right font-mono">{Number(r.ore).toFixed(2)}</TableCell>
+                  <TableCell>
+                    {r.stato_contabilizzazione === "non_contabilizzato"
+                      ? <Badge variant="destructive">tariffa mancante</Badge>
+                      : <Badge variant="outline">mai contabilizzato</Badge>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" onClick={() => singleMut.mutate(r.id)} disabled={singleMut.isPending}>
+                      Riprova
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

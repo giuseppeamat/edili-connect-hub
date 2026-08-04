@@ -347,4 +347,154 @@ export const getRapportinoCosto = createServerFn({ method: "POST" })
     } catch (e) { throw new Error(mapServerError(e)); }
   });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// RICALCOLO COSTI MANCANTI (anteprima obbligatoria + conferma)
+// ─────────────────────────────────────────────────────────────────────────────
+const ricalcoloSchema = z.object({
+  membro_id: uuid.nullable().optional(),
+  date_from: z.string().nullable().optional(),
+  date_to: z.string().nullable().optional(),
+  rapportino_ids: z.array(uuid).max(500).nullable().optional(),
+  dry_run: z.boolean().default(true),
+  limit: z.number().int().min(1).max(500).optional(),
+});
+
+export const recalculateMissingRapportiniCosts = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => ricalcoloSchema.parse(d ?? {}))
+  .handler(async ({ data, context }) => {
+    try {
+      const { roles } = await currentOrgAndRole(context);
+      assertCanManageCosti(roles);
+      const { data: rows, error } = await context.supabase.rpc(
+        "ricalcola_costi_rapportini_mancanti" as any,
+        {
+          _dry_run: data.dry_run,
+          _membro_id: data.membro_id ?? null,
+          _date_from: data.date_from ?? null,
+          _date_to: data.date_to ?? null,
+          _rapportino_ids: data.rapportino_ids ?? null,
+          _limit: data.limit ?? 500,
+        },
+      );
+      if (error) throw error;
+      const righe = (rows ?? []) as any[];
+      const conta = (e: string) => righe.filter((r) => r.esito === e).length;
+      const ok = righe.filter((r) => r.esito === "contabilizzabile" || r.esito === "contabilizzato");
+      return {
+        dry_run: data.dry_run,
+        righe: righe.map((r) => ({
+          rapportino_id: r.rapportino_id as string,
+          membro_id: (r.membro_id ?? null) as string | null,
+          membro_nome: (r.membro_nome ?? null) as string | null,
+          data: r.data as string,
+          ore: Number(r.ore ?? 0),
+          tariffa: r.tariffa === null || r.tariffa === undefined ? null : Number(r.tariffa),
+          costo: r.costo === null || r.costo === undefined ? null : Number(r.costo),
+          esito: r.esito as string,
+          motivo: (r.motivo ?? null) as string | null,
+        })),
+        riepilogo: {
+          analizzati: righe.length,
+          contabilizzabili: ok.length,
+          senza_tariffa: conta("tariffa_mancante"),
+          conflitti: conta("conflitto_tariffa"),
+          gia_contabilizzati: conta("gia_contabilizzato"),
+          esclusi: conta("escluso"),
+          annullati: conta("annullato"),
+          errori: conta("errore"),
+          totale_costo:
+            Math.round(ok.reduce((s, r) => s + Number(r.costo ?? 0), 0) * 100) / 100,
+        },
+      };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+// Ricalcolo del costo storico di un rapportino già contabilizzato.
+// Riservato a proprietario/amministratore, motivazione obbligatoria.
+export const ricalcolaCostoStoricoRapportino = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      rapportino_id: uuid,
+      motivo: z.string().min(5, "Motivazione obbligatoria (minimo 5 caratteri)").max(1000),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const { roles } = await currentOrgAndRole(context);
+      if (!roles.some((r: string) => ["proprietario", "amministratore"].includes(r))) {
+        throw new Error("Non sei autorizzato a ricalcolare un costo storico");
+      }
+      const { data: res, error } = await context.supabase.rpc(
+        "ricalcola_costo_storico_rapportino" as any,
+        { _rapportino_id: data.rapportino_id, _motivo: data.motivo },
+      );
+      if (error) throw error;
+      const row: any = Array.isArray(res) ? res[0] : res;
+      return {
+        costo_precedente: Number(row?.costo_precedente ?? 0),
+        tariffa_precedente: Number(row?.tariffa_precedente ?? 0),
+        costo_nuovo: row?.costo_nuovo === null || row?.costo_nuovo === undefined ? null : Number(row.costo_nuovo),
+        tariffa_nuova: row?.tariffa_nuova === null || row?.tariffa_nuova === undefined ? null : Number(row.tariffa_nuova),
+        stato: (row?.stato ?? null) as string | null,
+      };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+// Rapportini senza costo in un periodo: usato per l'avviso alla creazione di
+// una tariffa retroattiva (nessuna modifica, sola lettura).
+export const countRapportiniSenzaCostoPeriodo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ membro_id: uuid.nullable().optional(), date_from: z.string(), date_to: z.string().nullable().optional() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    try {
+      const { org, roles } = await currentOrgAndRole(context);
+      assertCanManageCosti(roles);
+      const { data: rap, error } = await context.supabase
+        .from("rapportini")
+        .select("id, membro_id, user_id")
+        .eq("organization_id", org)
+        .eq("stato", "approvato")
+        .is("archived_at", null)
+        .gte("data", data.date_from)
+        .lte("data", data.date_to ?? "9999-12-31")
+        .limit(500);
+      if (error) throw error;
+      if (!rap?.length) return { count: 0 };
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: costi } = await supabaseAdmin
+        .from("rapportini_costi")
+        .select("rapportino_id, stato, stornato_at")
+        .eq("organization_id", org)
+        .in("rapportino_id", rap.map((r: any) => r.id));
+      const attivi = new Set(
+        (costi ?? [])
+          .filter((c: any) => c.stato === "contabilizzato" && !c.stornato_at)
+          .map((c: any) => c.rapportino_id),
+      );
+      let rows = rap.filter((r: any) => !attivi.has(r.id));
+      if (data.membro_id) {
+        const { data: membro } = await context.supabase
+          .from("organization_members")
+          .select("id, user_id")
+          .eq("organization_id", org)
+          .eq("id", data.membro_id)
+          .maybeSingle();
+        rows = rows.filter(
+          (r: any) => r.membro_id === data.membro_id || (!r.membro_id && membro?.user_id && r.user_id === membro.user_id),
+        );
+      }
+      return { count: rows.length };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
 
