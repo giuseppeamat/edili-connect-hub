@@ -2,6 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { mapServerError } from "@/lib/server-error-mapper";
+import {
+  costiSostenutiCommessa,
+  manodoperaPerCantiere,
+  manodoperaPerCommessa,
+  type CostoManodoperaRow,
+} from "@/lib/costi-propagazione";
+
 
 type AppRole =
   | "proprietario" | "amministratore" | "ufficio_tecnico" | "amministrazione"
