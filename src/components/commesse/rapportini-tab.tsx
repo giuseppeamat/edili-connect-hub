@@ -23,6 +23,10 @@ import {
   listRapportinoAssignableFasi,
 } from "@/lib/rapportini.functions";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
+import { listAssignableMembers } from "@/lib/organization-members.functions";
+import { saveRapportinoPersonale } from "@/lib/rapportini-personale.functions";
+import { validaRighe } from "@/lib/rapportini-personale";
+import { Trash2 } from "lucide-react";
 
 function fullName(r: any) {
   if (!r) return "—";
