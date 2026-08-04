@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.create_costo_orario_membro(uuid, numeric, date, date, text) TO authenticated;

@@ -62,19 +62,27 @@ export const listPersonaleCostiOrari = createServerFn({ method: "POST" })
       const { data: rows, error } = await q;
       if (error) throw error;
 
-      // enrich con profili
-      const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
-      const { data: profs } = userIds.length
-        ? await context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
-        : { data: [] as any[] };
-      const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
-      return (rows ?? []).map((r: any) => ({ ...r, user: pm.get(r.user_id) ?? null }));
+      // enrich con membri organizzazione (sorgente autorevole dell'anagrafica)
+      const membroIds = Array.from(new Set((rows ?? []).map((r: any) => r.membro_id).filter(Boolean)));
+      const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+      const { data: membri } = await context.supabase
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email")
+        .eq("organization_id", org);
+      const byId = new Map((membri ?? []).map((m: any) => [m.id, m]));
+      const byUser = new Map((membri ?? []).filter((m: any) => m.user_id).map((m: any) => [m.user_id, m]));
+      void membroIds; void userIds;
+      return (rows ?? []).map((r: any) => ({
+        ...r,
+        user: byId.get(r.membro_id) ?? byUser.get(r.user_id) ?? null,
+      }));
     } catch (e) {
       throw new Error(mapServerError(e));
     }
   });
 
-// Elenco utenti gestibili (per select nel form)
+// Elenco membri gestibili (per select nel form): tutti i membri attivi
+// dell'organizzazione, anche quelli senza account di accesso.
 export const listUtentiGestibiliCostoOrario = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -82,10 +90,12 @@ export const listUtentiGestibiliCostoOrario = createServerFn({ method: "GET" })
       const { org, roles } = await currentOrgAndRole(context);
       assertCanManageCosti(roles);
       const { data, error } = await context.supabase
-        .from("profiles")
-        .select("id, nome, cognome, email, is_active")
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email, is_active, stato_accesso, qualifica")
         .eq("organization_id", org)
-        .order("cognome", { ascending: true });
+        .is("archived_at", null)
+        .order("cognome", { ascending: true })
+        .order("nome", { ascending: true });
       if (error) throw error;
       return data ?? [];
     } catch (e) {
@@ -116,7 +126,7 @@ export const getPersonaleCostoAttuale = createServerFn({ method: "POST" })
 // MUTAZIONI TARIFFA
 // ─────────────────────────────────────────────────────────────────────────────
 const createSchema = z.object({
-  user_id: uuid,
+  membro_id: uuid,
   costo_orario: z.number().min(0).max(10000),
   valido_dal: z.string().min(10),
   valido_al: z.string().nullable().optional(),
@@ -128,8 +138,8 @@ export const createPersonaleCostoOrario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => createSchema.parse(d))
   .handler(async ({ data, context }) => {
     try {
-      const { data: res, error } = await context.supabase.rpc("create_personale_costo_orario" as any, {
-        _user_id: data.user_id,
+      const { data: res, error } = await context.supabase.rpc("create_costo_orario_membro" as any, {
+        _membro_id: data.membro_id,
         _costo_orario: data.costo_orario,
         _valido_dal: data.valido_dal,
         _valido_al: data.valido_al ?? null,
