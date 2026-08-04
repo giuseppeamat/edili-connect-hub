@@ -81,7 +81,8 @@ export const listPersonaleCostiOrari = createServerFn({ method: "POST" })
     }
   });
 
-// Elenco utenti gestibili (per select nel form)
+// Elenco membri gestibili (per select nel form): tutti i membri attivi
+// dell'organizzazione, anche quelli senza account di accesso.
 export const listUtentiGestibiliCostoOrario = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -89,10 +90,12 @@ export const listUtentiGestibiliCostoOrario = createServerFn({ method: "GET" })
       const { org, roles } = await currentOrgAndRole(context);
       assertCanManageCosti(roles);
       const { data, error } = await context.supabase
-        .from("profiles")
-        .select("id, nome, cognome, email, is_active")
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email, is_active, stato_accesso, qualifica")
         .eq("organization_id", org)
-        .order("cognome", { ascending: true });
+        .is("archived_at", null)
+        .order("cognome", { ascending: true })
+        .order("nome", { ascending: true });
       if (error) throw error;
       return data ?? [];
     } catch (e) {
