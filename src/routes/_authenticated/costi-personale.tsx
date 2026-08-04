@@ -256,16 +256,19 @@ function TariffaDialog({
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-1">
-            <Label>Utente</Label>
+            <Label>Membro</Label>
             {isEdit ? (
               <Input value={fullName(edit?.user)} disabled />
             ) : (
-              <Select value={userId} onValueChange={setUserId}>
-                <SelectTrigger><SelectValue placeholder="Seleziona utente" /></SelectTrigger>
+              <Select value={membroId} onValueChange={setMembroId}>
+                <SelectTrigger><SelectValue placeholder="Seleziona membro" /></SelectTrigger>
                 <SelectContent>
+                  {users.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">Nessun membro disponibile</div>
+                  )}
                   {users.map((u: any) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {fullName(u)} {u.is_active === false && "(disattivato)"}
+                      {fullName(u)}{u.qualifica ? ` · ${u.qualifica}` : ""}{u.is_active === false ? " (non attivo)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
