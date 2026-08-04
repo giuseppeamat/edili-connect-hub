@@ -105,7 +105,17 @@ function CommessePage() {
 
   const { data: clienti = [] } = useQuery({
     queryKey: ["clienti-lite"],
-    queryFn: async () => (await supabase.from("clienti").select("id, ragione_sociale").order("ragione_sociale")).data ?? [],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clienti")
+        .select("id, denominazione, ragione_sociale")
+        .is("archived_at", null)
+        .order("denominazione");
+      return (data ?? []).map((c: any) => ({
+        id: c.id,
+        label: (c.denominazione || c.ragione_sociale || "Cliente senza nome") as string,
+      }));
+    },
   });
 
   const { data: responsabili = [] } = useQuery({
