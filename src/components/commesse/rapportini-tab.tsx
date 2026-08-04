@@ -221,6 +221,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
     setPausaMin("0");
     setDescrizione("");
     setNoteVal("");
+    setPersonale([]);
     setDataError(null);
     setDescError(null);
     setCommessaError(null);
