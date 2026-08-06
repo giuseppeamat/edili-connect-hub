@@ -118,3 +118,31 @@ describe("modificabilità rapportino", () => {
     expect(rapportinoModificabile({ stato: "bozza" })).toBe(true);
   });
 });
+
+describe("modificabilità bolle", () => {
+  it("permette bozza, inviato e respinto a tutti i ruoli edit-extra", () => {
+    for (const stato of ["bozza", "inviato", "respinto"]) {
+      for (const ruolo of BOLLE_ROLES_EDIT_EXTRA) {
+        expect(bolleModificabili({ stato }, [ruolo])).toBe(true);
+      }
+    }
+  });
+
+  it("permette approvato solo ai ruoli operativi abilitati", () => {
+    for (const ruolo of BOLLE_ROLES_EDIT_EXTRA) {
+      expect(bolleModificabili({ stato: "approvato" }, [ruolo])).toBe(true);
+    }
+    expect(bolleModificabili({ stato: "approvato" }, ["operaio"])).toBe(false);
+    expect(bolleModificabili({ stato: "approvato" }, ["cliente"])).toBe(false);
+    expect(bolleModificabili({ stato: "approvato" }, [])).toBe(false);
+  });
+
+  it("blocca archiviati e annullati indipendentemente dal ruolo", () => {
+    for (const ruolo of BOLLE_ROLES_EDIT_EXTRA) {
+      expect(bolleModificabili({ stato: "bozza", archived_at: "2026-01-01" }, [ruolo])).toBe(false);
+      expect(bolleModificabili({ stato: "annullato" }, [ruolo])).toBe(false);
+      expect(bolleModificabili({ stato: "approvato", archived_at: "2026-01-01" }, [ruolo])).toBe(false);
+    }
+  });
+});
+
