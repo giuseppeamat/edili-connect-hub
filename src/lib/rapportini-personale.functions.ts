@@ -31,6 +31,7 @@ const rigaSchema = z.object({
   membro_id: uuid,
   ore: z.number().positive().max(24),
   nota: z.string().max(500).nullable().optional(),
+  mansione: z.string().max(100).nullable().optional(),
 });
 
 export const saveRapportinoPersonale = createServerFn({ method: "POST" })
@@ -61,7 +62,12 @@ export const saveRapportinoPersonale = createServerFn({ method: "POST" })
     try {
       const { data: res, error } = await context.supabase.rpc("save_rapportino_personale" as any, {
         _rapportino_id: data.rapportino_id,
-        _righe: data.righe.map((r) => ({ membro_id: r.membro_id, ore: r.ore, nota: r.nota ?? null })),
+        _righe: data.righe.map((r) => ({
+          membro_id: r.membro_id,
+          ore: r.ore,
+          nota: r.nota ?? null,
+          mansione: r.mansione?.trim() ? r.mansione.trim() : null,
+        })),
         _allow_recalc: data.allow_recalc ?? false,
       });
       if (error) throw error;
