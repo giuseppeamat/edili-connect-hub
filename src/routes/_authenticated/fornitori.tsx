@@ -130,6 +130,7 @@ function FornitoriPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Ragione sociale</TableHead>
+              <TableHead>Tipologia</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead className="hidden md:table-cell">P.IVA</TableHead>
               <TableHead className="hidden md:table-cell">Città</TableHead>
@@ -141,12 +142,16 @@ function FornitoriPage() {
             {items.map((f) => (
               <TableRow key={f.id}>
                 <TableCell className="font-medium">{f.ragione_sociale}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{TIPO_LABEL[f.tipo_soggetto ?? "fornitore"]}</Badge>
+                </TableCell>
                 <TableCell>{f.categoria && <Badge variant="secondary">{f.categoria}</Badge>}</TableCell>
                 <TableCell className="hidden md:table-cell">{f.partita_iva}</TableCell>
                 <TableCell className="hidden md:table-cell">{f.citta}</TableCell>
                 <TableCell className="hidden lg:table-cell text-xs">{f.email}<br />{f.telefono}</TableCell>
                 <TableCell className="text-right">
-                  <Button size="icon" variant="ghost" onClick={() => { setEdit(f); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Modifica soggetto" onClick={() => apri(f)}><Pencil className="h-4 w-4" /></Button>
+
                   <Button size="icon" variant="ghost" onClick={() => confirm("Eliminare?") && del.mutate(f.id)}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
