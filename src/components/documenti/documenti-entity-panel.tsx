@@ -21,7 +21,7 @@ import { DocumentoUploadDialog } from "@/components/documenti/documento-upload-d
 const ALL = "__all__";
 
 export type DocumentiEntityPanelProps = {
-  entityType: "commessa" | "cantiere" | "cliente" | "fornitore";
+  entityType: "commessa" | "cantiere" | "cliente" | "fornitore" | "rapportino";
   entityId: string;
   /** Commessa di riferimento (per preselezionare l'upload dal cantiere). */
   commessaId?: string | null;
@@ -32,8 +32,8 @@ export type DocumentiEntityPanelProps = {
 };
 
 /**
- * Pannello Documenti riutilizzabile per commessa, cantiere, cliente e fornitore.
- * Nessuna logica duplicata: usa le stesse server functions e la stessa tabella.
+ * Pannello Documenti riutilizzabile per commessa, cantiere, cliente,
+ * fornitore e rapportino. Nessuna logica duplicata: stesse server functions.
  */
 export function DocumentiEntityPanel({
   entityType,
@@ -54,6 +54,7 @@ export function DocumentiEntityPanel({
       entityType === "cantiere" ? entityId : cantiereFilter === ALL ? null : cantiereFilter,
     cliente_id: entityType === "cliente" ? entityId : null,
     fornitore_id: entityType === "fornitore" ? entityId : null,
+    rapportino_id: entityType === "rapportino" ? entityId : null,
     includeArchived,
   };
 
@@ -64,7 +65,9 @@ export function DocumentiEntityPanel({
         ? documentiKeys.byCantiere(entityId)
         : entityType === "cliente"
           ? documentiKeys.byCliente(entityId)
-          : documentiKeys.byFornitore(entityId);
+          : entityType === "rapportino"
+            ? documentiKeys.byRapportino(entityId)
+            : documentiKeys.byFornitore(entityId);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: [...keyBase, filters],
@@ -78,7 +81,9 @@ export function DocumentiEntityPanel({
         ? { commessa_id: commessaId ?? null, cantiere_id: entityId }
         : entityType === "cliente"
           ? { cliente_id: entityId }
-          : { fornitore_id: entityId };
+          : entityType === "rapportino"
+            ? { rapportino_id: entityId, commessa_id: commessaId ?? null }
+            : { fornitore_id: entityId };
 
   return (
     <Card>

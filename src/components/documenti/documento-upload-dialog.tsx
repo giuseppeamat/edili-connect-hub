@@ -48,6 +48,7 @@ type Props = {
     cantiere_id?: string | null;
     cliente_id?: string | null;
     fornitore_id?: string | null;
+    rapportino_id?: string | null;
   };
   lockPreset?: boolean;
 };
@@ -136,6 +137,7 @@ export function DocumentoUploadDialog({
               cantiere_id: cantiereId === NONE ? null : cantiereId,
               cliente_id: clienteId === NONE ? null : clienteId,
               fornitore_id: preset?.fornitore_id ?? null,
+              rapportino_id: preset?.rapportino_id ?? null,
               visibilita: "organizzazione" as const,
               ...common,
             },

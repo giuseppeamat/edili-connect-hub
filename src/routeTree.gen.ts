@@ -19,6 +19,7 @@ import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authentic
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
 import { Route as AuthenticatedOrganizzazioneRouteImport } from './routes/_authenticated/organizzazione'
 import { Route as AuthenticatedNotificheRouteImport } from './routes/_authenticated/notifiche'
+import { Route as AuthenticatedMaterialiRouteImport } from './routes/_authenticated/materiali'
 import { Route as AuthenticatedFornitoriRouteImport } from './routes/_authenticated/fornitori'
 import { Route as AuthenticatedDocumentiRouteImport } from './routes/_authenticated/documenti'
 import { Route as AuthenticatedCostiPersonaleRouteImport } from './routes/_authenticated/costi-personale'
@@ -83,6 +84,11 @@ const AuthenticatedOrganizzazioneRoute =
 const AuthenticatedNotificheRoute = AuthenticatedNotificheRouteImport.update({
   id: '/notifiche',
   path: '/notifiche',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMaterialiRoute = AuthenticatedMaterialiRouteImport.update({
+  id: '/materiali',
+  path: '/materiali',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFornitoriRoute = AuthenticatedFornitoriRouteImport.update({
@@ -176,6 +182,7 @@ export interface FileRoutesByFullPath {
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/materiali': typeof AuthenticatedMaterialiRoute
   '/notifiche': typeof AuthenticatedNotificheRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuthenticatedAuditRoute
   '/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/fornitori': typeof AuthenticatedFornitoriRoute
+  '/materiali': typeof AuthenticatedMaterialiRoute
   '/notifiche': typeof AuthenticatedNotificheRoute
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
@@ -225,6 +233,7 @@ export interface FileRoutesById {
   '/_authenticated/costi-personale': typeof AuthenticatedCostiPersonaleRoute
   '/_authenticated/documenti': typeof AuthenticatedDocumentiRouteWithChildren
   '/_authenticated/fornitori': typeof AuthenticatedFornitoriRoute
+  '/_authenticated/materiali': typeof AuthenticatedMaterialiRoute
   '/_authenticated/notifiche': typeof AuthenticatedNotificheRoute
   '/_authenticated/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/costi-personale'
     | '/documenti'
     | '/fornitori'
+    | '/materiali'
     | '/notifiche'
     | '/organizzazione'
     | '/profilo'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/costi-personale'
     | '/fornitori'
+    | '/materiali'
     | '/notifiche'
     | '/organizzazione'
     | '/profilo'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/_authenticated/costi-personale'
     | '/_authenticated/documenti'
     | '/_authenticated/fornitori'
+    | '/_authenticated/materiali'
     | '/_authenticated/notifiche'
     | '/_authenticated/organizzazione'
     | '/_authenticated/profilo'
@@ -396,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/notifiche'
       fullPath: '/notifiche'
       preLoaderRoute: typeof AuthenticatedNotificheRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/materiali': {
+      id: '/_authenticated/materiali'
+      path: '/materiali'
+      fullPath: '/materiali'
+      preLoaderRoute: typeof AuthenticatedMaterialiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/fornitori': {
@@ -538,6 +557,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCostiPersonaleRoute: typeof AuthenticatedCostiPersonaleRoute
   AuthenticatedDocumentiRoute: typeof AuthenticatedDocumentiRouteWithChildren
   AuthenticatedFornitoriRoute: typeof AuthenticatedFornitoriRoute
+  AuthenticatedMaterialiRoute: typeof AuthenticatedMaterialiRoute
   AuthenticatedNotificheRoute: typeof AuthenticatedNotificheRoute
   AuthenticatedOrganizzazioneRoute: typeof AuthenticatedOrganizzazioneRoute
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
@@ -557,6 +577,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCostiPersonaleRoute: AuthenticatedCostiPersonaleRoute,
   AuthenticatedDocumentiRoute: AuthenticatedDocumentiRouteWithChildren,
   AuthenticatedFornitoriRoute: AuthenticatedFornitoriRoute,
+  AuthenticatedMaterialiRoute: AuthenticatedMaterialiRoute,
   AuthenticatedNotificheRoute: AuthenticatedNotificheRoute,
   AuthenticatedOrganizzazioneRoute: AuthenticatedOrganizzazioneRoute,
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
@@ -583,13 +604,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
