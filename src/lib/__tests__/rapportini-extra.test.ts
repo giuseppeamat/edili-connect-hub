@@ -9,7 +9,10 @@ import {
   riepilogoCosti,
   confrontoPrezzi,
   rapportinoModificabile,
+  bolleModificabili,
+  BOLLE_ROLES_EDIT_EXTRA,
 } from "@/lib/rapportini-extra";
+
 
 const riga = (o: Partial<Parameters<typeof totaleRiga>[0]> = {}) => ({
   descrizione: "Cemento",
