@@ -56,10 +56,13 @@ const rigaVuota = (): RigaDraft => ({
 export function BolleSection({
   rapportinoId,
   readOnlyBolle,
+  stato,
 }: {
   rapportinoId: string;
   readOnlyBolle?: boolean;
+  stato?: string | null;
 }) {
+
 
   const qc = useQueryClient();
   const user = useCurrentUser();
