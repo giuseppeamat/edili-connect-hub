@@ -194,11 +194,12 @@ export function BolleSection({
               {canSeeEcon && ` · € ${totaleMateriali.toFixed(2)} di materiali`}
             </div>
           </div>
-          {!readOnly && (
+          {!readOnlyBolle && (
             <Button size="sm" onClick={apriNuova}>
               <Plus className="h-4 w-4 mr-1" /> Nuova bolla
             </Button>
           )}
+
         </div>
 
         {isLoading ? (
@@ -223,7 +224,7 @@ export function BolleSection({
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{STATO_BOLLA_LABEL[b.stato] ?? b.stato}</Badge>
-                    {!readOnly && b.stato !== "annullata" && (
+                    {!readOnlyBolle && b.stato !== "annullata" && (
                       <>
                         <Button size="icon" variant="ghost" aria-label="Modifica bolla" onClick={() => apriModifica(b)}>
                           <Pencil className="h-4 w-4" />
@@ -233,6 +234,7 @@ export function BolleSection({
                         </Button>
                       </>
                     )}
+
                   </div>
                 </div>
                 <div className="mt-2 space-y-1 text-xs">

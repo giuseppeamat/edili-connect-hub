@@ -305,16 +305,17 @@ function RapportinoDetailPage() {
         </TabsContent>
 
         <TabsContent value="bolle">
-          <BolleSection rapportinoId={rapportinoId} readOnly={readOnlyExtra} />
+          <BolleSection rapportinoId={rapportinoId} readOnlyBolle={readOnlyBolle} />
         </TabsContent>
 
         <TabsContent value="subappalti">
           <SubappaltatoriSection
             rapportinoId={rapportinoId}
             commessaId={r.commessa_id}
-            readOnly={readOnlyExtra}
+            readOnly={readOnlySubappalti}
           />
         </TabsContent>
+
 
         <TabsContent value="documenti">
           <div className="mt-4">
