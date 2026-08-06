@@ -23,10 +23,18 @@ export const Route = createFileRoute("/_authenticated/fornitori")({
   component: FornitoriPage,
 });
 
+const TIPO_LABEL: Record<string, string> = {
+  fornitore: "Fornitore",
+  subappaltatore: "Subappaltatore",
+  entrambi: "Fornitore e subappaltatore",
+};
+
 function FornitoriPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
+  const [tipo, setTipo] = useState<string>("fornitore");
+
 
   const { data: items = [] } = useQuery({
     queryKey: ["fornitori"],
