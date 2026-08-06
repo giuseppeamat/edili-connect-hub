@@ -196,7 +196,13 @@ export function BolleSection({
               {(bolle as any[]).length} bolle
               {canSeeEcon && ` · € ${totaleMateriali.toFixed(2)} di materiali`}
             </div>
+            {stato === "approvato" && !readOnlyBolle && (
+              <div className="mt-1 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                Rapportino approvato: puoi registrare nuove bolle, ma i subappalti restano bloccati.
+              </div>
+            )}
           </div>
+
           {!readOnlyBolle && (
             <Button size="sm" onClick={apriNuova}>
               <Plus className="h-4 w-4 mr-1" /> Nuova bolla
