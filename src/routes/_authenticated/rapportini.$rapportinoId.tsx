@@ -22,7 +22,8 @@ import { DocumentiEntityPanel } from "@/components/documenti/documenti-entity-pa
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getRapportinoRiepilogoCosti } from "@/lib/bolle.functions";
 import { extraKeys } from "@/lib/rapportini-extra.keys";
-import { rapportinoModificabile } from "@/lib/rapportini-extra";
+import { rapportinoModificabile, bolleModificabili } from "@/lib/rapportini-extra";
+
 import { useMutation } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
