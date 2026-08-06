@@ -75,6 +75,13 @@ function RapportinoDetailPage() {
     enabled: canViewEcon && !!r,
   });
 
+  const riepilogoFn = useServerFn(getRapportinoRiepilogoCosti);
+  const { data: riepilogo } = useQuery({
+    queryKey: extraKeys.riepilogo(rapportinoId),
+    queryFn: async () => await riepilogoFn({ data: { rapportino_id: rapportinoId } }),
+    enabled: canViewEcon && !!r,
+  });
+
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const arch = useMutation({
