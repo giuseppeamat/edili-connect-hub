@@ -71,21 +71,44 @@ function FornitoriPage() {
     const fd = new FormData(e.currentTarget);
     const payload: any = {};
     fd.forEach((v, k) => (payload[k] = v || null));
+    payload.tipo_soggetto = tipo;
     save.mutate(payload);
+  };
+
+  const apri = (f: any | null) => {
+    setEdit(f);
+    setTipo(f?.tipo_soggetto ?? "fornitore");
+    setOpen(true);
   };
 
   return (
     <div>
       <PageHeader
-        title="Fornitori"
-        description={`${items.length} fornitori in anagrafica`}
+        title="Fornitori e subappaltatori"
+        description={`${items.length} soggetti in anagrafica`}
         actions={
           <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEdit(null); }}>
-            <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nuovo fornitore</Button></DialogTrigger>
+            <DialogTrigger asChild>
+              <Button onClick={() => apri(null)}><Plus className="h-4 w-4 mr-1" />Nuovo soggetto</Button>
+            </DialogTrigger>
             <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>{edit ? "Modifica fornitore" : "Nuovo fornitore"}</DialogTitle></DialogHeader>
-              <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <DialogHeader><DialogTitle>{edit ? "Modifica soggetto" : "Nuovo soggetto"}</DialogTitle></DialogHeader>
+              <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-3" key={edit?.id ?? "new"}>
                 <div className="md:col-span-2"><Label>Ragione sociale *</Label><Input name="ragione_sociale" required defaultValue={edit?.ragione_sociale} /></div>
+                <div className="md:col-span-2">
+                  <Label>Tipologia soggetto *</Label>
+                  <Select value={tipo} onValueChange={setTipo}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(TIPO_LABEL).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    I subappaltatori possono essere inseriti nei rapportini come ditte in cantiere.
+                  </p>
+                </div>
                 <div><Label>Categoria</Label><Input name="categoria" placeholder="Materiali, Noleggio..." defaultValue={edit?.categoria ?? ""} /></div>
                 <div><Label>P.IVA</Label><Input name="partita_iva" defaultValue={edit?.partita_iva ?? ""} /></div>
                 <div><Label>Città</Label><Input name="citta" defaultValue={edit?.citta ?? ""} /></div>
@@ -93,6 +116,8 @@ function FornitoriPage() {
                 <div><Label>Telefono</Label><Input name="telefono" defaultValue={edit?.telefono ?? ""} /></div>
                 <div><Label>Email</Label><Input name="email" type="email" defaultValue={edit?.email ?? ""} /></div>
                 <div className="md:col-span-2"><Label>Referente</Label><Input name="referente" defaultValue={edit?.referente ?? ""} /></div>
+                <div className="md:col-span-2"><Label>Specializzazioni</Label><Input name="specializzazioni" placeholder="Es. cartongesso, impianti elettrici" defaultValue={edit?.specializzazioni ?? ""} /></div>
+
                 <DialogFooter className="md:col-span-2"><Button type="submit" disabled={save.isPending}>Salva</Button></DialogFooter>
               </form>
             </DialogContent>
