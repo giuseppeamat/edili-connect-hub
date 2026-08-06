@@ -1074,10 +1074,12 @@ export type Database = {
           note_versione: string | null
           organization_id: string
           preventivo_id: string | null
+          rapportino_id: string | null
           size_bytes: number | null
           stato: Database["public"]["Enums"]["documento_stato"]
           storage_bucket: string
           storage_path: string | null
+          subappaltatore_id: string | null
           tags: string[] | null
           updated_at: string
           updated_by: string | null
@@ -1109,10 +1111,12 @@ export type Database = {
           note_versione?: string | null
           organization_id: string
           preventivo_id?: string | null
+          rapportino_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
           storage_bucket?: string
           storage_path?: string | null
+          subappaltatore_id?: string | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -1144,10 +1148,12 @@ export type Database = {
           note_versione?: string | null
           organization_id?: string
           preventivo_id?: string | null
+          rapportino_id?: string | null
           size_bytes?: number | null
           stato?: Database["public"]["Enums"]["documento_stato"]
           storage_bucket?: string
           storage_path?: string | null
+          subappaltatore_id?: string | null
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
@@ -1234,10 +1240,25 @@ export type Database = {
             referencedRelation: "preventivi"
             referencedColumns: ["id", "organization_id"]
           },
+          {
+            foreignKeyName: "documenti_rapportino_id_fkey"
+            columns: ["rapportino_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documenti_subappaltatore_id_fkey"
+            columns: ["subappaltatore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
+          },
         ]
       }
       fornitori: {
         Row: {
+          archived_at: string | null
           cap: string | null
           categoria: string | null
           citta: string | null
@@ -1246,17 +1267,23 @@ export type Database = {
           email: string | null
           id: string
           indirizzo: string | null
+          is_active: boolean
           note: string | null
+          note_operative: string | null
           organization_id: string
           partita_iva: string | null
           pec: string | null
           provincia: string | null
           ragione_sociale: string
           referente: string | null
+          specializzazioni: string[] | null
+          stato_qualifica: string
           telefono: string | null
+          tipo_soggetto: string
           updated_at: string
         }
         Insert: {
+          archived_at?: string | null
           cap?: string | null
           categoria?: string | null
           citta?: string | null
@@ -1265,17 +1292,23 @@ export type Database = {
           email?: string | null
           id?: string
           indirizzo?: string | null
+          is_active?: boolean
           note?: string | null
+          note_operative?: string | null
           organization_id: string
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
           ragione_sociale: string
           referente?: string | null
+          specializzazioni?: string[] | null
+          stato_qualifica?: string
           telefono?: string | null
+          tipo_soggetto?: string
           updated_at?: string
         }
         Update: {
+          archived_at?: string | null
           cap?: string | null
           categoria?: string | null
           citta?: string | null
@@ -1284,14 +1317,19 @@ export type Database = {
           email?: string | null
           id?: string
           indirizzo?: string | null
+          is_active?: boolean
           note?: string | null
+          note_operative?: string | null
           organization_id?: string
           partita_iva?: string | null
           pec?: string | null
           provincia?: string | null
           ragione_sociale?: string
           referente?: string | null
+          specializzazioni?: string[] | null
+          stato_qualifica?: string
           telefono?: string | null
+          tipo_soggetto?: string
           updated_at?: string
         }
         Relationships: [
@@ -1366,6 +1404,147 @@ export type Database = {
           },
           {
             foreignKeyName: "invites_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiali: {
+        Row: {
+          categoria: string | null
+          codice: string | null
+          created_at: string
+          created_by: string | null
+          descrizione: string | null
+          id: string
+          is_active: boolean
+          nome: string
+          organization_id: string
+          unita_misura_predefinita: string | null
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string | null
+          codice?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          id?: string
+          is_active?: boolean
+          nome: string
+          organization_id: string
+          unita_misura_predefinita?: string | null
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string | null
+          codice?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          id?: string
+          is_active?: boolean
+          nome?: string
+          organization_id?: string
+          unita_misura_predefinita?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiali_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiali_prezzi_fornitori: {
+        Row: {
+          bolla_id: string | null
+          bolla_riga_id: string | null
+          commessa_id: string | null
+          created_at: string
+          data_prezzo: string
+          descrizione: string | null
+          fornitore_id: string
+          id: string
+          materiale_id: string | null
+          organization_id: string
+          prezzo_unitario: number
+          quantita_riferimento: number | null
+          unita_misura: string | null
+        }
+        Insert: {
+          bolla_id?: string | null
+          bolla_riga_id?: string | null
+          commessa_id?: string | null
+          created_at?: string
+          data_prezzo: string
+          descrizione?: string | null
+          fornitore_id: string
+          id?: string
+          materiale_id?: string | null
+          organization_id: string
+          prezzo_unitario: number
+          quantita_riferimento?: number | null
+          unita_misura?: string | null
+        }
+        Update: {
+          bolla_id?: string | null
+          bolla_riga_id?: string | null
+          commessa_id?: string | null
+          created_at?: string
+          data_prezzo?: string
+          descrizione?: string | null
+          fornitore_id?: string
+          id?: string
+          materiale_id?: string | null
+          organization_id?: string
+          prezzo_unitario?: number
+          quantita_riferimento?: number | null
+          unita_misura?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_bolla_id_fkey"
+            columns: ["bolla_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini_bolle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_bolla_riga_id_fkey"
+            columns: ["bolla_riga_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini_bolle_righe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_commessa_id_fkey"
+            columns: ["commessa_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_fornitore_id_fkey"
+            columns: ["fornitore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_materiale_id_fkey"
+            columns: ["materiale_id"]
+            isOneToOne: false
+            referencedRelation: "materiali"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiali_prezzi_fornitori_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -2288,6 +2467,197 @@ export type Database = {
           },
         ]
       }
+      rapportini_bolle: {
+        Row: {
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data_bolla: string
+          data_consegna: string | null
+          documento_id: string | null
+          fornitore_id: string
+          id: string
+          imponibile: number | null
+          iva: number | null
+          note: string | null
+          numero_bolla: string
+          organization_id: string
+          rapportino_id: string
+          stato: string
+          storage_path: string | null
+          totale: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cantiere_id?: string | null
+          commessa_id: string
+          created_at?: string
+          created_by?: string | null
+          data_bolla: string
+          data_consegna?: string | null
+          documento_id?: string | null
+          fornitore_id: string
+          id?: string
+          imponibile?: number | null
+          iva?: number | null
+          note?: string | null
+          numero_bolla: string
+          organization_id: string
+          rapportino_id: string
+          stato?: string
+          storage_path?: string | null
+          totale?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cantiere_id?: string | null
+          commessa_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_bolla?: string
+          data_consegna?: string | null
+          documento_id?: string | null
+          fornitore_id?: string
+          id?: string
+          imponibile?: number | null
+          iva?: number | null
+          note?: string | null
+          numero_bolla?: string
+          organization_id?: string
+          rapportino_id?: string
+          stato?: string
+          storage_path?: string | null
+          totale?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapportini_bolle_cantiere_id_fkey"
+            columns: ["cantiere_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_commessa_id_fkey"
+            columns: ["commessa_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_fornitore_id_fkey"
+            columns: ["fornitore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_rapportino_id_fkey"
+            columns: ["rapportino_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rapportini_bolle_righe: {
+        Row: {
+          bolla_id: string
+          codice_articolo: string | null
+          created_at: string
+          descrizione: string
+          id: string
+          iva_pct: number | null
+          materiale_id: string | null
+          note: string | null
+          organization_id: string
+          posizione: number
+          prezzo_unitario: number | null
+          quantita: number
+          sconto_pct: number
+          totale_riga: number | null
+          unita_misura: string | null
+          updated_at: string
+        }
+        Insert: {
+          bolla_id: string
+          codice_articolo?: string | null
+          created_at?: string
+          descrizione: string
+          id?: string
+          iva_pct?: number | null
+          materiale_id?: string | null
+          note?: string | null
+          organization_id: string
+          posizione?: number
+          prezzo_unitario?: number | null
+          quantita: number
+          sconto_pct?: number
+          totale_riga?: number | null
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bolla_id?: string
+          codice_articolo?: string | null
+          created_at?: string
+          descrizione?: string
+          id?: string
+          iva_pct?: number | null
+          materiale_id?: string | null
+          note?: string | null
+          organization_id?: string
+          posizione?: number
+          prezzo_unitario?: number | null
+          quantita?: number
+          sconto_pct?: number
+          totale_riga?: number | null
+          unita_misura?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapportini_bolle_righe_bolla_id_fkey"
+            columns: ["bolla_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini_bolle"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_righe_materiale_id_fkey"
+            columns: ["materiale_id"]
+            isOneToOne: false
+            referencedRelation: "materiali"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_bolle_righe_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rapportini_costi: {
         Row: {
           budget_voce_id: string | null
@@ -2446,6 +2816,7 @@ export type Database = {
           created_by: string | null
           errore_contabilizzazione: string | null
           id: string
+          mansione: string | null
           membro_id: string
           nota: string | null
           ore: number
@@ -2465,6 +2836,7 @@ export type Database = {
           created_by?: string | null
           errore_contabilizzazione?: string | null
           id?: string
+          mansione?: string | null
           membro_id: string
           nota?: string | null
           ore: number
@@ -2484,6 +2856,7 @@ export type Database = {
           created_by?: string | null
           errore_contabilizzazione?: string | null
           id?: string
+          mansione?: string | null
           membro_id?: string
           nota?: string | null
           ore?: number
@@ -2523,6 +2896,256 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "rapportini"
             referencedColumns: ["id", "organization_id"]
+          },
+        ]
+      }
+      rapportini_subappaltatori: {
+        Row: {
+          annullato_at: string | null
+          cantiere_id: string | null
+          commessa_id: string
+          contabilizzato_at: string | null
+          contratto_id: string | null
+          created_at: string
+          created_by: string | null
+          descrizione: string | null
+          documento_id: string | null
+          fase_id: string | null
+          id: string
+          importo_congelato: number | null
+          importo_totale: number | null
+          importo_unitario: number | null
+          iva_pct: number | null
+          lavorazione: string
+          modalita_compenso: string
+          note: string | null
+          organization_id: string
+          quantita: number | null
+          rapportino_id: string
+          ritenuta_pct: number | null
+          stato_contabilizzazione: string
+          subappaltatore_id: string
+          unita_misura: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          annullato_at?: string | null
+          cantiere_id?: string | null
+          commessa_id: string
+          contabilizzato_at?: string | null
+          contratto_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          documento_id?: string | null
+          fase_id?: string | null
+          id?: string
+          importo_congelato?: number | null
+          importo_totale?: number | null
+          importo_unitario?: number | null
+          iva_pct?: number | null
+          lavorazione: string
+          modalita_compenso: string
+          note?: string | null
+          organization_id: string
+          quantita?: number | null
+          rapportino_id: string
+          ritenuta_pct?: number | null
+          stato_contabilizzazione?: string
+          subappaltatore_id: string
+          unita_misura?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          annullato_at?: string | null
+          cantiere_id?: string | null
+          commessa_id?: string
+          contabilizzato_at?: string | null
+          contratto_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          documento_id?: string | null
+          fase_id?: string | null
+          id?: string
+          importo_congelato?: number | null
+          importo_totale?: number | null
+          importo_unitario?: number | null
+          iva_pct?: number | null
+          lavorazione?: string
+          modalita_compenso?: string
+          note?: string | null
+          organization_id?: string
+          quantita?: number | null
+          rapportino_id?: string
+          ritenuta_pct?: number | null
+          stato_contabilizzazione?: string
+          subappaltatore_id?: string
+          unita_misura?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapportini_subappaltatori_cantiere_id_fkey"
+            columns: ["cantiere_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_commessa_id_fkey"
+            columns: ["commessa_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_contratto_id_fkey"
+            columns: ["contratto_id"]
+            isOneToOne: false
+            referencedRelation: "subappalti_contratti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "commessa_fasi_ritardi"
+            referencedColumns: ["fase_id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_rapportino_id_fkey"
+            columns: ["rapportino_id"]
+            isOneToOne: false
+            referencedRelation: "rapportini"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rapportini_subappaltatori_subappaltatore_id_fkey"
+            columns: ["subappaltatore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subappalti_contratti: {
+        Row: {
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data_fine: string | null
+          data_inizio: string
+          documento_id: string | null
+          id: string
+          importo_contratto: number
+          importo_maturato: number
+          importo_pagato: number
+          note: string | null
+          oggetto: string
+          organization_id: string
+          stato: string
+          subappaltatore_id: string
+          updated_at: string
+        }
+        Insert: {
+          cantiere_id?: string | null
+          commessa_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio: string
+          documento_id?: string | null
+          id?: string
+          importo_contratto?: number
+          importo_maturato?: number
+          importo_pagato?: number
+          note?: string | null
+          oggetto: string
+          organization_id: string
+          stato?: string
+          subappaltatore_id: string
+          updated_at?: string
+        }
+        Update: {
+          cantiere_id?: string | null
+          commessa_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string
+          documento_id?: string | null
+          id?: string
+          importo_contratto?: number
+          importo_maturato?: number
+          importo_pagato?: number
+          note?: string | null
+          oggetto?: string
+          organization_id?: string
+          stato?: string
+          subappaltatore_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subappalti_contratti_cantiere_id_fkey"
+            columns: ["cantiere_id"]
+            isOneToOne: false
+            referencedRelation: "cantieri"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subappalti_contratti_commessa_id_fkey"
+            columns: ["commessa_id"]
+            isOneToOne: false
+            referencedRelation: "commesse"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subappalti_contratti_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documenti"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subappalti_contratti_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subappalti_contratti_subappaltatore_id_fkey"
+            columns: ["subappaltatore_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2823,10 +3446,12 @@ export type Database = {
       }
       can_access_cantiere: { Args: { _cantiere_id: string }; Returns: boolean }
       can_access_commessa: { Args: { _commessa_id: string }; Returns: boolean }
+      can_edit_rapportino_extra: { Args: { _org: string }; Returns: boolean }
       can_manage_commessa_budget: {
         Args: { _commessa_id: string; _operation: string }
         Returns: boolean
       }
+      can_see_econ: { Args: { _org: string }; Returns: boolean }
       cancel_rapportino: {
         Args: { _expected_updated_at: string; _id: string; _reason: string }
         Returns: {
