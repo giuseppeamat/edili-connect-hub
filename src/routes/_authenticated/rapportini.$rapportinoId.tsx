@@ -305,8 +305,9 @@ function RapportinoDetailPage() {
         </TabsContent>
 
         <TabsContent value="bolle">
-          <BolleSection rapportinoId={rapportinoId} readOnlyBolle={readOnlyBolle} />
+          <BolleSection rapportinoId={rapportinoId} readOnlyBolle={readOnlyBolle} stato={r.stato} />
         </TabsContent>
+
 
         <TabsContent value="subappalti">
           <SubappaltatoriSection
