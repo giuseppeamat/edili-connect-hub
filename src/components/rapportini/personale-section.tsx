@@ -34,7 +34,7 @@ const STATO_VARIANT: Record<StatoContabilizzazione, string> = {
   annullato: "text-zinc-500 border-zinc-300",
 };
 
-type Draft = { membro_id: string; ore: string; nota: string };
+type Draft = { membro_id: string; ore: string; nota: string; mansione: string };
 
 export function PersonaleSection({
   rapportinoId,
@@ -75,7 +75,12 @@ export function PersonaleSection({
   useEffect(() => {
     if (dirty) return;
     setDrafts(
-      attive.map((r) => ({ membro_id: r.membro_id, ore: String(Number(r.ore ?? 0)), nota: r.nota ?? "" })),
+      attive.map((r) => ({
+        membro_id: r.membro_id,
+        ore: String(Number(r.ore ?? 0)),
+        nota: r.nota ?? "",
+        mansione: (r as any).mansione ?? "",
+      })),
     );
   }, [attive, dirty]);
 
