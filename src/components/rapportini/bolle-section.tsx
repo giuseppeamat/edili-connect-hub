@@ -55,11 +55,15 @@ const rigaVuota = (): RigaDraft => ({
 
 export function BolleSection({
   rapportinoId,
-  readOnly,
+  readOnlyBolle,
+  stato,
 }: {
   rapportinoId: string;
-  readOnly?: boolean;
+  readOnlyBolle?: boolean;
+  stato?: string | null;
 }) {
+
+
   const qc = useQueryClient();
   const user = useCurrentUser();
   const canSeeEcon = user.has("proprietario", "amministratore", "amministrazione");
@@ -192,12 +196,19 @@ export function BolleSection({
               {(bolle as any[]).length} bolle
               {canSeeEcon && ` · € ${totaleMateriali.toFixed(2)} di materiali`}
             </div>
+            {stato === "approvato" && !readOnlyBolle && (
+              <div className="mt-1 text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-1 rounded">
+                Rapportino approvato: puoi registrare nuove bolle, ma i subappalti restano bloccati.
+              </div>
+            )}
           </div>
-          {!readOnly && (
+
+          {!readOnlyBolle && (
             <Button size="sm" onClick={apriNuova}>
               <Plus className="h-4 w-4 mr-1" /> Nuova bolla
             </Button>
           )}
+
         </div>
 
         {isLoading ? (
@@ -222,7 +233,7 @@ export function BolleSection({
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline">{STATO_BOLLA_LABEL[b.stato] ?? b.stato}</Badge>
-                    {!readOnly && b.stato !== "annullata" && (
+                    {!readOnlyBolle && b.stato !== "annullata" && (
                       <>
                         <Button size="icon" variant="ghost" aria-label="Modifica bolla" onClick={() => apriModifica(b)}>
                           <Pencil className="h-4 w-4" />
@@ -232,6 +243,7 @@ export function BolleSection({
                         </Button>
                       </>
                     )}
+
                   </div>
                 </div>
                 <div className="mt-2 space-y-1 text-xs">

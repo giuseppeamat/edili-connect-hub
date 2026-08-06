@@ -207,3 +207,27 @@ export function rapportinoModificabile(r: { archived_at?: string | null; stato?:
   if (r.archived_at) return false;
   return r.stato !== "approvato" && r.stato !== "annullato";
 }
+
+/** Ruoli abilitati a registrare bolle anche su rapportino già approvato. */
+export const BOLLE_ROLES_EDIT_EXTRA = [
+  "proprietario",
+  "amministratore",
+  "amministrazione",
+  "ufficio_tecnico",
+  "responsabile_commessa",
+  "capocantiere",
+] as const;
+
+/** Le bolle sono registrabili anche su rapportino approvato, ma solo per ruoli operativi. */
+export function bolleModificabili(
+  r: { archived_at?: string | null; stato?: string | null } | null | undefined,
+  ruoli?: string[] | null,
+): boolean {
+  if (!r) return false;
+  if (r.archived_at) return false;
+  if (r.stato === "annullato") return false;
+  if (r.stato !== "approvato") return true;
+  const ruoliSet = new Set(ruoli ?? []);
+  return BOLLE_ROLES_EDIT_EXTRA.some((role) => ruoliSet.has(role));
+}
+

@@ -3322,6 +3322,49 @@ export type Database = {
       }
       _om_assert_manager: { Args: { _org: string }; Returns: undefined }
       _om_sync_user_roles: { Args: { _member: string }; Returns: undefined }
+      _rap_bolla_guard: {
+        Args: { _rapportino_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          archived_at: string | null
+          archived_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data: string
+          descrizione_lavori: string | null
+          fase_id: string | null
+          foto_urls: string[] | null
+          id: string
+          lavorazione: string | null
+          membro_id: string | null
+          note: string | null
+          ora_fine: string | null
+          ora_inizio: string | null
+          ore: number
+          organization_id: string
+          pausa_minuti: number
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          stato: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rapportini"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       _rap_current_profile: {
         Args: never
         Returns: {

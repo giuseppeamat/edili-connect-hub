@@ -22,7 +22,8 @@ import { DocumentiEntityPanel } from "@/components/documenti/documenti-entity-pa
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getRapportinoRiepilogoCosti } from "@/lib/bolle.functions";
 import { extraKeys } from "@/lib/rapportini-extra.keys";
-import { rapportinoModificabile } from "@/lib/rapportini-extra";
+import { rapportinoModificabile, bolleModificabili } from "@/lib/rapportini-extra";
+
 import { useMutation } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
@@ -130,8 +131,9 @@ function RapportinoDetailPage() {
 
   const activeCost = (costi as any[]).find((c) => c.stato === "contabilizzato" && !c.stornato_at);
   const readOnly = !!r.archived_at || r.stato === "annullato";
-  // Bolle e subappalti seguono la stessa regola del backend: rapportino aperto.
-  const readOnlyExtra = !rapportinoModificabile(r as any);
+  const readOnlyBolle = !bolleModificabili(r as any, user.roles);
+  const readOnlySubappalti = !rapportinoModificabile(r as any);
+
 
   return (
     <div>
@@ -303,16 +305,18 @@ function RapportinoDetailPage() {
         </TabsContent>
 
         <TabsContent value="bolle">
-          <BolleSection rapportinoId={rapportinoId} readOnly={readOnlyExtra} />
+          <BolleSection rapportinoId={rapportinoId} readOnlyBolle={readOnlyBolle} stato={r.stato} />
         </TabsContent>
+
 
         <TabsContent value="subappalti">
           <SubappaltatoriSection
             rapportinoId={rapportinoId}
             commessaId={r.commessa_id}
-            readOnly={readOnlyExtra}
+            readOnly={readOnlySubappalti}
           />
         </TabsContent>
+
 
         <TabsContent value="documenti">
           <div className="mt-4">
