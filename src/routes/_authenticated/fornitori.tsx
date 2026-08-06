@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { SchedaSoggettoDialog } from "@/components/fornitori/scheda-soggetto-dialog";
 
 export const Route = createFileRoute("/_authenticated/fornitori")({
   head: () => ({
@@ -35,6 +36,7 @@ function FornitoriPage() {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
   const [tipo, setTipo] = useState<string>("fornitore");
+  const [scheda, setScheda] = useState<string | null>(null);
 
 
   const { data: items = [] } = useQuery({
