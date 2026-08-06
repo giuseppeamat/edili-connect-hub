@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { mapServerError } from "@/lib/server-error-mapper";
+import { ECON_ROLES, hasAnyRole, resolveDashboardContext } from "@/lib/dashboard-authz";
 
 /**
  * Subappaltatori: anagrafica (condivisa con i fornitori), contratti
@@ -253,6 +254,222 @@ export const getCommessaCostiExtra = createServerFn({ method: "POST" })
       });
       if (error) throw error;
       return (res ?? { visibile: false }) as any;
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+/* ─────────── Scheda soggetto (fornitore / subappaltatore) ───────────
+ * Blocchi C ed E: contratti, bolle, storico prezzi e documenti della ditta.
+ * Gli importi sono esposti solo ai ruoli economici.
+ */
+
+export const getSoggettoScheda = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ fornitore_id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      const { organizationId: org, roles } = await resolveDashboardContext(
+        context.supabase,
+        context.userId,
+      );
+      const canEcon = hasAnyRole(roles, ECON_ROLES);
+      const fid = data.fornitore_id;
+
+      const { data: sog, error: sogErr } = await context.supabase
+        .from("fornitori")
+        .select(
+          "id, ragione_sociale, tipo_soggetto, specializzazioni, categoria, partita_iva, email, telefono, referente, citta, stato_qualifica, is_active, note_operative",
+        )
+        .eq("id", fid)
+        .eq("organization_id", org)
+        .maybeSingle();
+      if (sogErr) throw sogErr;
+      if (!sog) throw new Error("Soggetto non trovato");
+
+      const [bolleQ, prezziQ, docQ, contrQ] = await Promise.all([
+        context.supabase
+          .from("rapportini_bolle")
+          .select(
+            "id, numero_bolla, data_bolla, stato, imponibile, totale, commessa_id, rapportino_id",
+          )
+          .eq("organization_id", org)
+          .eq("fornitore_id", fid)
+          .order("data_bolla", { ascending: false })
+          .limit(100),
+        context.supabase
+          .from("materiali_prezzi_fornitori")
+          .select(
+            "id, data_prezzo, prezzo_unitario, unita_misura, descrizione, materiale_id, quantita_riferimento",
+          )
+          .eq("organization_id", org)
+          .eq("fornitore_id", fid)
+          .order("data_prezzo", { ascending: false })
+          .limit(100),
+        context.supabase
+          .from("documenti")
+          .select("id, nome, categoria, data_scadenza, stato, is_versione_corrente")
+          .eq("organization_id", org)
+          .or(`fornitore_id.eq.${fid},subappaltatore_id.eq.${fid}`)
+          .is("archived_at", null)
+          .eq("is_versione_corrente", true)
+          .order("data_scadenza", { ascending: true, nullsFirst: false })
+          .limit(100),
+        context.supabase
+          .from("subappalti_contratti")
+          .select("*")
+          .eq("organization_id", org)
+          .eq("subappaltatore_id", fid)
+          .order("data_inizio", { ascending: false })
+          .limit(100),
+      ]);
+
+      const bolle = (bolleQ.data ?? []) as any[];
+      const prezzi = (prezziQ.data ?? []) as any[];
+      const contratti = (contrQ.data ?? []) as any[];
+
+      const commIds = Array.from(
+        new Set([...bolle, ...contratti].map((r: any) => r.commessa_id).filter(Boolean)),
+      );
+      const matIds = Array.from(new Set(prezzi.map((p) => p.materiale_id).filter(Boolean)));
+      const [commQ, matQ] = await Promise.all([
+        commIds.length
+          ? context.supabase.from("commesse").select("id, codice, denominazione").in("id", commIds)
+          : Promise.resolve({ data: [] as any[] }),
+        matIds.length
+          ? context.supabase.from("materiali").select("id, codice, descrizione, unita_misura").in("id", matIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const cm = new Map(((commQ.data ?? []) as any[]).map((c) => [c.id, c]));
+      const mm = new Map(((matQ.data ?? []) as any[]).map((m) => [m.id, m]));
+
+      const bolleAttive = bolle.filter((b) => b.stato !== "annullata");
+      const totaleBolle = bolleAttive.reduce((s, b) => s + Number(b.imponibile ?? 0), 0);
+      const totaleContratti = contratti
+        .filter((c) => c.stato !== "annullato")
+        .reduce((s, c) => s + Number(c.importo_contratto ?? 0), 0);
+      const totaleMaturato = contratti
+        .filter((c) => c.stato !== "annullato")
+        .reduce((s, c) => s + Number(c.importo_maturato ?? 0), 0);
+
+      return {
+        soggetto: sog,
+        canSeeEconomics: canEcon,
+        totali: canEcon
+          ? {
+              bolle: bolleAttive.length,
+              totaleBolle,
+              contratti: contratti.length,
+              totaleContratti,
+              totaleMaturato,
+            }
+          : null,
+        bolle: bolle.map((b) => ({
+          id: b.id,
+          numero_bolla: b.numero_bolla,
+          data_bolla: b.data_bolla,
+          stato: b.stato,
+          rapportino_id: b.rapportino_id,
+          commessa: cm.get(b.commessa_id) ?? null,
+          imponibile: canEcon ? Number(b.imponibile ?? 0) : null,
+          totale: canEcon ? Number(b.totale ?? 0) : null,
+        })),
+        prezzi: canEcon
+          ? prezzi.map((p) => ({
+              id: p.id,
+              data_prezzo: p.data_prezzo,
+              prezzo_unitario: Number(p.prezzo_unitario ?? 0),
+              unita_misura: p.unita_misura ?? mm.get(p.materiale_id)?.unita_misura ?? null,
+              descrizione: p.descrizione ?? mm.get(p.materiale_id)?.descrizione ?? "—",
+              materiale: mm.get(p.materiale_id) ?? null,
+            }))
+          : [],
+        documenti: (docQ.data ?? []) as any[],
+        contratti: contratti.map((c) => ({
+          ...c,
+          importo_contratto: canEcon ? Number(c.importo_contratto ?? 0) : null,
+          importo_maturato: canEcon ? Number(c.importo_maturato ?? 0) : null,
+          importo_pagato: canEcon ? Number(c.importo_pagato ?? 0) : null,
+          commessa: cm.get(c.commessa_id) ?? null,
+        })),
+      };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
+/** Panoramica subappaltatori: contratti attivi e stato documenti obbligatori. */
+export const listSubappaltatoriOverview = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    try {
+      const { organizationId: org, roles } = await resolveDashboardContext(
+        context.supabase,
+        context.userId,
+      );
+      const canEcon = hasAnyRole(roles, ECON_ROLES);
+
+      const { data: soggetti, error } = await context.supabase
+        .from("fornitori")
+        .select("id, ragione_sociale, specializzazioni, stato_qualifica, partita_iva, telefono, email, is_active")
+        .eq("organization_id", org)
+        .is("archived_at", null)
+        .in("tipo_soggetto", ["subappaltatore", "entrambi"])
+        .order("ragione_sociale");
+      if (error) throw error;
+      const ids = (soggetti ?? []).map((s: any) => s.id);
+      if (!ids.length) return { canSeeEconomics: canEcon, righe: [] as any[] };
+
+      const [contrQ, docQ] = await Promise.all([
+        context.supabase
+          .from("subappalti_contratti")
+          .select("subappaltatore_id, stato, importo_contratto, importo_maturato")
+          .eq("organization_id", org)
+          .in("subappaltatore_id", ids),
+        context.supabase
+          .from("documenti")
+          .select("id, subappaltatore_id, fornitore_id, data_scadenza, stato")
+          .eq("organization_id", org)
+          .is("archived_at", null)
+          .eq("is_versione_corrente", true)
+          .not("data_scadenza", "is", null)
+          .or(`subappaltatore_id.in.(${ids.join(",")}),fornitore_id.in.(${ids.join(",")})`),
+      ]);
+
+      const contratti = (contrQ.data ?? []) as any[];
+      const documenti = (docQ.data ?? []) as any[];
+      const oggi = new Date().toISOString().slice(0, 10);
+      const fra30 = new Date();
+      fra30.setDate(fra30.getDate() + 30);
+      const limite = fra30.toISOString().slice(0, 10);
+
+      const righe = (soggetti ?? []).map((s: any) => {
+        const cs = contratti.filter((c) => c.subappaltatore_id === s.id);
+        const ds = documenti.filter(
+          (d) => d.subappaltatore_id === s.id || d.fornitore_id === s.id,
+        );
+        const scaduti = ds.filter((d) => String(d.data_scadenza).slice(0, 10) < oggi).length;
+        const inScadenza = ds.filter((d) => {
+          const x = String(d.data_scadenza).slice(0, 10);
+          return x >= oggi && x <= limite;
+        }).length;
+        return {
+          ...s,
+          contrattiAttivi: cs.filter((c) => c.stato === "attivo").length,
+          contrattiTotali: cs.length,
+          importoContratti: canEcon
+            ? cs.filter((c) => c.stato !== "annullato").reduce((a, c) => a + Number(c.importo_contratto ?? 0), 0)
+            : null,
+          importoMaturato: canEcon
+            ? cs.filter((c) => c.stato !== "annullato").reduce((a, c) => a + Number(c.importo_maturato ?? 0), 0)
+            : null,
+          documentiTotali: ds.length,
+          documentiScaduti: scaduti,
+          documentiInScadenza: inScadenza,
+        };
+      });
+
+      return { canSeeEconomics: canEcon, righe };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
