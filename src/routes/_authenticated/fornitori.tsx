@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { SchedaSoggettoDialog } from "@/components/fornitori/scheda-soggetto-dialog";
 
 export const Route = createFileRoute("/_authenticated/fornitori")({
   head: () => ({
@@ -35,6 +36,7 @@ function FornitoriPage() {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
   const [tipo, setTipo] = useState<string>("fornitore");
+  const [scheda, setScheda] = useState<string | null>(null);
 
 
   const { data: items = [] } = useQuery({
@@ -150,16 +152,20 @@ function FornitoriPage() {
                 <TableCell className="hidden md:table-cell">{f.citta}</TableCell>
                 <TableCell className="hidden lg:table-cell text-xs">{f.email}<br />{f.telefono}</TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="outline" className="mr-1" onClick={() => setScheda(f.id)}>Scheda</Button>
                   <Button size="icon" variant="ghost" aria-label="Modifica soggetto" onClick={() => apri(f)}><Pencil className="h-4 w-4" /></Button>
 
                   <Button size="icon" variant="ghost" onClick={() => confirm("Eliminare?") && del.mutate(f.id)}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
+
               </TableRow>
             ))}
             {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nessun soggetto in anagrafica.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
+      <SchedaSoggettoDialog fornitoreId={scheda} onOpenChange={(v) => { if (!v) setScheda(null); }} />
     </div>
+
   );
 }

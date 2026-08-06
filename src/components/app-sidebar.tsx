@@ -12,6 +12,7 @@ import {
   Building2,
   Wallet,
   Package,
+  Hammer,
   Bell,
 } from "lucide-react";
 import {
@@ -33,6 +34,7 @@ const items: NavItem[] = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Clienti", url: "/clienti", icon: Users, hideForRoles: ["operaio", "cliente", "fornitore"] },
   { title: "Fornitori", url: "/fornitori", icon: Truck, hideForRoles: ["operaio", "cliente", "fornitore"] },
+  { title: "Subappaltatori", url: "/subappaltatori", icon: Hammer, hideForRoles: ["operaio", "cliente", "fornitore"] },
   { title: "Preventivi", url: "/preventivi", icon: FileText, hideForRoles: ["operaio", "cliente", "fornitore"] },
   { title: "Commesse", url: "/commesse", icon: HardHat },
   { title: "Rapportini", url: "/rapportini", icon: ClipboardList },

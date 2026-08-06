@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AccettaInvitoRouteImport } from './routes/accetta-invito'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedSubappaltatoriRouteImport } from './routes/_authenticated/subappaltatori'
 import { Route as AuthenticatedScadenziarioRouteImport } from './routes/_authenticated/scadenziario'
 import { Route as AuthenticatedRapportiniRouteImport } from './routes/_authenticated/rapportini'
 import { Route as AuthenticatedProfiloRouteImport } from './routes/_authenticated/profilo'
@@ -59,6 +60,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSubappaltatoriRoute =
+  AuthenticatedSubappaltatoriRouteImport.update({
+    id: '/subappaltatori',
+    path: '/subappaltatori',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedScadenziarioRoute =
   AuthenticatedScadenziarioRouteImport.update({
     id: '/scadenziario',
@@ -188,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/profilo': typeof AuthenticatedProfiloRoute
   '/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
+  '/subappaltatori': typeof AuthenticatedSubappaltatoriRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
   '/documenti/$documentoId': typeof AuthenticatedDocumentiDocumentoIdRoute
@@ -211,6 +219,7 @@ export interface FileRoutesByTo {
   '/organizzazione': typeof AuthenticatedOrganizzazioneRoute
   '/profilo': typeof AuthenticatedProfiloRoute
   '/scadenziario': typeof AuthenticatedScadenziarioRoute
+  '/subappaltatori': typeof AuthenticatedSubappaltatoriRoute
   '/': typeof AuthenticatedIndexRoute
   '/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_authenticated/profilo': typeof AuthenticatedProfiloRoute
   '/_authenticated/rapportini': typeof AuthenticatedRapportiniRouteWithChildren
   '/_authenticated/scadenziario': typeof AuthenticatedScadenziarioRoute
+  '/_authenticated/subappaltatori': typeof AuthenticatedSubappaltatoriRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/clienti/$clienteId': typeof AuthenticatedClientiClienteIdRoute
   '/_authenticated/commesse/$commessaId': typeof AuthenticatedCommesseCommessaIdRoute
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/profilo'
     | '/rapportini'
     | '/scadenziario'
+    | '/subappaltatori'
     | '/clienti/$clienteId'
     | '/commesse/$commessaId'
     | '/documenti/$documentoId'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/organizzazione'
     | '/profilo'
     | '/scadenziario'
+    | '/subappaltatori'
     | '/'
     | '/clienti/$clienteId'
     | '/commesse/$commessaId'
@@ -318,6 +330,7 @@ export interface FileRouteTypes {
     | '/_authenticated/profilo'
     | '/_authenticated/rapportini'
     | '/_authenticated/scadenziario'
+    | '/_authenticated/subappaltatori'
     | '/_authenticated/'
     | '/_authenticated/clienti/$clienteId'
     | '/_authenticated/commesse/$commessaId'
@@ -373,6 +386,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/subappaltatori': {
+      id: '/_authenticated/subappaltatori'
+      path: '/subappaltatori'
+      fullPath: '/subappaltatori'
+      preLoaderRoute: typeof AuthenticatedSubappaltatoriRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/scadenziario': {
@@ -563,6 +583,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfiloRoute: typeof AuthenticatedProfiloRoute
   AuthenticatedRapportiniRoute: typeof AuthenticatedRapportiniRouteWithChildren
   AuthenticatedScadenziarioRoute: typeof AuthenticatedScadenziarioRoute
+  AuthenticatedSubappaltatoriRoute: typeof AuthenticatedSubappaltatoriRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedClientiClienteIdRoute: typeof AuthenticatedClientiClienteIdRoute
   AuthenticatedCommesseCommessaIdRoute: typeof AuthenticatedCommesseCommessaIdRoute
@@ -583,6 +604,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfiloRoute: AuthenticatedProfiloRoute,
   AuthenticatedRapportiniRoute: AuthenticatedRapportiniRouteWithChildren,
   AuthenticatedScadenziarioRoute: AuthenticatedScadenziarioRoute,
+  AuthenticatedSubappaltatoriRoute: AuthenticatedSubappaltatoriRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedClientiClienteIdRoute: AuthenticatedClientiClienteIdRoute,
   AuthenticatedCommesseCommessaIdRoute: AuthenticatedCommesseCommessaIdRoute,
@@ -604,3 +626,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
