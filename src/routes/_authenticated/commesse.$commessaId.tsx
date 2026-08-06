@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ArrowLeft, Lock, Archive, MoreHorizontal, MapPin, Calendar, UserRound, Plus, AlertTriangle, Users, FileText, ClipboardList, History, Home, ListChecks, Wallet } from "lucide-react";
 import { BudgetTab } from "@/components/commesse/budget-tab";
+import { CostiExtraCard } from "@/components/commesse/costi-extra-card";
 import { FasiTab, ManualCommessaProgressDialog } from "@/components/commesse/fasi-tab";
 import { CommessaRapportiniTab } from "@/components/commesse/rapportini-tab";
 import { Progress } from "@/components/ui/progress";
@@ -154,6 +155,7 @@ function CommessaDetailPage() {
 
         <TabsContent value="panoramica">
           <PanoramicaTab d={d} canEdit={canEditCommesse} canAssignResp={canAssignResp} onDone={invalidate} />
+          <CostiExtraCard commessaId={c.id} />
         </TabsContent>
         <TabsContent value="fasi">
           <FasiTab
