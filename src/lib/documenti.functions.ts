@@ -54,6 +54,7 @@ const prepareSchema = z.object({
   fornitore_id: nullableUuid,
   commessa_id: nullableUuid,
   cantiere_id: nullableUuid,
+  rapportino_id: nullableUuid,
   preventivo_id: nullableUuid,
   dipendente_id: nullableUuid,
   visibilita: z.enum(["privato", "organizzazione"]).optional(),
@@ -94,6 +95,7 @@ export const prepareDocumentoUpload = createServerFn({ method: "POST" })
           fornitore_id: data.fornitore_id ?? null,
           commessa_id: data.commessa_id ?? null,
           cantiere_id: data.cantiere_id ?? null,
+          rapportino_id: data.rapportino_id ?? null,
           preventivo_id: data.preventivo_id ?? null,
           dipendente_id: data.dipendente_id ?? null,
           visibilita: data.visibilita ?? "organizzazione",
@@ -211,6 +213,7 @@ const listSchema = z.object({
   fornitore_id: nullableUuid,
   commessa_id: nullableUuid,
   cantiere_id: nullableUuid,
+  rapportino_id: nullableUuid,
   includeArchived: z.boolean().nullable().optional(),
   upload_stato: z.enum(["preparato", "disponibile", "fallito"]).nullable().optional(),
   sort: z.enum(["updated_at", "data_scadenza", "nome", "created_at"]).nullable().optional(),
@@ -248,6 +251,7 @@ export const listDocumenti = createServerFn({ method: "POST" })
       if (data.fornitore_id) q = q.eq("fornitore_id", data.fornitore_id);
       if (data.commessa_id) q = q.eq("commessa_id", data.commessa_id);
       if (data.cantiere_id) q = q.eq("cantiere_id", data.cantiere_id);
+      if (data.rapportino_id) q = q.eq("rapportino_id", data.rapportino_id);
       q = applyScadenzaFilter(q, data.stato_scadenza ?? null);
 
       q = q.order(sort, {
