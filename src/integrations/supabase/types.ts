@@ -3329,6 +3329,49 @@ export type Database = {
           user_id: string
         }[]
       }
+      _rap_extra_guard: {
+        Args: { _rapportino_id: string; _write: boolean }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          archived_at: string | null
+          archived_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cantiere_id: string | null
+          commessa_id: string
+          created_at: string
+          created_by: string | null
+          data: string
+          descrizione_lavori: string | null
+          fase_id: string | null
+          foto_urls: string[] | null
+          id: string
+          lavorazione: string | null
+          membro_id: string | null
+          note: string | null
+          ora_fine: string | null
+          ora_inizio: string | null
+          ore: number
+          organization_id: string
+          pausa_minuti: number
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          stato: string
+          submitted_at: string | null
+          submitted_by: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rapportini"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       _rap_membro_effettivo: {
         Args: { _membro_id: string; _org: string; _user_id: string }
         Returns: string
@@ -3354,6 +3397,14 @@ export type Database = {
       admin_set_member_active: {
         Args: { _active: boolean; _actor: string; _org: string; _user: string }
         Returns: undefined
+      }
+      annulla_rapportino_bolla: {
+        Args: { _id: string; _motivo: string }
+        Returns: string
+      }
+      annulla_rapportino_subappalto: {
+        Args: { _id: string; _motivo: string }
+        Returns: string
       }
       approve_rapportino: {
         Args: { _expected_updated_at: string; _id: string; _note?: string }
@@ -3733,6 +3784,10 @@ export type Database = {
           id: string
         }[]
       }
+      get_commessa_costi_extra: {
+        Args: { _commessa_id: string }
+        Returns: Json
+      }
       get_costi_manodopera: {
         Args: { _commessa_ids?: string[] }
         Returns: {
@@ -3777,6 +3832,16 @@ export type Database = {
           righe: number
         }[]
       }
+      get_materiali_prezzi: {
+        Args: {
+          _fornitore_id: string
+          _from: string
+          _materiale_id: string
+          _q: string
+          _to: string
+        }
+        Returns: Json
+      }
       get_personale_costo_orario_at_date: {
         Args: { _data: string; _org: string; _user_id: string }
         Returns: {
@@ -3801,6 +3866,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_rapportino_bolle: { Args: { _rapportino_id: string }; Returns: Json }
+      get_rapportino_costi_riepilogo: {
+        Args: { _rapportino_id: string }
+        Returns: Json
+      }
       get_rapportino_personale: {
         Args: { _rapportino_id: string }
         Returns: {
@@ -3818,6 +3888,10 @@ export type Database = {
           stato_contabilizzazione: string
           tariffa_oraria_congelata: number
         }[]
+      }
+      get_rapportino_subappalti: {
+        Args: { _rapportino_id: string }
+        Returns: Json
       }
       has_any_role: {
         Args: {
@@ -4040,6 +4114,10 @@ export type Database = {
           tariffa: number
         }[]
       }
+      save_rapportino_bolla: {
+        Args: { _bolla: Json; _rapportino_id: string; _righe: Json }
+        Returns: string
+      }
       save_rapportino_personale: {
         Args: { _allow_recalc?: boolean; _rapportino_id: string; _righe: Json }
         Returns: {
@@ -4050,6 +4128,10 @@ export type Database = {
           rimosse: number
           tariffa_mancante: number
         }[]
+      }
+      save_rapportino_subappalto: {
+        Args: { _rapportino_id: string; _riga: Json }
+        Returns: string
       }
       set_commessa_baseline: {
         Args: {
