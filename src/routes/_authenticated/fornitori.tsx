@@ -156,7 +156,7 @@ function FornitoriPage() {
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nessun fornitore.</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nessun soggetto in anagrafica.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </Card>
