@@ -238,14 +238,22 @@ export async function runDashboardOperativa({
         let manodoperaPendente: ManodoperaPendente | null = null;
         let manodoperaContabilizzata: number | null = null;
         let costiSostenuti = attive.reduce((s, c) => s + Number(c.costi_sostenuti ?? 0), 0);
+        let costiExtra: {
+          materiali: number;
+          subappalti: number;
+          totale: number;
+          bolle: number;
+          righeSubappalto: number;
+        } | null = null;
 
         if (canCosti) {
           const ids = attive.map((c) => c.id);
-          const [pendQ, costiQ] = await Promise.all([
+          const [pendQ, costiQ, extraQ] = await Promise.all([
             context.supabase.rpc("get_kpi_manodopera_pendente"),
             ids.length
               ? context.supabase.rpc("get_costi_manodopera", { _commessa_ids: ids })
               : Promise.resolve({ data: [] as any[] }),
+            context.supabase.rpc("get_costi_extra_periodo", { _from: from, _to: to }),
           ]);
           manodoperaPendente = normalizzaPendente((pendQ as any).data);
           manodoperaDaContabilizzare = manodoperaPendente.righe;
@@ -255,6 +263,17 @@ export async function runDashboardOperativa({
             0,
           );
           costiSostenuti = costiSostenutiTotali(attive, rows);
+
+          const ex = (extraQ as any).data as any;
+          if (ex?.visibile) {
+            costiExtra = {
+              materiali: Number(ex.materiali ?? 0),
+              subappalti: Number(ex.subappalti ?? 0),
+              totale: Number(ex.totale ?? 0),
+              bolle: Number(ex.bolle ?? 0),
+              righeSubappalto: Number(ex.righe_subappalto ?? 0),
+            };
+          }
         }
 
         economia = {
@@ -265,6 +284,7 @@ export async function runDashboardOperativa({
           manodoperaDaContabilizzare,
           manodoperaPendente,
           manodoperaContabilizzata,
+          costiExtra,
         };
       }
 
