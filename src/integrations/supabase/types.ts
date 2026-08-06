@@ -3784,8 +3784,16 @@ export type Database = {
           id: string
         }[]
       }
+      get_cantiere_costi_extra: {
+        Args: { _cantiere_id: string }
+        Returns: Json
+      }
       get_commessa_costi_extra: {
         Args: { _commessa_id: string }
+        Returns: Json
+      }
+      get_costi_extra_periodo: {
+        Args: { _from: string; _to: string }
         Returns: Json
       }
       get_costi_manodopera: {
@@ -3880,6 +3888,7 @@ export type Database = {
           costo_congelato: number
           errore_contabilizzazione: string
           id: string
+          mansione: string
           membro_id: string
           membro_nome: string
           membro_qualifica: string
