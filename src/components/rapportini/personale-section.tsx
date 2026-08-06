@@ -110,6 +110,7 @@ export function PersonaleSection({
             membro_id: d.membro_id,
             ore: Number(d.ore),
             nota: d.nota.trim() ? d.nota.trim() : null,
+            mansione: d.mansione.trim() ? d.mansione.trim() : null,
           })),
         },
       }),
@@ -181,7 +182,7 @@ export function PersonaleSection({
                 size="sm"
                 onClick={() => {
                   setDirty(true);
-                  setDrafts((d) => [...d, { membro_id: "", ore: "8", nota: "" }]);
+                  setDrafts((d) => [...d, { membro_id: "", ore: "8", nota: "", mansione: "" }]);
                 }}
               >
                 <Plus className="h-4 w-4 mr-1" /> Aggiungi persona
