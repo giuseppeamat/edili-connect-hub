@@ -128,6 +128,7 @@ function RapportinoDetailPage() {
   }
 
   const activeCost = (costi as any[]).find((c) => c.stato === "contabilizzato" && !c.stornato_at);
+  const readOnly = !!r.archived_at || r.stato === "annullato";
 
   return (
     <div>
