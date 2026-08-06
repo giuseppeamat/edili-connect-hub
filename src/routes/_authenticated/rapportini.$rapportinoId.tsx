@@ -145,132 +145,183 @@ function RapportinoDetailPage() {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardContent className="p-4 grid gap-4 grid-cols-2">
-            <Field label="Data">{dateIt(r.data)}</Field>
-            <Field label="Stato"><StatoBadge stato={r.stato} archived={!!r.archived_at} /></Field>
-            <Field label="Autore">{fullName(r.user)}</Field>
-            <Field label="Ore">{Number(r.ore ?? 0).toFixed(2)}</Field>
-            <Field label="Ora inizio">{r.ora_inizio ?? "—"}</Field>
-            <Field label="Ora fine">{r.ora_fine ?? "—"}</Field>
-            <Field label="Pausa (min)">{r.pausa_minuti ?? 0}</Field>
-            <Field label="Creato il">{r.created_at ? dateIt(r.created_at) : "—"}</Field>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="riepilogo">
+        <TabsList className="flex w-full flex-wrap justify-start h-auto">
+          <TabsTrigger value="riepilogo">Riepilogo</TabsTrigger>
+          <TabsTrigger value="personale">Personale</TabsTrigger>
+          <TabsTrigger value="bolle">Bolle e materiali</TabsTrigger>
+          <TabsTrigger value="subappalti">Subappaltatori</TabsTrigger>
+          <TabsTrigger value="documenti">Documenti</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardContent className="p-4 grid gap-4 grid-cols-1">
-            <Field label="Commessa">
-              {r.commessa ? (
-                <Link
-                  to="/commesse/$commessaId"
-                  params={{ commessaId: r.commessa_id }}
-                  className="text-primary hover:underline"
-                >
-                  <span className="font-mono">{r.commessa.codice}</span> — {r.commessa.denominazione}
-                </Link>
-              ) : "—"}
-            </Field>
-            <Field label="Cantiere">
-              {r.cantiere ? `${r.cantiere.codice} — ${r.cantiere.nome}` : "—"}
-            </Field>
-            <Field label="Fase">{r.fase?.titolo ?? "—"}</Field>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="riepilogo">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardContent className="p-4 grid gap-4 grid-cols-2">
+                <Field label="Data">{dateIt(r.data)}</Field>
+                <Field label="Stato"><StatoBadge stato={r.stato} archived={!!r.archived_at} /></Field>
+                <Field label="Autore">{fullName(r.user)}</Field>
+                <Field label="Ore">{Number(r.ore ?? 0).toFixed(2)}</Field>
+                <Field label="Ora inizio">{r.ora_inizio ?? "—"}</Field>
+                <Field label="Ora fine">{r.ora_fine ?? "—"}</Field>
+                <Field label="Pausa (min)">{r.pausa_minuti ?? 0}</Field>
+                <Field label="Creato il">{r.created_at ? dateIt(r.created_at) : "—"}</Field>
+              </CardContent>
+            </Card>
 
-      <PersonaleSection
-        rapportinoId={rapportinoId}
-        readOnly={!!r.archived_at || r.stato === "annullato"}
-      />
+            <Card>
+              <CardContent className="p-4 grid gap-4 grid-cols-1">
+                <Field label="Commessa">
+                  {r.commessa ? (
+                    <Link
+                      to="/commesse/$commessaId"
+                      params={{ commessaId: r.commessa_id }}
+                      className="text-primary hover:underline"
+                    >
+                      <span className="font-mono">{r.commessa.codice}</span> — {r.commessa.denominazione}
+                    </Link>
+                  ) : "—"}
+                </Field>
+                <Field label="Cantiere">
+                  {r.cantiere ? `${r.cantiere.codice} — ${r.cantiere.nome}` : "—"}
+                </Field>
+                <Field label="Fase">{r.fase?.titolo ?? "—"}</Field>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card className="mt-4">
-        <CardContent className="p-4 space-y-4">
-          <Field label="Descrizione lavori">
-            <div className="whitespace-pre-wrap">{r.descrizione_lavori ?? r.lavorazione ?? "—"}</div>
-          </Field>
-          <Field label="Note">
-            <div className="whitespace-pre-wrap">{r.note ?? "—"}</div>
-          </Field>
-          {r.stato === "respinto" && r.rejection_reason && (
-            <Field label="Motivo rifiuto">
-              <div className="text-rose-700">{r.rejection_reason}</div>
-            </Field>
-          )}
-          {r.stato === "annullato" && r.cancellation_reason && (
-            <Field label="Motivo annullamento">
-              <div className="text-zinc-700">{r.cancellation_reason}</div>
-            </Field>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="mt-4">
-        <CardContent className="p-4">
-          <div className="text-sm font-medium mb-3">Timeline workflow</div>
-          <ol className="space-y-2 text-sm">
-            <li>
-              <span className="text-muted-foreground">Creato:</span>{" "}
-              {r.created_at ? dateIt(r.created_at) : "—"}
-            </li>
-            {r.submitted_at && (
-              <li>
-                <span className="text-muted-foreground">Inviato:</span> {dateIt(r.submitted_at)}
-              </li>
-            )}
-            {r.approved_at && (
-              <li>
-                <span className="text-emerald-700">Approvato:</span> {dateIt(r.approved_at)}
-              </li>
-            )}
-            {r.rejected_at && (
-              <li>
-                <span className="text-rose-700">Respinto:</span> {dateIt(r.rejected_at)}
-              </li>
-            )}
-            {r.cancelled_at && (
-              <li>
-                <span className="text-zinc-700">Annullato:</span> {dateIt(r.cancelled_at)}
-              </li>
-            )}
-            {r.archived_at && (
-              <li>
-                <span className="text-muted-foreground">Archiviato:</span> {dateIt(r.archived_at)}
-              </li>
-            )}
-          </ol>
-        </CardContent>
-      </Card>
-
-      {canViewEcon && (
-        <Card className="mt-4">
-          <CardContent className="p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <div className="text-sm font-medium">Contabilizzazione manodopera</div>
-              {activeCost && user.has("proprietario", "amministratore") && (
-                <Button size="sm" variant="outline" onClick={() => setStoricoOpen(true)}>
-                  Ricalcola costo storico
-                </Button>
+          <Card className="mt-4">
+            <CardContent className="p-4 space-y-4">
+              <Field label="Descrizione lavori">
+                <div className="whitespace-pre-wrap">{r.descrizione_lavori ?? r.lavorazione ?? "—"}</div>
+              </Field>
+              <Field label="Note">
+                <div className="whitespace-pre-wrap">{r.note ?? "—"}</div>
+              </Field>
+              {r.stato === "respinto" && r.rejection_reason && (
+                <Field label="Motivo rifiuto">
+                  <div className="text-rose-700">{r.rejection_reason}</div>
+                </Field>
               )}
-            </div>
-            {activeCost ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <Field label="Costo orario">€ {Number(activeCost.costo_orario_applicato ?? 0).toFixed(2)}</Field>
-                <Field label="Ore">{Number(activeCost.ore ?? 0).toFixed(2)}</Field>
-                <Field label="Costo totale">€ {Number(activeCost.costo_totale ?? 0).toFixed(2)}</Field>
-                <Field label="Periodo">{activeCost.periodo_riferimento ?? "—"}</Field>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                {r.stato === "approvato"
-                  ? "Nessuna contabilizzazione attiva per questo rapportino."
-                  : "La contabilizzazione avviene alla prima approvazione."}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              {r.stato === "annullato" && r.cancellation_reason && (
+                <Field label="Motivo annullamento">
+                  <div className="text-zinc-700">{r.cancellation_reason}</div>
+                </Field>
+              )}
+            </CardContent>
+          </Card>
+
+          {canViewEcon && (riepilogo as any)?.visibile && (
+            <Card className="mt-4">
+              <CardContent className="p-4">
+                <div className="text-sm font-medium mb-3">Costi della giornata</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Field label="Manodopera">€ {Number((riepilogo as any).manodopera ?? 0).toFixed(2)}</Field>
+                  <Field label="Materiali">€ {Number((riepilogo as any).materiali ?? 0).toFixed(2)}</Field>
+                  <Field label="Subappalti">€ {Number((riepilogo as any).subappalti ?? 0).toFixed(2)}</Field>
+                  <Field label="Totale giornata">
+                    <strong>€ {Number((riepilogo as any).totale ?? 0).toFixed(2)}</strong>
+                  </Field>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="mt-4">
+            <CardContent className="p-4">
+              <div className="text-sm font-medium mb-3">Timeline workflow</div>
+              <ol className="space-y-2 text-sm">
+                <li>
+                  <span className="text-muted-foreground">Creato:</span>{" "}
+                  {r.created_at ? dateIt(r.created_at) : "—"}
+                </li>
+                {r.submitted_at && (
+                  <li>
+                    <span className="text-muted-foreground">Inviato:</span> {dateIt(r.submitted_at)}
+                  </li>
+                )}
+                {r.approved_at && (
+                  <li>
+                    <span className="text-emerald-700">Approvato:</span> {dateIt(r.approved_at)}
+                  </li>
+                )}
+                {r.rejected_at && (
+                  <li>
+                    <span className="text-rose-700">Respinto:</span> {dateIt(r.rejected_at)}
+                  </li>
+                )}
+                {r.cancelled_at && (
+                  <li>
+                    <span className="text-zinc-700">Annullato:</span> {dateIt(r.cancelled_at)}
+                  </li>
+                )}
+                {r.archived_at && (
+                  <li>
+                    <span className="text-muted-foreground">Archiviato:</span> {dateIt(r.archived_at)}
+                  </li>
+                )}
+              </ol>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="personale">
+          <PersonaleSection rapportinoId={rapportinoId} readOnly={readOnly} />
+
+          {canViewEcon && (
+            <Card className="mt-4">
+              <CardContent className="p-4">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium">Contabilizzazione manodopera</div>
+                  {activeCost && user.has("proprietario", "amministratore") && (
+                    <Button size="sm" variant="outline" onClick={() => setStoricoOpen(true)}>
+                      Ricalcola costo storico
+                    </Button>
+                  )}
+                </div>
+                {activeCost ? (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <Field label="Costo orario">€ {Number(activeCost.costo_orario_applicato ?? 0).toFixed(2)}</Field>
+                    <Field label="Ore">{Number(activeCost.ore ?? 0).toFixed(2)}</Field>
+                    <Field label="Costo totale">€ {Number(activeCost.costo_totale ?? 0).toFixed(2)}</Field>
+                    <Field label="Periodo">{activeCost.periodo_riferimento ?? "—"}</Field>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    {r.stato === "approvato"
+                      ? "Nessuna contabilizzazione attiva per questo rapportino."
+                      : "La contabilizzazione avviene alla prima approvazione."}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="bolle">
+          <BolleSection rapportinoId={rapportinoId} readOnly={readOnly} />
+        </TabsContent>
+
+        <TabsContent value="subappalti">
+          <SubappaltatoriSection
+            rapportinoId={rapportinoId}
+            commessaId={r.commessa_id}
+            readOnly={readOnly}
+          />
+        </TabsContent>
+
+        <TabsContent value="documenti">
+          <div className="mt-4">
+            <DocumentiEntityPanel
+              entityType="rapportino"
+              entityId={rapportinoId}
+              commessaId={r.commessa_id}
+              canUpload={!readOnly}
+              canManage={user.has("proprietario", "amministratore", "ufficio_tecnico", "amministrazione")}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={storicoOpen} onOpenChange={setStoricoOpen}>
         <DialogContent>
