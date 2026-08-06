@@ -216,7 +216,14 @@ function RapportiniPage() {
                 </TableCell>
                 <TableCell><StatoBadge stato={r.stato} archived={!!r.archived_at} /></TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <RapportinoActionsMenu row={r} onArchive={(row) => setArchTarget(row)} />
+                  <div className="flex items-center justify-end gap-1">
+                    <Button asChild size="sm" variant="outline">
+                      <Link to="/rapportini/$rapportinoId" params={{ rapportinoId: r.id }}>
+                        Apri
+                      </Link>
+                    </Button>
+                    <RapportinoActionsMenu row={r} onArchive={(row) => setArchTarget(row)} />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

@@ -39,6 +39,29 @@ export function CostiExtraCard({ commessaId }: { commessaId: string }) {
           <Voce label="Manodopera" value={d.manodopera} />
           <Voce label="Totale" value={d.totale} />
         </div>
+        {Array.isArray(d.per_cantiere) && d.per_cantiere.length > 0 && (
+          <div className="mt-4 border-t pt-3">
+            <div className="text-xs uppercase text-muted-foreground tracking-wide mb-2">
+              Dettaglio per cantiere
+            </div>
+            <div className="space-y-1">
+              {d.per_cantiere.map((r: any, i: number) => (
+                <div
+                  key={r.cantiere_id ?? `nc-${i}`}
+                  className="flex flex-wrap items-baseline justify-between gap-2 text-xs border-b last:border-0 py-1"
+                >
+                  <span className="font-medium">{r.cantiere}</span>
+                  <span className="text-muted-foreground">
+                    materiali € {Number(r.materiali ?? 0).toFixed(2)} · subappalti €{" "}
+                    {Number(r.subappalti ?? 0).toFixed(2)} · manodopera €{" "}
+                    {Number(r.manodopera ?? 0).toFixed(2)} ·{" "}
+                    <strong className="text-foreground">€ {Number(r.totale ?? 0).toFixed(2)}</strong>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <p className="text-xs text-muted-foreground mt-3">
           Importi calcolati dalle bolle e dalle presenze ditte registrate nei rapportini non annullati.
         </p>
