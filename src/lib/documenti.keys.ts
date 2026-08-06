@@ -34,6 +34,7 @@ export const documentiKeys = {
   byCantiere: (id: string) => [...documentiKeys.all, "by-cantiere", id] as const,
   byCliente: (id: string) => [...documentiKeys.all, "by-cliente", id] as const,
   byFornitore: (id: string) => [...documentiKeys.all, "by-fornitore", id] as const,
+  byRapportino: (id: string) => [...documentiKeys.all, "by-rapportino", id] as const,
   scadenziario: (f?: ScadenziarioFilters) =>
     [...documentiKeys.all, "scadenziario", f ?? {}] as const,
 };
