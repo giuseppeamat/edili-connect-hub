@@ -131,8 +131,9 @@ function RapportinoDetailPage() {
 
   const activeCost = (costi as any[]).find((c) => c.stato === "contabilizzato" && !c.stornato_at);
   const readOnly = !!r.archived_at || r.stato === "annullato";
-  // Bolle e subappalti seguono la stessa regola del backend: rapportino aperto.
-  const readOnlyExtra = !rapportinoModificabile(r as any);
+  const readOnlyBolle = !bolleModificabili(r as any, user.roles);
+  const readOnlySubappalti = !rapportinoModificabile(r as any);
+
 
   return (
     <div>

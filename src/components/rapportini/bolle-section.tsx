@@ -55,11 +55,12 @@ const rigaVuota = (): RigaDraft => ({
 
 export function BolleSection({
   rapportinoId,
-  readOnly,
+  readOnlyBolle,
 }: {
   rapportinoId: string;
-  readOnly?: boolean;
+  readOnlyBolle?: boolean;
 }) {
+
   const qc = useQueryClient();
   const user = useCurrentUser();
   const canSeeEcon = user.has("proprietario", "amministratore", "amministrazione");
