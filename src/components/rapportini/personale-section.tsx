@@ -34,7 +34,7 @@ const STATO_VARIANT: Record<StatoContabilizzazione, string> = {
   annullato: "text-zinc-500 border-zinc-300",
 };
 
-type Draft = { membro_id: string; ore: string; nota: string };
+type Draft = { membro_id: string; ore: string; nota: string; mansione: string };
 
 export function PersonaleSection({
   rapportinoId,
@@ -75,7 +75,12 @@ export function PersonaleSection({
   useEffect(() => {
     if (dirty) return;
     setDrafts(
-      attive.map((r) => ({ membro_id: r.membro_id, ore: String(Number(r.ore ?? 0)), nota: r.nota ?? "" })),
+      attive.map((r) => ({
+        membro_id: r.membro_id,
+        ore: String(Number(r.ore ?? 0)),
+        nota: r.nota ?? "",
+        mansione: (r as any).mansione ?? "",
+      })),
     );
   }, [attive, dirty]);
 
@@ -105,6 +110,7 @@ export function PersonaleSection({
             membro_id: d.membro_id,
             ore: Number(d.ore),
             nota: d.nota.trim() ? d.nota.trim() : null,
+            mansione: d.mansione.trim() ? d.mansione.trim() : null,
           })),
         },
       }),
@@ -176,7 +182,7 @@ export function PersonaleSection({
                 size="sm"
                 onClick={() => {
                   setDirty(true);
-                  setDrafts((d) => [...d, { membro_id: "", ore: "8", nota: "" }]);
+                  setDrafts((d) => [...d, { membro_id: "", ore: "8", nota: "", mansione: "" }]);
                 }}
               >
                 <Plus className="h-4 w-4 mr-1" /> Aggiungi persona
@@ -197,7 +203,7 @@ export function PersonaleSection({
               const riga = attive.find((r) => r.membro_id === d.membro_id);
               return (
                 <div key={`${d.membro_id || "new"}-${i}`} className="grid gap-2 md:grid-cols-12 items-end border-b pb-2">
-                  <div className="md:col-span-4">
+                  <div className="md:col-span-3">
                     <Label className="text-xs">Persona</Label>
                     <Select
                       value={d.membro_id || undefined}
@@ -223,6 +229,21 @@ export function PersonaleSection({
                     </Select>
                   </div>
                   <div className="md:col-span-2">
+                    <Label className="text-xs">Mansione</Label>
+                    <Input
+                      value={d.mansione}
+                      disabled={readOnly}
+                      maxLength={100}
+                      placeholder={
+                        (membri as any[]).find((m) => m.id === d.membro_id)?.qualifica ?? "es. muratore"
+                      }
+                      onChange={(e) => {
+                        setDirty(true);
+                        setDrafts((arr) => arr.map((x, j) => (j === i ? { ...x, mansione: e.target.value } : x)));
+                      }}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
                     <Label className="text-xs">Ore</Label>
                     <Input
                       type="number" min="0.25" max="24" step="0.25" value={d.ore} disabled={readOnly}
@@ -232,7 +253,7 @@ export function PersonaleSection({
                       }}
                     />
                   </div>
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-2">
                     <Label className="text-xs">Nota</Label>
                     <Input
                       value={d.nota} disabled={readOnly} maxLength={500}

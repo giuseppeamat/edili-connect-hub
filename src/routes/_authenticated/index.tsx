@@ -355,6 +355,17 @@ function Dashboard() {
                     to="/costi-personale"
                   />
                 )}
+                {econ.costiExtra && (
+                  <KpiCard
+                    title="Materiali e subappalti"
+                    value={eur(econ.costiExtra.totale)}
+                    icon={Wallet}
+                    hint={`${eur(econ.costiExtra.materiali)} materiali · ${eur(econ.costiExtra.subappalti)} subappalti`}
+                    to="/rapportini"
+                  />
+                )}
+
+
 
               </>
             )}
