@@ -16,6 +16,12 @@ import { getRapportino, archiveRapportino } from "@/lib/rapportini.functions";
 import { getRapportinoCosto, ricalcolaCostoStoricoRapportino } from "@/lib/personale-costi.functions";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { PersonaleSection } from "@/components/rapportini/personale-section";
+import { BolleSection } from "@/components/rapportini/bolle-section";
+import { SubappaltatoriSection } from "@/components/rapportini/subappaltatori-section";
+import { DocumentiEntityPanel } from "@/components/documenti/documenti-entity-panel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getRapportinoRiepilogoCosti } from "@/lib/bolle.functions";
+import { extraKeys } from "@/lib/rapportini-extra.keys";
 import { useMutation } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
