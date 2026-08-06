@@ -213,6 +213,13 @@ export async function runDashboardOperativa({
         manodoperaDaContabilizzare: number | null;
         manodoperaPendente: ManodoperaPendente | null;
         manodoperaContabilizzata: number | null;
+        costiExtra: {
+          materiali: number;
+          subappalti: number;
+          totale: number;
+          bolle: number;
+          righeSubappalto: number;
+        } | null;
       } = null;
       if (canEcon) {
         const valoreCommesse = attive.reduce(
