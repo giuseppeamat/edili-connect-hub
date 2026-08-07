@@ -32,7 +32,10 @@ import {
 
 const searchSchema = z.object({
   periodo: fallback(z.string(), "30").optional(),
+  da: fallback(z.string(), "").optional(),
+  a: fallback(z.string(), "").optional(),
 });
+
 
 export const Route = createFileRoute("/_authenticated/")({
   validateSearch: zodValidator(searchSchema),
