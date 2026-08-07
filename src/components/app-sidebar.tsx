@@ -14,6 +14,7 @@ import {
   Package,
   Hammer,
   Bell,
+  PiggyBank,
 } from "lucide-react";
 import {
   Sidebar,
