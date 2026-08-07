@@ -18,6 +18,7 @@ import {
   convertToCommessa,
   generatePreventivoPdfFn,
 } from "@/lib/preventivi.functions";
+import { PreventivoCostoStruttura } from "@/components/costi-struttura/preventivo-costo-struttura";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
