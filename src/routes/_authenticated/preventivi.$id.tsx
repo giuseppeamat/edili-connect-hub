@@ -197,8 +197,20 @@ function PreventivoEditor() {
         <TabsList>
           <TabsTrigger value="voci">Categorie & Voci</TabsTrigger>
           <TabsTrigger value="header">Intestazione</TabsTrigger>
+          <TabsTrigger value="struttura">Costi struttura</TabsTrigger>
           <TabsTrigger value="condizioni">Condizioni</TabsTrigger>
         </TabsList>
+
+        {/* ------ COSTI STRUTTURA ------ */}
+        <TabsContent value="struttura">
+          <PreventivoCostoStruttura
+            preventivo={preventivo}
+            readOnly={readOnly}
+            saving={savePatch.isPending}
+            onSave={(patch) => savePatch.mutate(patch)}
+          />
+        </TabsContent>
+
 
         {/* ------ VOCI ------ */}
         <TabsContent value="voci" className="space-y-4">
