@@ -143,20 +143,52 @@ function Dashboard() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const periodo: PeriodoKey = isPeriodo(search.periodo) ? search.periodo : "30";
+  const customFrom = isIsoDate(search.da) ? search.da : "";
+  const customTo = isIsoDate(search.a) ? search.a : "";
+  const customValido = periodo === "custom" && !!customFrom && !!customTo;
   const [seeding, setSeeding] = useState(false);
+  const [draftFrom, setDraftFrom] = useState(customFrom);
+  const [draftTo, setDraftTo] = useState(customTo);
+  const [customOpen, setCustomOpen] = useState(false);
 
   useEffect(() => {
-    if (search.periodo !== undefined && (!isPeriodo(search.periodo) || search.periodo === "30")) {
+    setDraftFrom(customFrom);
+    setDraftTo(customTo);
+  }, [customFrom, customTo]);
+
+  useEffect(() => {
+    if (
+      search.periodo !== undefined &&
+      periodo !== "custom" &&
+      (!isPeriodo(search.periodo) || search.periodo === "30")
+    ) {
       void navigate({ to: "/", search: {}, replace: true });
     }
-  }, [navigate, search.periodo]);
+  }, [navigate, periodo, search.periodo]);
+
+  const applyCustom = () => {
+    if (!isIsoDate(draftFrom) || !isIsoDate(draftTo)) {
+      toast.error("Seleziona una data di inizio e una di fine");
+      return;
+    }
+    const [da, a] = draftFrom <= draftTo ? [draftFrom, draftTo] : [draftTo, draftFrom];
+    setCustomOpen(false);
+    void navigate({ to: "/", search: { periodo: "custom", da, a }, replace: true });
+  };
 
   const dashFn = useServerFn(getDashboardOperativa);
   const { data, error, isPending, isError, refetch, isFetching } = useQuery({
     // La chiave inizia con "dashboard" così le invalidazioni esistenti
     // (approvazione rapportino, budget, stato commessa) la raggiungono.
-    queryKey: ["dashboard", "operativa", periodo],
-    queryFn: async () => await dashFn({ data: { periodo } }),
+    queryKey: ["dashboard", "operativa", periodo, customFrom, customTo],
+    queryFn: async () =>
+      await dashFn({
+        data:
+          periodo === "custom"
+            ? { periodo, from: customFrom, to: customTo }
+            : { periodo },
+      }),
+
     staleTime: 45_000,
     retry: (failureCount, queryError) =>
       failureCount < 1 &&
