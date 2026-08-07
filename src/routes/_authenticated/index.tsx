@@ -232,6 +232,7 @@ function Dashboard() {
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard operativa</h1>
           <p className="text-sm text-muted-foreground">
             Cosa richiede attenzione oggi · {PERIODO_LABEL[periodo]}
+            {customValido && ` (${dateIt(customFrom)} — ${dateIt(customTo)})`}
           </p>
         </div>
 
@@ -252,6 +253,52 @@ function Dashboard() {
               {PERIODO_LABEL[p]}
             </Button>
           ))}
+          <Popover open={customOpen} onOpenChange={setCustomOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant={periodo === "custom" ? "default" : "outline"}>
+                <CalendarClock className="mr-1.5 h-4 w-4" />
+                {customValido ? `${dateIt(customFrom)} — ${dateIt(customTo)}` : "Personalizzato"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="periodo-da">Dal</Label>
+                <Input
+                  id="periodo-da"
+                  type="date"
+                  value={draftFrom}
+                  max={draftTo || undefined}
+                  onChange={(e) => setDraftFrom(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="periodo-a">Al</Label>
+                <Input
+                  id="periodo-a"
+                  type="date"
+                  value={draftTo}
+                  min={draftFrom || undefined}
+                  onChange={(e) => setDraftTo(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-between gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCustomOpen(false);
+                    void navigate({ to: "/", search: {}, replace: true });
+                  }}
+                >
+                  Azzera
+                </Button>
+                <Button size="sm" onClick={applyCustom}>
+                  Applica
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {!isPending && !isError && data?.isEmpty && (
             <Button onClick={handleSeed} disabled={seeding}>
               {seeding ? "Caricamento..." : "Carica dati demo"}
