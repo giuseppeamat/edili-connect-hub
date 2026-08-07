@@ -34,7 +34,7 @@ export async function runDashboardOperativa({
   data,
   context,
 }: {
-  data: { periodo?: string };
+  data: { periodo?: string; from?: string; to?: string };
   context: { supabase: any; userId: string };
 }) {
     try {
@@ -51,7 +51,7 @@ export async function runDashboardOperativa({
 
       const periodo: PeriodoKey = isPeriodo(data.periodo) ? data.periodo : "30";
       const today = new Date();
-      const { from, to } = periodRange(periodo, today);
+      const { from, to } = periodRange(periodo, today, { from: data.from, to: data.to });
       const in30 = new Date(today);
       in30.setDate(in30.getDate() + 30);
       const in30Iso = in30.toISOString().slice(0, 10);

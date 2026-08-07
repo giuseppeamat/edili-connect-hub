@@ -7,7 +7,11 @@ import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
 import { getDashboardOperativa } from "@/lib/dashboard.functions";
-import { PERIODO_LABEL, isPeriodo, type PeriodoKey } from "@/lib/dashboard-model";
+import { PERIODO_LABEL, isPeriodo, isIsoDate, type PeriodoKey } from "@/lib/dashboard-model";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +36,10 @@ import {
 
 const searchSchema = z.object({
   periodo: fallback(z.string(), "30").optional(),
+  da: fallback(z.string(), "").optional(),
+  a: fallback(z.string(), "").optional(),
 });
+
 
 export const Route = createFileRoute("/_authenticated/")({
   validateSearch: zodValidator(searchSchema),
@@ -140,20 +147,52 @@ function Dashboard() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const periodo: PeriodoKey = isPeriodo(search.periodo) ? search.periodo : "30";
+  const customFrom = isIsoDate(search.da) ? search.da : "";
+  const customTo = isIsoDate(search.a) ? search.a : "";
+  const customValido = periodo === "custom" && !!customFrom && !!customTo;
   const [seeding, setSeeding] = useState(false);
+  const [draftFrom, setDraftFrom] = useState(customFrom);
+  const [draftTo, setDraftTo] = useState(customTo);
+  const [customOpen, setCustomOpen] = useState(false);
 
   useEffect(() => {
-    if (search.periodo !== undefined && (!isPeriodo(search.periodo) || search.periodo === "30")) {
+    setDraftFrom(customFrom);
+    setDraftTo(customTo);
+  }, [customFrom, customTo]);
+
+  useEffect(() => {
+    if (
+      search.periodo !== undefined &&
+      periodo !== "custom" &&
+      (!isPeriodo(search.periodo) || search.periodo === "30")
+    ) {
       void navigate({ to: "/", search: {}, replace: true });
     }
-  }, [navigate, search.periodo]);
+  }, [navigate, periodo, search.periodo]);
+
+  const applyCustom = () => {
+    if (!isIsoDate(draftFrom) || !isIsoDate(draftTo)) {
+      toast.error("Seleziona una data di inizio e una di fine");
+      return;
+    }
+    const [da, a] = draftFrom <= draftTo ? [draftFrom, draftTo] : [draftTo, draftFrom];
+    setCustomOpen(false);
+    void navigate({ to: "/", search: { periodo: "custom", da, a }, replace: true });
+  };
 
   const dashFn = useServerFn(getDashboardOperativa);
   const { data, error, isPending, isError, refetch, isFetching } = useQuery({
     // La chiave inizia con "dashboard" così le invalidazioni esistenti
     // (approvazione rapportino, budget, stato commessa) la raggiungono.
-    queryKey: ["dashboard", "operativa", periodo],
-    queryFn: async () => await dashFn({ data: { periodo } }),
+    queryKey: ["dashboard", "operativa", periodo, customFrom, customTo],
+    queryFn: async () =>
+      await dashFn({
+        data:
+          periodo === "custom"
+            ? { periodo, from: customFrom, to: customTo }
+            : { periodo },
+      }),
+
     staleTime: 45_000,
     retry: (failureCount, queryError) =>
       failureCount < 1 &&
@@ -193,6 +232,7 @@ function Dashboard() {
           <h1 className="text-2xl md:text-3xl font-bold">Dashboard operativa</h1>
           <p className="text-sm text-muted-foreground">
             Cosa richiede attenzione oggi · {PERIODO_LABEL[periodo]}
+            {customValido && ` (${dateIt(customFrom)} — ${dateIt(customTo)})`}
           </p>
         </div>
 
@@ -213,6 +253,52 @@ function Dashboard() {
               {PERIODO_LABEL[p]}
             </Button>
           ))}
+          <Popover open={customOpen} onOpenChange={setCustomOpen}>
+            <PopoverTrigger asChild>
+              <Button size="sm" variant={periodo === "custom" ? "default" : "outline"}>
+                <CalendarClock className="mr-1.5 h-4 w-4" />
+                {customValido ? `${dateIt(customFrom)} — ${dateIt(customTo)}` : "Personalizzato"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="periodo-da">Dal</Label>
+                <Input
+                  id="periodo-da"
+                  type="date"
+                  value={draftFrom}
+                  max={draftTo || undefined}
+                  onChange={(e) => setDraftFrom(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="periodo-a">Al</Label>
+                <Input
+                  id="periodo-a"
+                  type="date"
+                  value={draftTo}
+                  min={draftFrom || undefined}
+                  onChange={(e) => setDraftTo(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-between gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCustomOpen(false);
+                    void navigate({ to: "/", search: {}, replace: true });
+                  }}
+                >
+                  Azzera
+                </Button>
+                <Button size="sm" onClick={applyCustom}>
+                  Applica
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {!isPending && !isError && data?.isEmpty && (
             <Button onClick={handleSeed} disabled={seeding}>
               {seeding ? "Caricamento..." : "Carica dati demo"}

@@ -4,17 +4,25 @@
  * ordinamento. Testabile in isolamento.
  */
 
-export type PeriodoKey = "oggi" | "7" | "30" | "mese";
+export type PeriodoKey = "oggi" | "7" | "30" | "mese" | "custom";
 
 export const PERIODO_LABEL: Record<PeriodoKey, string> = {
   oggi: "Oggi",
   "7": "Ultimi 7 giorni",
   "30": "Ultimi 30 giorni",
   mese: "Mese corrente",
+  custom: "Personalizzato",
 };
 
 export function isPeriodo(v: unknown): v is PeriodoKey {
-  return v === "oggi" || v === "7" || v === "30" || v === "mese";
+  return v === "oggi" || v === "7" || v === "30" || v === "mese" || v === "custom";
+}
+
+/** True se la stringa è una data valida in formato YYYY-MM-DD. */
+export function isIsoDate(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return !Number.isNaN(t);
 }
 
 function iso(d: Date): string {
@@ -22,9 +30,21 @@ function iso(d: Date): string {
 }
 
 /** Intervallo [from, to] in formato YYYY-MM-DD per il periodo scelto. */
-export function periodRange(periodo: PeriodoKey, today = new Date()): { from: string; to: string } {
+export function periodRange(
+  periodo: PeriodoKey,
+  today = new Date(),
+  custom?: { from?: unknown; to?: unknown },
+): { from: string; to: string } {
   const base = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
   const to = iso(base);
+  if (periodo === "custom") {
+    const cFrom = isIsoDate(custom?.from) ? custom!.from : null;
+    const cTo = isIsoDate(custom?.to) ? custom!.to : null;
+    if (cFrom && cTo) return cFrom <= cTo ? { from: cFrom, to: cTo } : { from: cTo, to: cFrom };
+    if (cFrom) return { from: cFrom, to: cFrom > to ? cFrom : to };
+    if (cTo) return { from: cTo, to: cTo };
+    return { from: to, to };
+  }
   if (periodo === "oggi") return { from: to, to };
   if (periodo === "mese") {
     return { from: iso(new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), 1))), to };
