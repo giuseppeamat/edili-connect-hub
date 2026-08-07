@@ -138,6 +138,15 @@ function PreventivoEditor() {
     onError: (e: any) => toast.error(e?.message ?? "Errore salvataggio"),
   });
 
+  const savePatch = useMutation({
+    mutationFn: async (patch: Record<string, unknown>) => {
+      if (!preventivo?.updated_at) throw new Error("Preventivo non caricato");
+      return updateHeaderFn({ data: { id, expected_updated_at: preventivo.updated_at, patch: patch as any } });
+    },
+    onSuccess: () => { toast.success("Salvato"); invalidateAll(); },
+    onError: (e: any) => toast.error(e?.message ?? "Errore salvataggio"),
+  });
+
   if (isLoading) return <div className="p-6 text-muted-foreground">Caricamento…</div>;
   if (!preventivo) return (
     <div className="p-6">
