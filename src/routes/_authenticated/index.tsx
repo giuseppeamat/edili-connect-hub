@@ -7,7 +7,11 @@ import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
 import { getDashboardOperativa } from "@/lib/dashboard.functions";
-import { PERIODO_LABEL, isPeriodo, type PeriodoKey } from "@/lib/dashboard-model";
+import { PERIODO_LABEL, isPeriodo, isIsoDate, type PeriodoKey } from "@/lib/dashboard-model";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
