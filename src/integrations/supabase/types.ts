@@ -954,6 +954,298 @@ export type Database = {
           },
         ]
       }
+      costi_struttura: {
+        Row: {
+          anni_ammortamento: number | null
+          anno_riferimento: number
+          archived_at: string | null
+          archived_by: string | null
+          categoria_id: string
+          created_at: string
+          created_by: string | null
+          data_fine: string | null
+          data_inizio: string
+          data_inizio_ammortamento: string | null
+          descrizione: string
+          documento_id: string | null
+          fornitore_id: string | null
+          id: string
+          importo: number
+          is_active: boolean
+          mese_riferimento: number | null
+          note: string | null
+          organization_id: string
+          periodicita: Database["public"]["Enums"]["costo_periodicita"]
+          quota_annua: number | null
+          tipo_personale: Database["public"]["Enums"]["cs_tipo_personale"]
+          updated_at: string
+          updated_by: string | null
+          valore_residuo: number | null
+        }
+        Insert: {
+          anni_ammortamento?: number | null
+          anno_riferimento: number
+          archived_at?: string | null
+          archived_by?: string | null
+          categoria_id: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string
+          data_inizio_ammortamento?: string | null
+          descrizione: string
+          documento_id?: string | null
+          fornitore_id?: string | null
+          id?: string
+          importo?: number
+          is_active?: boolean
+          mese_riferimento?: number | null
+          note?: string | null
+          organization_id: string
+          periodicita?: Database["public"]["Enums"]["costo_periodicita"]
+          quota_annua?: number | null
+          tipo_personale?: Database["public"]["Enums"]["cs_tipo_personale"]
+          updated_at?: string
+          updated_by?: string | null
+          valore_residuo?: number | null
+        }
+        Update: {
+          anni_ammortamento?: number | null
+          anno_riferimento?: number
+          archived_at?: string | null
+          archived_by?: string | null
+          categoria_id?: string
+          created_at?: string
+          created_by?: string | null
+          data_fine?: string | null
+          data_inizio?: string
+          data_inizio_ammortamento?: string | null
+          descrizione?: string
+          documento_id?: string | null
+          fornitore_id?: string | null
+          id?: string
+          importo?: number
+          is_active?: boolean
+          mese_riferimento?: number | null
+          note?: string | null
+          organization_id?: string
+          periodicita?: Database["public"]["Enums"]["costo_periodicita"]
+          quota_annua?: number | null
+          tipo_personale?: Database["public"]["Enums"]["cs_tipo_personale"]
+          updated_at?: string
+          updated_by?: string | null
+          valore_residuo?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costi_struttura_categoria_fk"
+            columns: ["categoria_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "costi_struttura_categorie"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "costi_struttura_fornitore_fk"
+            columns: ["fornitore_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "fornitori"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "costi_struttura_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      costi_struttura_categorie: {
+        Row: {
+          archived_at: string | null
+          archived_by: string | null
+          created_at: string
+          created_by: string | null
+          descrizione: string | null
+          gruppo: string
+          id: string
+          is_active: boolean
+          is_sistema: boolean
+          nome: string
+          ordine: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          gruppo: string
+          id?: string
+          is_active?: boolean
+          is_sistema?: boolean
+          nome: string
+          ordine?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          descrizione?: string | null
+          gruppo?: string
+          id?: string
+          is_active?: boolean
+          is_sistema?: boolean
+          nome?: string
+          ordine?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costi_struttura_categorie_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      costi_struttura_config: {
+        Row: {
+          altri_overhead_orario: number
+          costo_mezzi_orario: number
+          created_at: string
+          includi_costo_mezzi_in_industriale: boolean
+          includi_costo_personale_in_industriale: boolean
+          includi_costo_struttura_in_industriale: boolean
+          includi_personale_diretto: boolean
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          altri_overhead_orario?: number
+          costo_mezzi_orario?: number
+          created_at?: string
+          includi_costo_mezzi_in_industriale?: boolean
+          includi_costo_personale_in_industriale?: boolean
+          includi_costo_struttura_in_industriale?: boolean
+          includi_personale_diretto?: boolean
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          altri_overhead_orario?: number
+          costo_mezzi_orario?: number
+          created_at?: string
+          includi_costo_mezzi_in_industriale?: boolean
+          includi_costo_personale_in_industriale?: boolean
+          includi_costo_struttura_in_industriale?: boolean
+          includi_personale_diretto?: boolean
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costi_struttura_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      costo_orario_versioni: {
+        Row: {
+          altri_overhead_orario: number
+          anno: number
+          approvato_at: string | null
+          approvato_da: string | null
+          componenti: Json
+          costo_industriale_orario: number
+          costo_mezzi_orario: number
+          costo_orario_struttura: number
+          costo_personale_medio: number
+          created_at: string
+          created_by: string | null
+          data_calcolo: string
+          id: string
+          note: string | null
+          ore_produttive: number
+          organization_id: string
+          origine: string
+          stato: Database["public"]["Enums"]["costo_orario_stato"]
+          totale_costi_annualizzati: number
+          updated_at: string
+          versione: number
+        }
+        Insert: {
+          altri_overhead_orario?: number
+          anno: number
+          approvato_at?: string | null
+          approvato_da?: string | null
+          componenti?: Json
+          costo_industriale_orario?: number
+          costo_mezzi_orario?: number
+          costo_orario_struttura?: number
+          costo_personale_medio?: number
+          created_at?: string
+          created_by?: string | null
+          data_calcolo?: string
+          id?: string
+          note?: string | null
+          ore_produttive?: number
+          organization_id: string
+          origine?: string
+          stato?: Database["public"]["Enums"]["costo_orario_stato"]
+          totale_costi_annualizzati?: number
+          updated_at?: string
+          versione: number
+        }
+        Update: {
+          altri_overhead_orario?: number
+          anno?: number
+          approvato_at?: string | null
+          approvato_da?: string | null
+          componenti?: Json
+          costo_industriale_orario?: number
+          costo_mezzi_orario?: number
+          costo_orario_struttura?: number
+          costo_personale_medio?: number
+          created_at?: string
+          created_by?: string | null
+          data_calcolo?: string
+          id?: string
+          note?: string | null
+          ore_produttive?: number
+          organization_id?: string
+          origine?: string
+          stato?: Database["public"]["Enums"]["costo_orario_stato"]
+          totale_costi_annualizzati?: number
+          updated_at?: string
+          versione?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "costo_orario_versioni_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_attivita: {
         Row: {
           archived_at: string | null
@@ -1620,6 +1912,80 @@ export type Database = {
           },
         ]
       }
+      ore_produttive_config: {
+        Row: {
+          anno: number
+          created_at: string
+          created_by: string | null
+          dipendenti_produttivi: number
+          id: string
+          note: string | null
+          ore_amministrative: number
+          ore_ferie: number
+          ore_festivita: number
+          ore_formazione: number
+          ore_malattia: number
+          ore_non_produttive_altre: number
+          ore_permessi: number
+          ore_produttive_manuali: number | null
+          ore_teoriche_persona: number
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          usa_manuale: boolean
+        }
+        Insert: {
+          anno: number
+          created_at?: string
+          created_by?: string | null
+          dipendenti_produttivi?: number
+          id?: string
+          note?: string | null
+          ore_amministrative?: number
+          ore_ferie?: number
+          ore_festivita?: number
+          ore_formazione?: number
+          ore_malattia?: number
+          ore_non_produttive_altre?: number
+          ore_permessi?: number
+          ore_produttive_manuali?: number | null
+          ore_teoriche_persona?: number
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          usa_manuale?: boolean
+        }
+        Update: {
+          anno?: number
+          created_at?: string
+          created_by?: string | null
+          dipendenti_produttivi?: number
+          id?: string
+          note?: string | null
+          ore_amministrative?: number
+          ore_ferie?: number
+          ore_festivita?: number
+          ore_formazione?: number
+          ore_malattia?: number
+          ore_non_produttive_altre?: number
+          ore_permessi?: number
+          ore_produttive_manuali?: number | null
+          ore_teoriche_persona?: number
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          usa_manuale?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ore_produttive_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           archived_at: string | null
@@ -1815,6 +2181,13 @@ export type Database = {
           condizioni_generali: string | null
           condizioni_pagamento: string | null
           convertito_at: string | null
+          costo_struttura_importo: number
+          costo_struttura_modalita: Database["public"]["Enums"]["cs_modalita"]
+          costo_struttura_ore: number
+          costo_struttura_pct: number
+          costo_struttura_tariffa: number
+          costo_struttura_versione_id: string | null
+          costo_struttura_versione_label: string | null
           created_at: string
           created_by: string | null
           data_accettazione: string | null
@@ -1860,6 +2233,13 @@ export type Database = {
           condizioni_generali?: string | null
           condizioni_pagamento?: string | null
           convertito_at?: string | null
+          costo_struttura_importo?: number
+          costo_struttura_modalita?: Database["public"]["Enums"]["cs_modalita"]
+          costo_struttura_ore?: number
+          costo_struttura_pct?: number
+          costo_struttura_tariffa?: number
+          costo_struttura_versione_id?: string | null
+          costo_struttura_versione_label?: string | null
           created_at?: string
           created_by?: string | null
           data_accettazione?: string | null
@@ -1905,6 +2285,13 @@ export type Database = {
           condizioni_generali?: string | null
           condizioni_pagamento?: string | null
           convertito_at?: string | null
+          costo_struttura_importo?: number
+          costo_struttura_modalita?: Database["public"]["Enums"]["cs_modalita"]
+          costo_struttura_ore?: number
+          costo_struttura_pct?: number
+          costo_struttura_tariffa?: number
+          costo_struttura_versione_id?: string | null
+          costo_struttura_versione_label?: string | null
           created_at?: string
           created_by?: string | null
           data_accettazione?: string | null
@@ -1957,6 +2344,13 @@ export type Database = {
             columns: ["cliente_id", "organization_id"]
             isOneToOne: false
             referencedRelation: "clienti"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "preventivi_cs_versione_fk"
+            columns: ["costo_struttura_versione_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "costo_orario_versioni"
             referencedColumns: ["id", "organization_id"]
           },
           {
@@ -3827,6 +4221,10 @@ export type Database = {
           id: string
         }[]
       }
+      ensure_costi_struttura_categorie: {
+        Args: { _org: string }
+        Returns: undefined
+      }
       get_cantiere_costi_extra: {
         Args: { _cantiere_id: string }
         Returns: Json
@@ -4429,6 +4827,22 @@ export type Database = {
         | "sospesa"
         | "completata"
         | "annullata"
+      costo_orario_stato: "bozza" | "calcolato" | "approvato" | "archiviato"
+      costo_periodicita:
+        | "mensile"
+        | "trimestrale"
+        | "semestrale"
+        | "annuale"
+        | "una_tantum"
+        | "ammortizzato"
+      cs_modalita: "nessuno" | "orario" | "percentuale" | "manuale"
+      cs_tipo_personale:
+        | "non_applicabile"
+        | "diretto"
+        | "indiretto"
+        | "amministrazione"
+        | "titolari"
+        | "tecnico"
       documento_stato: "valido" | "in_scadenza" | "scaduto" | "archiviato"
       documento_visibilita: "privato" | "organizzazione" | "pubblico"
       invite_status: "pending" | "accepted" | "revoked" | "expired"
@@ -4619,6 +5033,24 @@ export const Constants = {
         "sospesa",
         "completata",
         "annullata",
+      ],
+      costo_orario_stato: ["bozza", "calcolato", "approvato", "archiviato"],
+      costo_periodicita: [
+        "mensile",
+        "trimestrale",
+        "semestrale",
+        "annuale",
+        "una_tantum",
+        "ammortizzato",
+      ],
+      cs_modalita: ["nessuno", "orario", "percentuale", "manuale"],
+      cs_tipo_personale: [
+        "non_applicabile",
+        "diretto",
+        "indiretto",
+        "amministrazione",
+        "titolari",
+        "tecnico",
       ],
       documento_stato: ["valido", "in_scadenza", "scaduto", "archiviato"],
       documento_visibilita: ["privato", "organizzazione", "pubblico"],
