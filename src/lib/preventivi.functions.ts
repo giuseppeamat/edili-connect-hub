@@ -149,6 +149,13 @@ const headerSchema = z.object({
     condizioni_generali: z.string().max(8000).nullable().optional(),
     firma_referente: z.string().max(200).nullable().optional(),
     note: z.string().max(4000).nullable().optional(),
+    costo_struttura_modalita: z.enum(["nessuno", "orario", "percentuale", "manuale"]).optional(),
+    costo_struttura_ore: z.number().min(0).optional(),
+    costo_struttura_tariffa: z.number().min(0).optional(),
+    costo_struttura_pct: z.number().min(0).max(100).optional(),
+    costo_struttura_importo: z.number().min(0).optional(),
+    costo_struttura_versione_id: z.string().uuid().nullable().optional(),
+    costo_struttura_versione_label: z.string().max(60).nullable().optional(),
   }),
 });
 

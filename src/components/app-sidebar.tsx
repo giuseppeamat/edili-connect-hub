@@ -14,6 +14,7 @@ import {
   Package,
   Hammer,
   Bell,
+  PiggyBank,
 } from "lucide-react";
 import {
   Sidebar,
@@ -39,6 +40,7 @@ const items: NavItem[] = [
   { title: "Commesse", url: "/commesse", icon: HardHat },
   { title: "Rapportini", url: "/rapportini", icon: ClipboardList },
   { title: "Costi personale", url: "/costi-personale", icon: Wallet, onlyForRoles: ["proprietario", "amministratore", "amministrazione"] },
+  { title: "Costi struttura", url: "/costi-struttura", icon: PiggyBank, onlyForRoles: ["proprietario", "amministratore", "amministrazione"] },
   { title: "Materiali e prezzi", url: "/materiali", icon: Package, hideForRoles: ["operaio", "cliente", "fornitore"] },
   { title: "Documenti", url: "/documenti", icon: FolderOpen },
   { title: "Notifiche", url: "/notifiche", icon: Bell },

@@ -18,6 +18,7 @@ import {
   convertToCommessa,
   generatePreventivoPdfFn,
 } from "@/lib/preventivi.functions";
+import { PreventivoCostoStruttura } from "@/components/costi-struttura/preventivo-costo-struttura";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,6 +139,15 @@ function PreventivoEditor() {
     onError: (e: any) => toast.error(e?.message ?? "Errore salvataggio"),
   });
 
+  const savePatch = useMutation({
+    mutationFn: async (patch: Record<string, unknown>) => {
+      if (!preventivo?.updated_at) throw new Error("Preventivo non caricato");
+      return updateHeaderFn({ data: { id, expected_updated_at: preventivo.updated_at, patch: patch as any } });
+    },
+    onSuccess: () => { toast.success("Salvato"); invalidateAll(); },
+    onError: (e: any) => toast.error(e?.message ?? "Errore salvataggio"),
+  });
+
   if (isLoading) return <div className="p-6 text-muted-foreground">Caricamento…</div>;
   if (!preventivo) return (
     <div className="p-6">
@@ -197,8 +207,20 @@ function PreventivoEditor() {
         <TabsList>
           <TabsTrigger value="voci">Categorie & Voci</TabsTrigger>
           <TabsTrigger value="header">Intestazione</TabsTrigger>
+          <TabsTrigger value="struttura">Costi struttura</TabsTrigger>
           <TabsTrigger value="condizioni">Condizioni</TabsTrigger>
         </TabsList>
+
+        {/* ------ COSTI STRUTTURA ------ */}
+        <TabsContent value="struttura">
+          <PreventivoCostoStruttura
+            preventivo={preventivo}
+            readOnly={readOnly}
+            saving={savePatch.isPending}
+            onSave={(patch) => savePatch.mutate(patch)}
+          />
+        </TabsContent>
+
 
         {/* ------ VOCI ------ */}
         <TabsContent value="voci" className="space-y-4">
