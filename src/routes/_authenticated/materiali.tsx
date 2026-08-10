@@ -214,33 +214,52 @@ function MaterialiPage() {
                   <TableHead className="hidden md:table-cell">Codice</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead className="hidden md:table-cell">U.M.</TableHead>
+                  {canSeeEcon && <TableHead>Ultimo prezzo</TableHead>}
                   <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(materiali as any[]).map((m) => (
+                {(materiali as any[]).map((m) => {
+                  const up = ultimiPrezzi[m.id];
+                  return (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{m.nome}</TableCell>
                     <TableCell className="hidden md:table-cell font-mono text-xs">{m.codice ?? "—"}</TableCell>
                     <TableCell>{m.categoria && <Badge variant="secondary">{m.categoria}</Badge>}</TableCell>
                     <TableCell className="hidden md:table-cell">{m.unita_misura_predefinita ?? "—"}</TableCell>
+                    {canSeeEcon && (
+                      <TableCell>
+                        {up ? (
+                          <div className="text-sm">
+                            <div className="font-medium">€ {up.prezzo.toFixed(2)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {up.fornitore} · {dateIt(up.data)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       {canManage && (
-                        <Button size="icon" variant="ghost" aria-label="Modifica materiale" onClick={() => { setEdit(m); setOpen(true); }}>
+                        <Button size="icon" variant="ghost" aria-label="Modifica materiale" onClick={() => { setEdit(m); setFormFornitore(""); setOpen(true); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {(materiali as any[]).length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={canSeeEcon ? 6 : 5} className="text-center text-muted-foreground py-8">
                       Nessun materiale. I materiali possono essere creati anche registrando una bolla.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
+
             </Table>
           </Card>
         </TabsContent>
