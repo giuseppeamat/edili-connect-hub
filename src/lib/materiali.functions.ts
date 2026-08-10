@@ -40,6 +40,15 @@ export const listMateriali = createServerFn({ method: "GET" })
     }
   });
 
+const prezzoBlock = z.object({
+  fornitore_id: uuid,
+  prezzo_unitario: z.number().nonnegative(),
+  data_prezzo: z.string().min(1),
+  unita_misura: z.string().max(20).nullable().optional(),
+  quantita_riferimento: z.number().nonnegative().nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
+});
+
 export const saveMateriale = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -52,9 +61,11 @@ export const saveMateriale = createServerFn({ method: "POST" })
         categoria: z.string().max(100).nullable().optional(),
         unita_misura_predefinita: z.string().max(20).nullable().optional(),
         is_active: z.boolean().optional(),
+        prezzo: prezzoBlock.nullable().optional(),
       })
       .parse(d),
   )
+
   .handler(async ({ data, context }) => {
     try {
       const org = await orgId(context);
