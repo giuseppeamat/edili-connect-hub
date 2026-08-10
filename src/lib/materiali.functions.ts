@@ -77,6 +77,7 @@ export const saveMateriale = createServerFn({ method: "POST" })
         unita_misura_predefinita: data.unita_misura_predefinita || null,
         is_active: data.is_active ?? true,
       };
+      let materialeId: string;
       if (data.id) {
         const { error } = await context.supabase
           .from("materiali")
@@ -84,19 +85,56 @@ export const saveMateriale = createServerFn({ method: "POST" })
           .eq("id", data.id)
           .eq("organization_id", org);
         if (error) throw error;
-        return { id: data.id };
+        materialeId = data.id;
+      } else {
+        const { data: row, error } = await context.supabase
+          .from("materiali")
+          .insert({ ...payload, organization_id: org, created_by: context.userId })
+          .select("id")
+          .single();
+        if (error) throw error;
+        materialeId = row!.id as string;
       }
-      const { data: row, error } = await context.supabase
-        .from("materiali")
-        .insert({ ...payload, organization_id: org, created_by: context.userId })
-        .select("id")
-        .single();
-      if (error) throw error;
-      return { id: row!.id as string };
+
+      if (data.prezzo) {
+        const { error: pErr } = await context.supabase.rpc("save_prezzo_materiale" as any, {
+          _materiale_id: materialeId,
+          _fornitore_id: data.prezzo.fornitore_id,
+          _prezzo: data.prezzo.prezzo_unitario,
+          _data: data.prezzo.data_prezzo,
+          _unita_misura: data.prezzo.unita_misura ?? data.unita_misura_predefinita ?? null,
+          _quantita_riferimento: data.prezzo.quantita_riferimento ?? null,
+          _note: data.prezzo.note ?? null,
+        });
+        if (pErr) throw pErr;
+      }
+      return { id: materialeId };
     } catch (e) {
       throw new Error(mapServerError(e));
     }
   });
+
+export const savePrezzoMateriale = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => prezzoBlock.extend({ materiale_id: uuid }).parse(d))
+  .handler(async ({ data, context }) => {
+    try {
+      const { data: id, error } = await context.supabase.rpc("save_prezzo_materiale" as any, {
+        _materiale_id: data.materiale_id,
+        _fornitore_id: data.fornitore_id,
+        _prezzo: data.prezzo_unitario,
+        _data: data.data_prezzo,
+        _unita_misura: data.unita_misura ?? null,
+        _quantita_riferimento: data.quantita_riferimento ?? null,
+        _note: data.note ?? null,
+      });
+      if (error) throw error;
+      return { id: id as unknown as string };
+    } catch (e) {
+      throw new Error(mapServerError(e));
+    }
+  });
+
 
 export const listPrezziMateriali = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
