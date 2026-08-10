@@ -377,7 +377,7 @@ function MaterialiPage() {
         )}
       </Tabs>
 
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEdit(null); }}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEdit(null); setFormFornitore(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{edit ? "Modifica materiale" : "Nuovo materiale"}</DialogTitle>
@@ -391,12 +391,78 @@ function MaterialiPage() {
             <div><Label>Categoria</Label><Input name="categoria" defaultValue={edit?.categoria ?? ""} maxLength={100} /></div>
             <div><Label>Unità di misura</Label><Input name="unita_misura_predefinita" defaultValue={edit?.unita_misura_predefinita ?? ""} maxLength={20} /></div>
             <div className="md:col-span-2"><Label>Descrizione</Label><Input name="descrizione" defaultValue={edit?.descrizione ?? ""} maxLength={1000} /></div>
+
+            {canSeeEcon && (
+              <>
+                <div className="md:col-span-2 border-t pt-3">
+                  <div className="text-sm font-medium">Prezzo iniziale (facoltativo)</div>
+                  <p className="text-xs text-muted-foreground">
+                    Se compili prezzo e fornitore viene creata una rilevazione nello storico prezzi.
+                  </p>
+                </div>
+                <div>
+                  <Label>Fornitore</Label>
+                  <Select value={formFornitore} onValueChange={setFormFornitore}>
+                    <SelectTrigger><SelectValue placeholder="Seleziona fornitore" /></SelectTrigger>
+                    <SelectContent>
+                      {(fornitori as any[]).map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.ragione_sociale}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Prezzo unitario (€)</Label><Input name="prezzo_unitario" type="number" step="0.01" min="0" inputMode="decimal" /></div>
+                <div><Label>Data prezzo</Label><Input name="data_prezzo" type="date" defaultValue={today} /></div>
+                <div><Label>Note prezzo</Label><Input name="prezzo_note" maxLength={500} /></div>
+              </>
+            )}
+
             <DialogFooter className="md:col-span-2">
               <Button type="submit" disabled={save.isPending}>Salva</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={prezzoOpen} onOpenChange={setPrezzoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuova rilevazione prezzo</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={onSubmitPrezzo} className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label>Materiale *</Label>
+              <Select value={prezzoMateriale} onValueChange={setPrezzoMateriale}>
+                <SelectTrigger><SelectValue placeholder="Seleziona materiale" /></SelectTrigger>
+                <SelectContent>
+                  {(materiali as any[]).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Fornitore *</Label>
+              <Select value={prezzoFornitore} onValueChange={setPrezzoFornitore}>
+                <SelectTrigger><SelectValue placeholder="Seleziona fornitore" /></SelectTrigger>
+                <SelectContent>
+                  {(fornitori as any[]).map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.ragione_sociale}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Prezzo unitario (€) *</Label><Input name="prezzo_unitario" type="number" step="0.01" min="0" required inputMode="decimal" /></div>
+            <div><Label>Data prezzo *</Label><Input name="data_prezzo" type="date" required defaultValue={today} /></div>
+            <div><Label>Unità di misura</Label><Input name="unita_misura" maxLength={20} /></div>
+            <div><Label>Note</Label><Input name="note" maxLength={500} /></div>
+            <DialogFooter className="md:col-span-2">
+              <Button type="submit" disabled={savePrezzo.isPending}>Registra prezzo</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
