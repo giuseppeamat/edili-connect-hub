@@ -1759,12 +1759,15 @@ export type Database = {
           bolla_riga_id: string | null
           commessa_id: string | null
           created_at: string
+          created_by: string | null
           data_prezzo: string
           descrizione: string | null
           fornitore_id: string
           id: string
           materiale_id: string | null
+          note: string | null
           organization_id: string
+          origine: string
           prezzo_unitario: number
           quantita_riferimento: number | null
           unita_misura: string | null
@@ -1774,12 +1777,15 @@ export type Database = {
           bolla_riga_id?: string | null
           commessa_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_prezzo: string
           descrizione?: string | null
           fornitore_id: string
           id?: string
           materiale_id?: string | null
+          note?: string | null
           organization_id: string
+          origine?: string
           prezzo_unitario: number
           quantita_riferimento?: number | null
           unita_misura?: string | null
@@ -1789,12 +1795,15 @@ export type Database = {
           bolla_riga_id?: string | null
           commessa_id?: string | null
           created_at?: string
+          created_by?: string | null
           data_prezzo?: string
           descrizione?: string | null
           fornitore_id?: string
           id?: string
           materiale_id?: string | null
+          note?: string | null
           organization_id?: string
+          origine?: string
           prezzo_unitario?: number
           quantita_riferimento?: number | null
           unita_misura?: string | null
@@ -4563,6 +4572,18 @@ export type Database = {
           riga_id: string
           tariffa: number
         }[]
+      }
+      save_prezzo_materiale: {
+        Args: {
+          _data: string
+          _fornitore_id: string
+          _materiale_id: string
+          _note?: string
+          _prezzo: number
+          _quantita_riferimento?: number
+          _unita_misura?: string
+        }
+        Returns: string
       }
       save_rapportino_bolla: {
         Args: { _bolla: Json; _rapportino_id: string; _righe: Json }

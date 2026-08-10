@@ -16,10 +16,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Plus, Pencil } from "lucide-react";
 import { dateIt } from "@/lib/format";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { listMateriali, saveMateriale, listPrezziMateriali } from "@/lib/materiali.functions";
+import { listMateriali, saveMateriale, listPrezziMateriali, savePrezzoMateriale } from "@/lib/materiali.functions";
 import { listSoggetti } from "@/lib/subappaltatori.functions";
-import { confrontoPrezzi } from "@/lib/rapportini-extra";
+import { confrontoPrezzi, ultimiPrezziPerMateriale } from "@/lib/rapportini-extra";
 import { extraKeys } from "@/lib/rapportini-extra.keys";
+
 
 export const Route = createFileRoute("/_authenticated/materiali")({
   head: () => ({
@@ -42,6 +43,7 @@ function MaterialiPage() {
   const listFn = useServerFn(listMateriali);
   const saveFn = useServerFn(saveMateriale);
   const prezziFn = useServerFn(listPrezziMateriali);
+  const savePrezzoFn = useServerFn(savePrezzoMateriale);
   const fornFn = useServerFn(listSoggetti);
 
   const { data: materiali = [] } = useQuery({
@@ -66,6 +68,14 @@ function MaterialiPage() {
     queryFn: async () => (await prezziFn({ data: prezziFilters })) as any[],
   });
 
+  // Tutti i prezzi (senza filtri) per la colonna "Ultimo prezzo" in anagrafica.
+  const { data: tuttiPrezzi = [] } = useQuery({
+    queryKey: extraKeys.prezzi({ scope: "all" }),
+    enabled: canSeeEcon,
+    queryFn: async () => (await prezziFn({ data: {} })) as any[],
+  });
+  const ultimiPrezzi = useMemo(() => ultimiPrezziPerMateriale(tuttiPrezzi as any[]), [tuttiPrezzi]);
+
   const confronto = useMemo(
     () =>
       materialeFilter === ALL
@@ -83,6 +93,17 @@ function MaterialiPage() {
 
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
+  const [prezzoOpen, setPrezzoOpen] = useState(false);
+  const [prezzoMateriale, setPrezzoMateriale] = useState<string>("");
+  const [prezzoFornitore, setPrezzoFornitore] = useState<string>("");
+  const [formFornitore, setFormFornitore] = useState<string>("");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const invalidaPrezzi = () => {
+    qc.invalidateQueries({ queryKey: extraKeys.materiali() });
+    qc.invalidateQueries({ queryKey: ["materiali", "prezzi"] });
+  };
 
   const save = useMutation({
     mutationFn: async (payload: any) => await saveFn({ data: payload }),
@@ -90,7 +111,20 @@ function MaterialiPage() {
       toast.success("Materiale salvato");
       setOpen(false);
       setEdit(null);
-      qc.invalidateQueries({ queryKey: extraKeys.materiali() });
+      setFormFornitore("");
+      invalidaPrezzi();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const savePrezzo = useMutation({
+    mutationFn: async (payload: any) => await savePrezzoFn({ data: payload }),
+    onSuccess: () => {
+      toast.success("Prezzo registrato");
+      setPrezzoOpen(false);
+      setPrezzoMateriale("");
+      setPrezzoFornitore("");
+      invalidaPrezzi();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -98,6 +132,16 @@ function MaterialiPage() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const prezzoRaw = String(fd.get("prezzo_unitario") ?? "").replace(",", ".").trim();
+    const prezzoNum = prezzoRaw === "" ? null : Number(prezzoRaw);
+    if (prezzoRaw !== "" && (!Number.isFinite(prezzoNum) || (prezzoNum as number) < 0)) {
+      toast.error("Prezzo non valido");
+      return;
+    }
+    if (prezzoNum !== null && !formFornitore) {
+      toast.error("Seleziona il fornitore per registrare il prezzo");
+      return;
+    }
     save.mutate({
       id: edit?.id ?? null,
       nome: String(fd.get("nome") ?? "").trim(),
@@ -105,8 +149,41 @@ function MaterialiPage() {
       categoria: (fd.get("categoria") as string) || null,
       unita_misura_predefinita: (fd.get("unita_misura_predefinita") as string) || null,
       descrizione: (fd.get("descrizione") as string) || null,
+      prezzo:
+        prezzoNum !== null && formFornitore
+          ? {
+              fornitore_id: formFornitore,
+              prezzo_unitario: prezzoNum,
+              data_prezzo: String(fd.get("data_prezzo") || today),
+              unita_misura: (fd.get("unita_misura_predefinita") as string) || null,
+              note: (fd.get("prezzo_note") as string) || null,
+            }
+          : null,
     });
   };
+
+  const onSubmitPrezzo = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const prezzoNum = Number(String(fd.get("prezzo_unitario") ?? "").replace(",", "."));
+    if (!prezzoMateriale || !prezzoFornitore) {
+      toast.error("Materiale e fornitore sono obbligatori");
+      return;
+    }
+    if (!Number.isFinite(prezzoNum) || prezzoNum < 0) {
+      toast.error("Prezzo non valido");
+      return;
+    }
+    savePrezzo.mutate({
+      materiale_id: prezzoMateriale,
+      fornitore_id: prezzoFornitore,
+      prezzo_unitario: prezzoNum,
+      data_prezzo: String(fd.get("data_prezzo") || today),
+      unita_misura: (fd.get("unita_misura") as string) || null,
+      note: (fd.get("note") as string) || null,
+    });
+  };
+
 
   return (
     <div>
@@ -137,33 +214,52 @@ function MaterialiPage() {
                   <TableHead className="hidden md:table-cell">Codice</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead className="hidden md:table-cell">U.M.</TableHead>
+                  {canSeeEcon && <TableHead>Ultimo prezzo</TableHead>}
                   <TableHead className="w-16"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(materiali as any[]).map((m) => (
+                {(materiali as any[]).map((m) => {
+                  const up = ultimiPrezzi[m.id];
+                  return (
                   <TableRow key={m.id}>
                     <TableCell className="font-medium">{m.nome}</TableCell>
                     <TableCell className="hidden md:table-cell font-mono text-xs">{m.codice ?? "—"}</TableCell>
                     <TableCell>{m.categoria && <Badge variant="secondary">{m.categoria}</Badge>}</TableCell>
                     <TableCell className="hidden md:table-cell">{m.unita_misura_predefinita ?? "—"}</TableCell>
+                    {canSeeEcon && (
+                      <TableCell>
+                        {up ? (
+                          <div className="text-sm">
+                            <div className="font-medium">€ {up.prezzo.toFixed(2)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {up.fornitore} · {dateIt(up.data)}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell className="text-right">
                       {canManage && (
-                        <Button size="icon" variant="ghost" aria-label="Modifica materiale" onClick={() => { setEdit(m); setOpen(true); }}>
+                        <Button size="icon" variant="ghost" aria-label="Modifica materiale" onClick={() => { setEdit(m); setFormFornitore(""); setOpen(true); }}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                       )}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {(materiali as any[]).length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={canSeeEcon ? 6 : 5} className="text-center text-muted-foreground py-8">
                       Nessun materiale. I materiali possono essere creati anche registrando una bolla.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
+
             </Table>
           </Card>
         </TabsContent>
@@ -232,6 +328,14 @@ function MaterialiPage() {
             )}
 
             <Card>
+              <div className="p-4 flex items-center justify-between">
+                <div className="text-sm font-medium">Rilevazioni prezzo</div>
+                {canManage && (
+                  <Button size="sm" onClick={() => { setPrezzoMateriale(materialeFilter === ALL ? "" : materialeFilter); setPrezzoFornitore(fornitoreFilter === ALL ? "" : fornitoreFilter); setPrezzoOpen(true); }}>
+                    <Plus className="h-4 w-4 mr-1" /> Nuova rilevazione
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -240,6 +344,7 @@ function MaterialiPage() {
                     <TableHead>Fornitore</TableHead>
                     <TableHead>Prezzo</TableHead>
                     <TableHead className="hidden md:table-cell">U.M.</TableHead>
+                    <TableHead className="hidden md:table-cell">Origine</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -250,23 +355,29 @@ function MaterialiPage() {
                       <TableCell>{p.fornitore_nome ?? "—"}</TableCell>
                       <TableCell>€ {Number(p.prezzo_unitario ?? 0).toFixed(2)}</TableCell>
                       <TableCell className="hidden md:table-cell">{p.unita_misura ?? "—"}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant={p.origine === "manuale" ? "outline" : "secondary"}>
+                          {p.origine === "manuale" ? "Manuale" : "Bolla"}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {(prezzi as any[]).length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        Nessuna rilevazione di prezzo. Lo storico si popola registrando le bolle.
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        Nessuna rilevazione di prezzo. Puoi registrarne una manualmente oppure caricare una bolla.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </Card>
+
           </TabsContent>
         )}
       </Tabs>
 
-      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEdit(null); }}>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setEdit(null); setFormFornitore(""); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{edit ? "Modifica materiale" : "Nuovo materiale"}</DialogTitle>
@@ -280,12 +391,78 @@ function MaterialiPage() {
             <div><Label>Categoria</Label><Input name="categoria" defaultValue={edit?.categoria ?? ""} maxLength={100} /></div>
             <div><Label>Unità di misura</Label><Input name="unita_misura_predefinita" defaultValue={edit?.unita_misura_predefinita ?? ""} maxLength={20} /></div>
             <div className="md:col-span-2"><Label>Descrizione</Label><Input name="descrizione" defaultValue={edit?.descrizione ?? ""} maxLength={1000} /></div>
+
+            {canSeeEcon && (
+              <>
+                <div className="md:col-span-2 border-t pt-3">
+                  <div className="text-sm font-medium">Prezzo iniziale (facoltativo)</div>
+                  <p className="text-xs text-muted-foreground">
+                    Se compili prezzo e fornitore viene creata una rilevazione nello storico prezzi.
+                  </p>
+                </div>
+                <div>
+                  <Label>Fornitore</Label>
+                  <Select value={formFornitore} onValueChange={setFormFornitore}>
+                    <SelectTrigger><SelectValue placeholder="Seleziona fornitore" /></SelectTrigger>
+                    <SelectContent>
+                      {(fornitori as any[]).map((f) => (
+                        <SelectItem key={f.id} value={f.id}>{f.ragione_sociale}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Prezzo unitario (€)</Label><Input name="prezzo_unitario" type="number" step="0.01" min="0" inputMode="decimal" /></div>
+                <div><Label>Data prezzo</Label><Input name="data_prezzo" type="date" defaultValue={today} /></div>
+                <div><Label>Note prezzo</Label><Input name="prezzo_note" maxLength={500} /></div>
+              </>
+            )}
+
             <DialogFooter className="md:col-span-2">
               <Button type="submit" disabled={save.isPending}>Salva</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={prezzoOpen} onOpenChange={setPrezzoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuova rilevazione prezzo</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={onSubmitPrezzo} className="grid gap-3 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Label>Materiale *</Label>
+              <Select value={prezzoMateriale} onValueChange={setPrezzoMateriale}>
+                <SelectTrigger><SelectValue placeholder="Seleziona materiale" /></SelectTrigger>
+                <SelectContent>
+                  {(materiali as any[]).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Fornitore *</Label>
+              <Select value={prezzoFornitore} onValueChange={setPrezzoFornitore}>
+                <SelectTrigger><SelectValue placeholder="Seleziona fornitore" /></SelectTrigger>
+                <SelectContent>
+                  {(fornitori as any[]).map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.ragione_sociale}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Prezzo unitario (€) *</Label><Input name="prezzo_unitario" type="number" step="0.01" min="0" required inputMode="decimal" /></div>
+            <div><Label>Data prezzo *</Label><Input name="data_prezzo" type="date" required defaultValue={today} /></div>
+            <div><Label>Unità di misura</Label><Input name="unita_misura" maxLength={20} /></div>
+            <div><Label>Note</Label><Input name="note" maxLength={500} /></div>
+            <DialogFooter className="md:col-span-2">
+              <Button type="submit" disabled={savePrezzo.isPending}>Registra prezzo</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }

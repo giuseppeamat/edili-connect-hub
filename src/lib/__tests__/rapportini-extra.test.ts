@@ -7,7 +7,7 @@ import {
   importoSubappalto,
   validaSubappalto,
   riepilogoCosti,
-  confrontoPrezzi,
+  confrontoPrezzi, ultimiPrezziPerMateriale,
   rapportinoModificabile,
   bolleModificabili,
   BOLLE_ROLES_EDIT_EXTRA,
@@ -146,3 +146,17 @@ describe("modificabilità bolle", () => {
   });
 });
 
+
+describe("ultimiPrezziPerMateriale", () => {
+  it("prende la rilevazione più recente per materiale e ignora righe senza materiale", () => {
+    const r = ultimiPrezziPerMateriale([
+      { materiale_id: "m1", prezzo_unitario: 10, data_prezzo: "2026-01-01", fornitore_nome: "A" },
+      { materiale_id: "m1", prezzo_unitario: "12.345", data_prezzo: "2026-03-01", fornitore_nome: "B", unita_misura: "kg" },
+      { materiale_id: null, prezzo_unitario: 99, data_prezzo: "2026-05-01" },
+      { materiale_id: "m2", prezzo_unitario: 5, data_prezzo: "2026-02-01" },
+    ]);
+    expect(r["m1"]).toEqual({ prezzo: 12.35, data: "2026-03-01", fornitore: "B", unita_misura: "kg" });
+    expect(r["m2"]!.prezzo).toBe(5);
+    expect(Object.keys(r)).toHaveLength(2);
+  });
+});

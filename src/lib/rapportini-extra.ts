@@ -231,3 +231,31 @@ export function bolleModificabili(
   return BOLLE_ROLES_EDIT_EXTRA.some((role) => ruoliSet.has(role));
 }
 
+
+/** Ultimo prezzo rilevato per ciascun materiale (per la colonna in anagrafica). */
+export function ultimiPrezziPerMateriale(
+  righe: Array<{
+    materiale_id?: string | null;
+    prezzo_unitario: number | string;
+    data_prezzo: string;
+    fornitore_nome?: string | null;
+    unita_misura?: string | null;
+  }>,
+): Record<string, { prezzo: number; data: string; fornitore: string; unita_misura: string | null }> {
+  const out: Record<string, { prezzo: number; data: string; fornitore: string; unita_misura: string | null }> = {};
+  for (const r of righe ?? []) {
+    if (!r.materiale_id) continue;
+    const p = num(r.prezzo_unitario);
+    if (p === null) continue;
+    const prev = out[r.materiale_id];
+    if (!prev || prev.data < r.data_prezzo) {
+      out[r.materiale_id] = {
+        prezzo: round2(p),
+        data: r.data_prezzo,
+        fornitore: r.fornitore_nome ?? "—",
+        unita_misura: r.unita_misura ?? null,
+      };
+    }
+  }
+  return out;
+}
