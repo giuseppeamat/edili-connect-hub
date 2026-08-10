@@ -328,6 +328,14 @@ function MaterialiPage() {
             )}
 
             <Card>
+              <div className="p-4 flex items-center justify-between">
+                <div className="text-sm font-medium">Rilevazioni prezzo</div>
+                {canManage && (
+                  <Button size="sm" onClick={() => { setPrezzoMateriale(materialeFilter === ALL ? "" : materialeFilter); setPrezzoFornitore(fornitoreFilter === ALL ? "" : fornitoreFilter); setPrezzoOpen(true); }}>
+                    <Plus className="h-4 w-4 mr-1" /> Nuova rilevazione
+                  </Button>
+                )}
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -336,6 +344,7 @@ function MaterialiPage() {
                     <TableHead>Fornitore</TableHead>
                     <TableHead>Prezzo</TableHead>
                     <TableHead className="hidden md:table-cell">U.M.</TableHead>
+                    <TableHead className="hidden md:table-cell">Origine</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -346,18 +355,24 @@ function MaterialiPage() {
                       <TableCell>{p.fornitore_nome ?? "—"}</TableCell>
                       <TableCell>€ {Number(p.prezzo_unitario ?? 0).toFixed(2)}</TableCell>
                       <TableCell className="hidden md:table-cell">{p.unita_misura ?? "—"}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant={p.origine === "manuale" ? "outline" : "secondary"}>
+                          {p.origine === "manuale" ? "Manuale" : "Bolla"}
+                        </Badge>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {(prezzi as any[]).length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        Nessuna rilevazione di prezzo. Lo storico si popola registrando le bolle.
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        Nessuna rilevazione di prezzo. Puoi registrarne una manualmente oppure caricare una bolla.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </Card>
+
           </TabsContent>
         )}
       </Tabs>
