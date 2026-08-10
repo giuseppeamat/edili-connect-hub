@@ -43,6 +43,7 @@ function MaterialiPage() {
   const listFn = useServerFn(listMateriali);
   const saveFn = useServerFn(saveMateriale);
   const prezziFn = useServerFn(listPrezziMateriali);
+  const savePrezzoFn = useServerFn(savePrezzoMateriale);
   const fornFn = useServerFn(listSoggetti);
 
   const { data: materiali = [] } = useQuery({
@@ -67,6 +68,14 @@ function MaterialiPage() {
     queryFn: async () => (await prezziFn({ data: prezziFilters })) as any[],
   });
 
+  // Tutti i prezzi (senza filtri) per la colonna "Ultimo prezzo" in anagrafica.
+  const { data: tuttiPrezzi = [] } = useQuery({
+    queryKey: extraKeys.prezzi({ scope: "all" }),
+    enabled: canSeeEcon,
+    queryFn: async () => (await prezziFn({ data: {} })) as any[],
+  });
+  const ultimiPrezzi = useMemo(() => ultimiPrezziPerMateriale(tuttiPrezzi as any[]), [tuttiPrezzi]);
+
   const confronto = useMemo(
     () =>
       materialeFilter === ALL
@@ -84,6 +93,17 @@ function MaterialiPage() {
 
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<any>(null);
+  const [prezzoOpen, setPrezzoOpen] = useState(false);
+  const [prezzoMateriale, setPrezzoMateriale] = useState<string>("");
+  const [prezzoFornitore, setPrezzoFornitore] = useState<string>("");
+  const [formFornitore, setFormFornitore] = useState<string>("");
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const invalidaPrezzi = () => {
+    qc.invalidateQueries({ queryKey: extraKeys.materiali() });
+    qc.invalidateQueries({ queryKey: ["materiali", "prezzi"] });
+  };
 
   const save = useMutation({
     mutationFn: async (payload: any) => await saveFn({ data: payload }),
@@ -91,7 +111,20 @@ function MaterialiPage() {
       toast.success("Materiale salvato");
       setOpen(false);
       setEdit(null);
-      qc.invalidateQueries({ queryKey: extraKeys.materiali() });
+      setFormFornitore("");
+      invalidaPrezzi();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const savePrezzo = useMutation({
+    mutationFn: async (payload: any) => await savePrezzoFn({ data: payload }),
+    onSuccess: () => {
+      toast.success("Prezzo registrato");
+      setPrezzoOpen(false);
+      setPrezzoMateriale("");
+      setPrezzoFornitore("");
+      invalidaPrezzi();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -99,6 +132,16 @@ function MaterialiPage() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const prezzoRaw = String(fd.get("prezzo_unitario") ?? "").replace(",", ".").trim();
+    const prezzoNum = prezzoRaw === "" ? null : Number(prezzoRaw);
+    if (prezzoRaw !== "" && (!Number.isFinite(prezzoNum) || (prezzoNum as number) < 0)) {
+      toast.error("Prezzo non valido");
+      return;
+    }
+    if (prezzoNum !== null && !formFornitore) {
+      toast.error("Seleziona il fornitore per registrare il prezzo");
+      return;
+    }
     save.mutate({
       id: edit?.id ?? null,
       nome: String(fd.get("nome") ?? "").trim(),
@@ -106,8 +149,41 @@ function MaterialiPage() {
       categoria: (fd.get("categoria") as string) || null,
       unita_misura_predefinita: (fd.get("unita_misura_predefinita") as string) || null,
       descrizione: (fd.get("descrizione") as string) || null,
+      prezzo:
+        prezzoNum !== null && formFornitore
+          ? {
+              fornitore_id: formFornitore,
+              prezzo_unitario: prezzoNum,
+              data_prezzo: String(fd.get("data_prezzo") || today),
+              unita_misura: (fd.get("unita_misura_predefinita") as string) || null,
+              note: (fd.get("prezzo_note") as string) || null,
+            }
+          : null,
     });
   };
+
+  const onSubmitPrezzo = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const prezzoNum = Number(String(fd.get("prezzo_unitario") ?? "").replace(",", "."));
+    if (!prezzoMateriale || !prezzoFornitore) {
+      toast.error("Materiale e fornitore sono obbligatori");
+      return;
+    }
+    if (!Number.isFinite(prezzoNum) || prezzoNum < 0) {
+      toast.error("Prezzo non valido");
+      return;
+    }
+    savePrezzo.mutate({
+      materiale_id: prezzoMateriale,
+      fornitore_id: prezzoFornitore,
+      prezzo_unitario: prezzoNum,
+      data_prezzo: String(fd.get("data_prezzo") || today),
+      unita_misura: (fd.get("unita_misura") as string) || null,
+      note: (fd.get("note") as string) || null,
+    });
+  };
+
 
   return (
     <div>
