@@ -698,7 +698,7 @@ export const listAssignableMembers = createServerFn({ method: "GET" })
 // ============= ADD MEMBER =============
 const addMemberSchema = z.object({
   commessa_id: z.string().uuid(),
-  user_id: z.string().uuid(),
+  membro_id: z.string().uuid(),
   ruolo_operativo: z.enum(RUOLI_OPERATIVI),
   cantiere_id: z.string().uuid().nullable().optional(),
   data_inizio: z.string().optional(),
@@ -706,19 +706,22 @@ const addMemberSchema = z.object({
   note: z.string().max(500).nullable().optional(),
 });
 
-async function assertUserActiveInOrg(context: any, orgId: string, userId: string) {
-  const { data: p } = await context.supabase
-    .from("profiles").select("id, is_active, organization_id").eq("id", userId).maybeSingle();
-  if (!p || p.organization_id !== orgId) throw new Error("Utente non appartiene all'organizzazione");
-  if (p.is_active === false) throw new Error("Utente disattivato");
-  const { data: r } = await context.supabase
-    .from("user_roles").select("role").eq("user_id", userId).eq("organization_id", orgId);
-  const rolesU = (r ?? []).map((x: any) => x.role as AppRole);
-  if (rolesU.includes("cliente") || rolesU.includes("fornitore")) {
+/** Il membro deve esistere in anagrafica, essere attivo e non essere cliente/fornitore. */
+async function resolveAssignableMembro(context: any, orgId: string, membroId: string) {
+  const { data: m } = await context.supabase
+    .from("organization_members")
+    .select("id, user_id, is_active, archived_at, ruolo_organizzativo, organization_id")
+    .eq("id", membroId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (!m) throw new Error("Membro non appartiene all'organizzazione");
+  if (m.archived_at || m.is_active === false) throw new Error("Membro non attivo");
+  if (m.ruolo_organizzativo === "cliente" || m.ruolo_organizzativo === "fornitore") {
     throw new Error("Cliente/Fornitore non possono essere assegnati come membri interni");
   }
-  if (!rolesU.length) throw new Error("Utente senza ruoli in questa organizzazione");
+  return m as { id: string; user_id: string | null };
 }
+
 
 async function assertCanManageMembers(context: any, commessa: any, roles: AppRole[]) {
   if (hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])) return;
