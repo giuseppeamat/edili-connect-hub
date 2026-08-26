@@ -634,14 +634,38 @@ export const listCommessaMembers = createServerFn({ method: "POST" })
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
-    let profMap = new Map<string, any>();
-    if (ids.length) {
+
+    const membroIds = Array.from(new Set((rows ?? []).map((r: any) => r.membro_id).filter(Boolean)));
+    const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+
+    const membroMap = new Map<string, any>();
+    if (membroIds.length) {
+      const { data: membri } = await context.supabase
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email, stato_accesso")
+        .eq("organization_id", organizationId)
+        .in("id", membroIds);
+      for (const m of membri ?? []) membroMap.set((m as any).id, m);
+    }
+    const profMap = new Map<string, any>();
+    if (userIds.length) {
       const { data: profs } = await context.supabase
-        .from("profiles").select("id, nome, cognome, email").in("id", ids);
+        .from("profiles").select("id, nome, cognome, email").in("id", userIds);
       for (const p of profs ?? []) profMap.set(p.id, p);
     }
-    return (rows ?? []).map((r: any) => ({ ...r, profile: profMap.get(r.user_id) ?? null }));
+
+    return (rows ?? []).map((r: any) => {
+      const membro = r.membro_id ? membroMap.get(r.membro_id) : null;
+      const prof = r.user_id ? profMap.get(r.user_id) : null;
+      const person = membro ?? prof ?? null;
+      return {
+        ...r,
+        profile: person
+          ? { nome: person.nome, cognome: person.cognome, email: person.email }
+          : null,
+        has_access: Boolean(r.user_id ?? membro?.user_id),
+      };
+    });
   });
 
 // ============= LIST ASSIGNABLE MEMBERS (per aggiunta team) =============
@@ -649,25 +673,27 @@ export const listAssignableMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { organizationId } = await ctx(context);
-    const INTERNAL: AppRole[] = ["proprietario","amministratore","ufficio_tecnico","amministrazione","responsabile_commessa","capocantiere","operaio"];
-    const { data: rolesRows } = await context.supabase
-      .from("user_roles").select("user_id, role").eq("organization_id", organizationId).in("role", INTERNAL);
-    const ids = Array.from(new Set((rolesRows ?? []).map((r: any) => r.user_id)));
-    if (!ids.length) return [];
-    const { data: profs } = await context.supabase
-      .from("profiles").select("id, nome, cognome, email, is_active, organization_id")
-      .in("id", ids).eq("organization_id", organizationId).eq("is_active", true);
-    const roleByUser = new Map<string, AppRole[]>();
-    for (const r of rolesRows ?? []) {
-      const arr = roleByUser.get((r as any).user_id) ?? [];
-      arr.push((r as any).role);
-      roleByUser.set((r as any).user_id, arr);
-    }
-    return (profs ?? []).map((p: any) => ({
-      id: p.id, nome: p.nome, cognome: p.cognome, email: p.email,
-      roles: roleByUser.get(p.id) ?? [],
-    }));
+    const { data: membri } = await context.supabase
+      .from("organization_members")
+      .select("id, user_id, nome, cognome, email, ruolo_organizzativo, is_active, archived_at")
+      .eq("organization_id", organizationId)
+      .is("archived_at", null)
+      .eq("is_active", true)
+      .order("cognome", { ascending: true });
+
+    return (membri ?? [])
+      .filter((m: any) => m.ruolo_organizzativo !== "cliente" && m.ruolo_organizzativo !== "fornitore")
+      .map((m: any) => ({
+        membro_id: m.id,
+        user_id: m.user_id ?? null,
+        nome: m.nome,
+        cognome: m.cognome,
+        email: m.email,
+        ruolo_organizzativo: m.ruolo_organizzativo,
+        has_access: Boolean(m.user_id),
+      }));
   });
+
 
 // ============= ADD MEMBER =============
 const addMemberSchema = z.object({
