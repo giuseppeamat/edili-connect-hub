@@ -857,11 +857,11 @@ function TeamTab({ commessa, canManage }: any) {
 function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: any) {
   const listFn = useServerFn(listAssignableMembers);
   const addFn = useServerFn(addCommessaMember);
-  const { data: users = [] } = useQuery({
+  const { data: membriOrg = [] } = useQuery({
     queryKey: ["assignable-members"], enabled: open,
     queryFn: async () => await listFn(),
   });
-  const [userId, setUserId] = useState("");
+  const [membroId, setMembroId] = useState("");
   const [ruolo, setRuolo] = useState<string>("operaio");
   const [cantiereId, setCantiereId] = useState<string>("__none__");
   const [saving, setSaving] = useState(false);
@@ -871,14 +871,19 @@ function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: a
         <DialogHeader><DialogTitle>Aggiungi membro</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Utente *</Label>
-            <Select value={userId} onValueChange={setUserId}>
-              <SelectTrigger><SelectValue placeholder="Seleziona utente attivo" /></SelectTrigger>
+            <Label>Membro *</Label>
+            <Select value={membroId} onValueChange={setMembroId}>
+              <SelectTrigger><SelectValue placeholder="Seleziona un membro dell'organizzazione" /></SelectTrigger>
               <SelectContent>
-                {(users as any[]).map((u) => <SelectItem key={u.id} value={u.id}>{fullName(u)}</SelectItem>)}
+                {(membriOrg as any[]).map((u) => (
+                  <SelectItem key={u.membro_id} value={u.membro_id}>
+                    {fullName(u)}{u.has_access ? "" : " — Senza accesso"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label>Ruolo operativo *</Label>
             <Select value={ruolo} onValueChange={setRuolo}>
