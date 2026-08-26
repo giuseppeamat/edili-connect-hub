@@ -806,7 +806,13 @@ function TeamTab({ commessa, canManage }: any) {
                 const cant = (cantieri as any[]).find((k) => k.id === m.cantiere_id);
                 return (
                   <tr key={m.id} className="border-t">
-                    <td className="p-3">{fullName(m.profile)}<div className="text-xs text-muted-foreground">{m.profile?.email}</div></td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        {fullName(m.profile)}
+                        {!m.has_access && <Badge variant="outline" className="text-xs">Senza accesso</Badge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{m.profile?.email}</div>
+                    </td>
                     <td className="p-3">{RUOLI_OP_LABEL[m.ruolo_operativo] ?? m.ruolo_operativo}</td>
                     <td className="p-3 text-xs">{cant ? `${cant.codice} — ${cant.nome}` : <span className="text-muted-foreground">Commessa intera</span>}</td>
                     <td className="p-3">{dateIt(m.data_inizio)}</td>
