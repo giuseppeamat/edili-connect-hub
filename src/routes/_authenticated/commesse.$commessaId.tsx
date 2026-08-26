@@ -715,7 +715,7 @@ function SetCapocantiereDialog({ open, onOpenChange, cantiere, onDone }: any) {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Nessuno</SelectItem>
-              {filtered.map((m) => <SelectItem key={m.id} value={m.id}>{fullName(m)}</SelectItem>)}
+              {filtered.map((m) => <SelectItem key={m.membro_id} value={m.user_id}>{fullName(m)}</SelectItem>)}
             </SelectContent>
           </Select>
           <DialogFooter>
