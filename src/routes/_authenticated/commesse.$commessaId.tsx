@@ -698,9 +698,12 @@ function SetCapocantiereDialog({ open, onOpenChange, cantiere, onDone }: any) {
     queryKey: ["assignable-members"], enabled: open,
     queryFn: async () => await listFn(),
   });
+  // Il capocantiere del cantiere è un utente Auth: solo membri con accesso attivo.
   const filtered = (members as any[]).filter((m) =>
-    m.roles?.some((r: string) => ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore","proprietario"].includes(r))
+    m.user_id &&
+    ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore","proprietario"].includes(m.ruolo_organizzativo)
   );
+
   const [val, setVal] = useState<string>(cantiere.capocantiere_id ?? "__none__");
   const [saving, setSaving] = useState(false);
   return (
@@ -712,7 +715,7 @@ function SetCapocantiereDialog({ open, onOpenChange, cantiere, onDone }: any) {
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__none__">Nessuno</SelectItem>
-              {filtered.map((m) => <SelectItem key={m.id} value={m.id}>{fullName(m)}</SelectItem>)}
+              {filtered.map((m) => <SelectItem key={m.membro_id} value={m.user_id}>{fullName(m)}</SelectItem>)}
             </SelectContent>
           </Select>
           <DialogFooter>
@@ -806,7 +809,13 @@ function TeamTab({ commessa, canManage }: any) {
                 const cant = (cantieri as any[]).find((k) => k.id === m.cantiere_id);
                 return (
                   <tr key={m.id} className="border-t">
-                    <td className="p-3">{fullName(m.profile)}<div className="text-xs text-muted-foreground">{m.profile?.email}</div></td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        {fullName(m.profile)}
+                        {!m.has_access && <Badge variant="outline" className="text-xs">Senza accesso</Badge>}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{m.profile?.email}</div>
+                    </td>
                     <td className="p-3">{RUOLI_OP_LABEL[m.ruolo_operativo] ?? m.ruolo_operativo}</td>
                     <td className="p-3 text-xs">{cant ? `${cant.codice} — ${cant.nome}` : <span className="text-muted-foreground">Commessa intera</span>}</td>
                     <td className="p-3">{dateIt(m.data_inizio)}</td>
@@ -851,11 +860,11 @@ function TeamTab({ commessa, canManage }: any) {
 function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: any) {
   const listFn = useServerFn(listAssignableMembers);
   const addFn = useServerFn(addCommessaMember);
-  const { data: users = [] } = useQuery({
+  const { data: membriOrg = [] } = useQuery({
     queryKey: ["assignable-members"], enabled: open,
     queryFn: async () => await listFn(),
   });
-  const [userId, setUserId] = useState("");
+  const [membroId, setMembroId] = useState("");
   const [ruolo, setRuolo] = useState<string>("operaio");
   const [cantiereId, setCantiereId] = useState<string>("__none__");
   const [saving, setSaving] = useState(false);
@@ -865,14 +874,19 @@ function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: a
         <DialogHeader><DialogTitle>Aggiungi membro</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Utente *</Label>
-            <Select value={userId} onValueChange={setUserId}>
-              <SelectTrigger><SelectValue placeholder="Seleziona utente attivo" /></SelectTrigger>
+            <Label>Membro *</Label>
+            <Select value={membroId} onValueChange={setMembroId}>
+              <SelectTrigger><SelectValue placeholder="Seleziona un membro dell'organizzazione" /></SelectTrigger>
               <SelectContent>
-                {(users as any[]).map((u) => <SelectItem key={u.id} value={u.id}>{fullName(u)}</SelectItem>)}
+                {(membriOrg as any[]).map((u) => (
+                  <SelectItem key={u.membro_id} value={u.membro_id}>
+                    {fullName(u)}{u.has_access ? "" : " — Senza accesso"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+
           <div>
             <Label>Ruolo operativo *</Label>
             <Select value={ruolo} onValueChange={setRuolo}>
@@ -899,16 +913,16 @@ function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: a
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Annulla</Button>
-            <Button disabled={saving || !userId} onClick={async () => {
+            <Button disabled={saving || !membroId} onClick={async () => {
               setSaving(true);
               try {
                 await addFn({ data: {
-                  commessa_id: commessaId, user_id: userId,
+                  commessa_id: commessaId, membro_id: membroId,
                   ruolo_operativo: ruolo as any,
                   cantiere_id: cantiereId === "__none__" ? null : cantiereId,
                 }});
                 toast.success("Membro aggiunto"); onDone(); onOpenChange(false);
-                setUserId(""); setRuolo("operaio"); setCantiereId("__none__");
+                setMembroId(""); setRuolo("operaio"); setCantiereId("__none__");
               } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
             }}>Aggiungi</Button>
           </DialogFooter>

@@ -634,14 +634,38 @@ export const listCommessaMembers = createServerFn({ method: "POST" })
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    const ids = Array.from(new Set((rows ?? []).map((r: any) => r.user_id)));
-    let profMap = new Map<string, any>();
-    if (ids.length) {
+
+    const membroIds = Array.from(new Set((rows ?? []).map((r: any) => r.membro_id).filter(Boolean)));
+    const userIds = Array.from(new Set((rows ?? []).map((r: any) => r.user_id).filter(Boolean)));
+
+    const membroMap = new Map<string, any>();
+    if (membroIds.length) {
+      const { data: membri } = await context.supabase
+        .from("organization_members")
+        .select("id, user_id, nome, cognome, email, stato_accesso")
+        .eq("organization_id", organizationId)
+        .in("id", membroIds);
+      for (const m of membri ?? []) membroMap.set((m as any).id, m);
+    }
+    const profMap = new Map<string, any>();
+    if (userIds.length) {
       const { data: profs } = await context.supabase
-        .from("profiles").select("id, nome, cognome, email").in("id", ids);
+        .from("profiles").select("id, nome, cognome, email").in("id", userIds);
       for (const p of profs ?? []) profMap.set(p.id, p);
     }
-    return (rows ?? []).map((r: any) => ({ ...r, profile: profMap.get(r.user_id) ?? null }));
+
+    return (rows ?? []).map((r: any) => {
+      const membro = r.membro_id ? membroMap.get(r.membro_id) : null;
+      const prof = r.user_id ? profMap.get(r.user_id) : null;
+      const person = membro ?? prof ?? null;
+      return {
+        ...r,
+        profile: person
+          ? { nome: person.nome, cognome: person.cognome, email: person.email }
+          : null,
+        has_access: Boolean(r.user_id ?? membro?.user_id),
+      };
+    });
   });
 
 // ============= LIST ASSIGNABLE MEMBERS (per aggiunta team) =============
@@ -649,30 +673,32 @@ export const listAssignableMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { organizationId } = await ctx(context);
-    const INTERNAL: AppRole[] = ["proprietario","amministratore","ufficio_tecnico","amministrazione","responsabile_commessa","capocantiere","operaio"];
-    const { data: rolesRows } = await context.supabase
-      .from("user_roles").select("user_id, role").eq("organization_id", organizationId).in("role", INTERNAL);
-    const ids = Array.from(new Set((rolesRows ?? []).map((r: any) => r.user_id)));
-    if (!ids.length) return [];
-    const { data: profs } = await context.supabase
-      .from("profiles").select("id, nome, cognome, email, is_active, organization_id")
-      .in("id", ids).eq("organization_id", organizationId).eq("is_active", true);
-    const roleByUser = new Map<string, AppRole[]>();
-    for (const r of rolesRows ?? []) {
-      const arr = roleByUser.get((r as any).user_id) ?? [];
-      arr.push((r as any).role);
-      roleByUser.set((r as any).user_id, arr);
-    }
-    return (profs ?? []).map((p: any) => ({
-      id: p.id, nome: p.nome, cognome: p.cognome, email: p.email,
-      roles: roleByUser.get(p.id) ?? [],
-    }));
+    const { data: membri } = await context.supabase
+      .from("organization_members")
+      .select("id, user_id, nome, cognome, email, ruolo_organizzativo, is_active, archived_at")
+      .eq("organization_id", organizationId)
+      .is("archived_at", null)
+      .eq("is_active", true)
+      .order("cognome", { ascending: true });
+
+    return (membri ?? [])
+      .filter((m: any) => m.ruolo_organizzativo !== "cliente" && m.ruolo_organizzativo !== "fornitore")
+      .map((m: any) => ({
+        membro_id: m.id,
+        user_id: m.user_id ?? null,
+        nome: m.nome,
+        cognome: m.cognome,
+        email: m.email,
+        ruolo_organizzativo: m.ruolo_organizzativo,
+        has_access: Boolean(m.user_id),
+      }));
   });
+
 
 // ============= ADD MEMBER =============
 const addMemberSchema = z.object({
   commessa_id: z.string().uuid(),
-  user_id: z.string().uuid(),
+  membro_id: z.string().uuid(),
   ruolo_operativo: z.enum(RUOLI_OPERATIVI),
   cantiere_id: z.string().uuid().nullable().optional(),
   data_inizio: z.string().optional(),
@@ -680,19 +706,22 @@ const addMemberSchema = z.object({
   note: z.string().max(500).nullable().optional(),
 });
 
-async function assertUserActiveInOrg(context: any, orgId: string, userId: string) {
-  const { data: p } = await context.supabase
-    .from("profiles").select("id, is_active, organization_id").eq("id", userId).maybeSingle();
-  if (!p || p.organization_id !== orgId) throw new Error("Utente non appartiene all'organizzazione");
-  if (p.is_active === false) throw new Error("Utente disattivato");
-  const { data: r } = await context.supabase
-    .from("user_roles").select("role").eq("user_id", userId).eq("organization_id", orgId);
-  const rolesU = (r ?? []).map((x: any) => x.role as AppRole);
-  if (rolesU.includes("cliente") || rolesU.includes("fornitore")) {
+/** Il membro deve esistere in anagrafica, essere attivo e non essere cliente/fornitore. */
+async function resolveAssignableMembro(context: any, orgId: string, membroId: string) {
+  const { data: m } = await context.supabase
+    .from("organization_members")
+    .select("id, user_id, is_active, archived_at, ruolo_organizzativo, organization_id")
+    .eq("id", membroId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  if (!m) throw new Error("Membro non appartiene all'organizzazione");
+  if (m.archived_at || m.is_active === false) throw new Error("Membro non attivo");
+  if (m.ruolo_organizzativo === "cliente" || m.ruolo_organizzativo === "fornitore") {
     throw new Error("Cliente/Fornitore non possono essere assegnati come membri interni");
   }
-  if (!rolesU.length) throw new Error("Utente senza ruoli in questa organizzazione");
+  return m as { id: string; user_id: string | null };
 }
+
 
 async function assertCanManageMembers(context: any, commessa: any, roles: AppRole[]) {
   if (hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])) return;
@@ -714,7 +743,7 @@ export const addCommessaMember = createServerFn({ method: "POST" })
       throw new Error("Non puoi assegnare il ruolo responsabile via team: usa 'Cambia responsabile'");
     }
 
-    await assertUserActiveInOrg(context, organizationId, data.user_id);
+    const membro = await resolveAssignableMembro(context, organizationId, data.membro_id);
 
     if (data.cantiere_id) {
       const { data: k } = await context.supabase.from("cantieri")
@@ -727,7 +756,8 @@ export const addCommessaMember = createServerFn({ method: "POST" })
       organization_id: organizationId,
       commessa_id: data.commessa_id,
       cantiere_id: data.cantiere_id ?? null,
-      user_id: data.user_id,
+      membro_id: membro.id,
+      user_id: membro.user_id ?? null,
       ruolo_operativo: data.ruolo_operativo,
       data_inizio: data.data_inizio || new Date().toISOString().slice(0,10),
       data_fine: data.data_fine ?? null,
@@ -737,11 +767,13 @@ export const addCommessaMember = createServerFn({ method: "POST" })
     }).select("id").single();
     if (error) throw error;
     await logAudit(context, organizationId, "commessa.member_added", data.commessa_id, {
-      member_id: inserted.id, user_id: data.user_id, ruolo_operativo: data.ruolo_operativo,
+      member_id: inserted.id, membro_id: membro.id, user_id: membro.user_id ?? null,
+      ruolo_operativo: data.ruolo_operativo,
       cantiere_id: data.cantiere_id ?? null,
     });
     return { id: inserted.id };
   });
+
 
 // ============= UPDATE MEMBER =============
 const updateMemberSchema = z.object({
