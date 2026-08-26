@@ -743,7 +743,7 @@ export const addCommessaMember = createServerFn({ method: "POST" })
       throw new Error("Non puoi assegnare il ruolo responsabile via team: usa 'Cambia responsabile'");
     }
 
-    await assertUserActiveInOrg(context, organizationId, data.user_id);
+    const membro = await resolveAssignableMembro(context, organizationId, data.membro_id);
 
     if (data.cantiere_id) {
       const { data: k } = await context.supabase.from("cantieri")
@@ -756,7 +756,8 @@ export const addCommessaMember = createServerFn({ method: "POST" })
       organization_id: organizationId,
       commessa_id: data.commessa_id,
       cantiere_id: data.cantiere_id ?? null,
-      user_id: data.user_id,
+      membro_id: membro.id,
+      user_id: membro.user_id ?? null,
       ruolo_operativo: data.ruolo_operativo,
       data_inizio: data.data_inizio || new Date().toISOString().slice(0,10),
       data_fine: data.data_fine ?? null,
@@ -766,11 +767,13 @@ export const addCommessaMember = createServerFn({ method: "POST" })
     }).select("id").single();
     if (error) throw error;
     await logAudit(context, organizationId, "commessa.member_added", data.commessa_id, {
-      member_id: inserted.id, user_id: data.user_id, ruolo_operativo: data.ruolo_operativo,
+      member_id: inserted.id, membro_id: membro.id, user_id: membro.user_id ?? null,
+      ruolo_operativo: data.ruolo_operativo,
       cantiere_id: data.cantiere_id ?? null,
     });
     return { id: inserted.id };
   });
+
 
 // ============= UPDATE MEMBER =============
 const updateMemberSchema = z.object({
