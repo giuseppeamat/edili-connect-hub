@@ -910,16 +910,16 @@ function AddMemberDialog({ open, onOpenChange, commessaId, cantieri, onDone }: a
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Annulla</Button>
-            <Button disabled={saving || !userId} onClick={async () => {
+            <Button disabled={saving || !membroId} onClick={async () => {
               setSaving(true);
               try {
                 await addFn({ data: {
-                  commessa_id: commessaId, user_id: userId,
+                  commessa_id: commessaId, membro_id: membroId,
                   ruolo_operativo: ruolo as any,
                   cantiere_id: cantiereId === "__none__" ? null : cantiereId,
                 }});
                 toast.success("Membro aggiunto"); onDone(); onOpenChange(false);
-                setUserId(""); setRuolo("operaio"); setCantiereId("__none__");
+                setMembroId(""); setRuolo("operaio"); setCantiereId("__none__");
               } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
             }}>Aggiungi</Button>
           </DialogFooter>
