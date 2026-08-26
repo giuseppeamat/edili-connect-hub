@@ -698,9 +698,12 @@ function SetCapocantiereDialog({ open, onOpenChange, cantiere, onDone }: any) {
     queryKey: ["assignable-members"], enabled: open,
     queryFn: async () => await listFn(),
   });
+  // Il capocantiere del cantiere è un utente Auth: solo membri con accesso attivo.
   const filtered = (members as any[]).filter((m) =>
-    m.roles?.some((r: string) => ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore","proprietario"].includes(r))
+    m.user_id &&
+    ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore","proprietario"].includes(m.ruolo_organizzativo)
   );
+
   const [val, setVal] = useState<string>(cantiere.capocantiere_id ?? "__none__");
   const [saving, setSaving] = useState(false);
   return (
