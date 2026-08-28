@@ -18,7 +18,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { eur, num, dateIt } from "@/lib/format";
-import { seedDemoData } from "@/lib/seed-demo";
 import {
   FileText,
   HardHat,
@@ -150,7 +149,6 @@ function Dashboard() {
   const customFrom = isIsoDate(search.da) ? search.da : "";
   const customTo = isIsoDate(search.a) ? search.a : "";
   const customValido = periodo === "custom" && !!customFrom && !!customTo;
-  const [seeding, setSeeding] = useState(false);
   const [draftFrom, setDraftFrom] = useState(customFrom);
   const [draftTo, setDraftTo] = useState(customTo);
   const [customOpen, setCustomOpen] = useState(false);
@@ -208,19 +206,6 @@ function Dashboard() {
   const organizationUnavailable = /organizzazione non trovata|utente disattivato/i.test(
     dashboardErrorMessage,
   );
-
-  const handleSeed = async () => {
-    setSeeding(true);
-    try {
-      await seedDemoData();
-      toast.success("Dati demo caricati");
-      qc.invalidateQueries();
-    } catch (e: any) {
-      toast.error(e.message ?? "Errore");
-    } finally {
-      setSeeding(false);
-    }
-  };
 
   const kpi = data?.kpi;
   const econ = data?.economia ?? null;
