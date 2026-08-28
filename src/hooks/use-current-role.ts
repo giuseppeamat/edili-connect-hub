@@ -65,9 +65,9 @@ export function useCurrentRole() {
     isInternal: INTERNAL_ROLES.some((r) => roles.includes(r)),
     // ===== Commesse (Sprint 4 Blocco 3) =====
     canViewCommesse: INTERNAL_ROLES.some((r) => roles.includes(r)),
-    canCreateCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
-    canEditCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa"),
-    canManageCommessaState: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa"),
+    canCreateCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
+    canEditCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
+    canManageCommessaState: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
     canCloseCommesse: has("proprietario", "amministratore", "amministrazione"),
     canReopenCommesse: has("proprietario", "amministratore", "amministrazione"),
     canArchiveCommesse: has("proprietario", "amministratore", "amministrazione"),
