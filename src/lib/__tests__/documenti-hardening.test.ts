@@ -89,16 +89,11 @@ describe("cleanup orfani", () => {
     expect(isOrphanObject("org/doc/2/b.pdf", [])).toBe(true);
     expect(isOrphanObject("org/doc/2/b.pdf", ["org/doc/2/b.pdf"])).toBe(false);
   });
-  it("solo proprietario e amministratore possono fare cleanup", () => {
+  it("solo i ruoli amministrativi possono fare cleanup", () => {
     expect(canCleanupStorage(["proprietario"])).toBe(true);
     expect(canCleanupStorage(["amministratore"])).toBe(true);
-    for (const r of [
-      "capocantiere",
-      "operaio",
-      "responsabile_commessa",
-      "ufficio_tecnico",
-      "amministrazione",
-    ]) {
+    expect(canCleanupStorage(["amministrazione"])).toBe(true);
+    for (const r of ["capocantiere", "operaio", "responsabile_commessa", "ufficio_tecnico"]) {
       expect(canCleanupStorage([r])).toBe(false);
     }
     expect(canCleanupStorage([])).toBe(false);
