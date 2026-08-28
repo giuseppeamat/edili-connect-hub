@@ -4391,15 +4391,20 @@ export type Database = {
         Args: { _org: string; _user: string }
         Returns: boolean
       }
-      is_valid_responsabile_fase: {
-        Args: {
-          _cantiere_id: string
-          _commessa_id: string
-          _org: string
-          _user: string
-        }
-        Returns: boolean
-      }
+      is_valid_responsabile_fase:
+        | {
+            Args: { _commessa: string; _org: string; _user: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _cantiere_id: string
+              _commessa_id: string
+              _org: string
+              _user: string
+            }
+            Returns: boolean
+          }
       link_member_to_user: {
         Args: { _member_id: string; _org: string; _user_id: string }
         Returns: undefined
