@@ -299,11 +299,6 @@ function Dashboard() {
             </PopoverContent>
           </Popover>
 
-          {!isPending && !isError && data?.isEmpty && (
-            <Button onClick={handleSeed} disabled={seeding}>
-              {seeding ? "Caricamento..." : "Carica dati demo"}
-            </Button>
-          )}
         </div>
       </header>
 
