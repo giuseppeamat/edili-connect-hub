@@ -153,21 +153,21 @@ export function useCurrentUser() {
 
 
     isProprietario: has("proprietario"),
-    isAdmin: has("proprietario", "amministratore"),
+    isAdmin: has("proprietario", "amministratore", "amministrazione"),
     canManageAnagrafiche: has("proprietario", "amministratore", "ufficio_tecnico", "amministrazione"),
-    canEditPreventivi: has("proprietario", "amministratore", "ufficio_tecnico"),
-    canDeleteBusinessData: has("proprietario", "amministratore"),
+    canEditPreventivi: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
+    canDeleteBusinessData: has("proprietario", "amministratore", "amministrazione"),
     canReadAudit: has("proprietario", "amministratore", "amministrazione"),
     isInternal: INTERNAL.some((r) => roles.includes(r)),
     // ===== Commesse (Sprint 4 Blocco 3) =====
     canViewCommesse: INTERNAL.some((r) => roles.includes(r)),
-    canCreateCommesse: has("proprietario", "amministratore", "ufficio_tecnico"),
-    canEditCommesse: has("proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa"),
-    canManageCommessaState: has("proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa"),
-    canCloseCommesse: has("proprietario", "amministratore"),
-    canReopenCommesse: has("proprietario", "amministratore"),
-    canArchiveCommesse: has("proprietario", "amministratore"),
-    canAssignResponsabile: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canCreateCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
+    canEditCommesse: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
+    canManageCommessaState: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"),
+    canCloseCommesse: has("proprietario", "amministratore", "amministrazione"),
+    canReopenCommesse: has("proprietario", "amministratore", "amministrazione"),
+    canArchiveCommesse: has("proprietario", "amministratore", "amministrazione"),
+    canAssignResponsabile: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
     canViewCommessaEconomics: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
     // ===== Budget (Sprint 4 Blocco 6c) =====
     canViewCommessaBudget: has(
@@ -176,16 +176,16 @@ export function useCurrentUser() {
     canEditCommessaBudget: has(
       "proprietario", "amministratore", "ufficio_tecnico", "amministrazione", "responsabile_commessa",
     ),
-    canImportCommessaBudget: has("proprietario", "amministratore", "ufficio_tecnico"),
-    canManageCommessaBaseline: has("proprietario", "amministratore"),
+    canImportCommessaBudget: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
+    canManageCommessaBaseline: has("proprietario", "amministratore", "amministrazione"),
     canEditManualCommessaBudget: has(
       "proprietario", "amministratore", "amministrazione", "ufficio_tecnico",
     ),
-    canChangeCommessaBudgetMode: has("proprietario", "amministratore", "ufficio_tecnico"),
+    canChangeCommessaBudgetMode: has("proprietario", "amministratore", "amministrazione", "ufficio_tecnico"),
     // ===== Personale / Rapportini =====
     canViewPersonnelHourlyCost: has("proprietario", "amministratore", "amministrazione"),
     canApproveRapportino: has(
-      "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
+      "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
     ),
 
   };

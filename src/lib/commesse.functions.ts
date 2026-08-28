@@ -14,10 +14,10 @@ type AppRole =
   | "proprietario" | "amministratore" | "ufficio_tecnico" | "amministrazione"
   | "responsabile_commessa" | "capocantiere" | "operaio" | "cliente" | "fornitore";
 
-const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "ufficio_tecnico"];
-const ADMIN_ROLES: AppRole[] = ["proprietario", "amministratore"];
+const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere"];
+const ADMIN_ROLES: AppRole[] = ["proprietario", "amministratore", "amministrazione"];
 const RESPONSABILE_ROLES: AppRole[] = [
-  "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
+  "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere",
 ];
 
 const TIPOLOGIE = [
@@ -213,6 +213,20 @@ export const createCommessa = createServerFn({ method: "POST" })
       created_by: context.userId,
     }).select("id").single();
     if (error) throw error;
+
+    // Il creatore operativo (capocantiere / responsabile commessa) resta membro
+    // della commessa, altrimenti perderebbe l'accesso a quanto ha appena creato.
+    const isAdminLike = hasAny(roles, ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico"]);
+    if (!isAdminLike && data.responsabile_id !== context.userId) {
+      await supabaseAdmin.from("commessa_membri").insert({
+        organization_id: organizationId,
+        commessa_id: inserted.id,
+        user_id: context.userId,
+        ruolo_operativo: roles.includes("capocantiere") ? "capocantiere" : "collaboratore",
+        is_active: true,
+        created_by: context.userId,
+      });
+    }
 
     // Sync commessa_membri per il responsabile iniziale
     if (data.responsabile_id) {
@@ -724,7 +738,7 @@ async function resolveAssignableMembro(context: any, orgId: string, membroId: st
 
 
 async function assertCanManageMembers(context: any, commessa: any, roles: AppRole[]) {
-  if (hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])) return;
+  if (hasAny(roles, ["proprietario","amministratore", "amministrazione","ufficio_tecnico"])) return;
   if (hasAny(roles, ["responsabile_commessa"]) && commessa.responsabile_id === context.userId) return;
   throw new Error("Non autorizzato a gestire i membri di questa commessa");
 }
@@ -738,7 +752,7 @@ export const addCommessaMember = createServerFn({ method: "POST" })
     await assertCanManageMembers(context, commessa, roles);
 
     // responsabile_commessa NON può assegnare ruoli amministrativi tramite membri
-    if (!hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])
+    if (!hasAny(roles, ["proprietario","amministratore", "amministrazione","ufficio_tecnico"])
         && data.ruolo_operativo === "responsabile_commessa") {
       throw new Error("Non puoi assegnare il ruolo responsabile via team: usa 'Cambia responsabile'");
     }
@@ -862,7 +876,7 @@ export const setCommessaResponsabile = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { organizationId, roles } = await ctx(context);
-    assertRole(roles, ["proprietario","amministratore","ufficio_tecnico"], "Non autorizzato a cambiare il responsabile");
+    assertRole(roles, ["proprietario","amministratore", "amministrazione","ufficio_tecnico"], "Non autorizzato a cambiare il responsabile");
     const commessa = await fetchCommessaAccessible(context, data.commessa_id, organizationId);
     if (new Date(commessa.updated_at).getTime() !== new Date(data.expected_updated_at).getTime()) {
       throw new Error("Commessa modificata da un altro utente. Ricarica la pagina.");

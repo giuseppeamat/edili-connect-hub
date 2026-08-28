@@ -30,7 +30,7 @@ function isAuthor(r: RapportinoRow, userId: string | null) {
 }
 
 function isAdminExt(roles: AppRole[]) {
-  return has(roles, "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa", "capocantiere");
+  return has(roles, "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa", "capocantiere");
 }
 
 /** BOZZA → INVIATO */
@@ -44,7 +44,7 @@ export function canSubmitRapportino(r: RapportinoRow, ctx: PermCtx): boolean {
 export function canApproveRapportino(r: RapportinoRow, ctx: PermCtx): boolean {
   if (r.archived_at) return false;
   if (r.stato !== "inviato") return false;
-  const isPropAdmin = has(ctx.roles, "proprietario", "amministratore");
+  const isPropAdmin = has(ctx.roles, "proprietario", "amministratore", "amministrazione");
   // separazione autore/approvatore (salvo prop/admin)
   if (!isPropAdmin && isAuthor(r, ctx.userId)) return false;
   if (isPropAdmin) return true;
@@ -58,7 +58,7 @@ export function canApproveRapportino(r: RapportinoRow, ctx: PermCtx): boolean {
 export function canRejectRapportino(r: RapportinoRow, ctx: PermCtx): boolean {
   if (r.archived_at) return false;
   if (r.stato !== "inviato") return false;
-  if (has(ctx.roles, "proprietario", "amministratore", "ufficio_tecnico")) return true;
+  if (has(ctx.roles, "proprietario", "amministratore", "amministrazione", "ufficio_tecnico")) return true;
   if (has(ctx.roles, "responsabile_commessa") && ctx.canAccessCommessa) return true;
   if (has(ctx.roles, "capocantiere") && ctx.isCapocantiereDi) return true;
   return false;
@@ -74,7 +74,7 @@ export function canReopenRejectedRapportino(r: RapportinoRow, ctx: PermCtx): boo
 /** Annulla: BOZZA (autore/prop/admin), INVIATO/APPROVATO (solo prop/admin) */
 export function canCancelRapportino(r: RapportinoRow, ctx: PermCtx): boolean {
   if (r.archived_at) return false;
-  const propAdmin = has(ctx.roles, "proprietario", "amministratore");
+  const propAdmin = has(ctx.roles, "proprietario", "amministratore", "amministrazione");
   if (r.stato === "bozza") return isAuthor(r, ctx.userId) || propAdmin;
   if (r.stato === "inviato" || r.stato === "approvato") return propAdmin;
   return false;
@@ -90,11 +90,11 @@ export function canEditRapportinoByState(r: RapportinoRow, ctx: PermCtx): boolea
 /** Archiviabile: bozza/respinto (autore o admin ext); annullato solo prop/admin; inviato/approvato mai */
 export function canArchiveRapportinoByState(r: RapportinoRow, ctx: PermCtx): boolean {
   if (r.archived_at) return false;
-  const propAdmin = has(ctx.roles, "proprietario", "amministratore");
+  const propAdmin = has(ctx.roles, "proprietario", "amministratore", "amministrazione");
   if (r.stato === "inviato" || r.stato === "approvato") return false;
   if (r.stato === "annullato") return propAdmin;
   // bozza | respinto
-  return isAuthor(r, ctx.userId) || has(ctx.roles, "proprietario", "amministratore", "ufficio_tecnico", "responsabile_commessa");
+  return isAuthor(r, ctx.userId) || has(ctx.roles, "proprietario", "amministratore", "amministrazione", "ufficio_tecnico", "responsabile_commessa");
 }
 
 export const STATO_LABEL: Record<string, string> = {
