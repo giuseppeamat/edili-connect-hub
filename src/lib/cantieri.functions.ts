@@ -7,7 +7,7 @@ type AppRole =
   | "responsabile_commessa" | "capocantiere" | "operaio" | "cliente" | "fornitore";
 
 const STATI_CANTIERE = ["pianificato","attivo","sospeso","completato","chiuso","archiviato"] as const;
-const CAPOCANTIERE_ROLES: AppRole[] = ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore","proprietario"];
+const CAPOCANTIERE_ROLES: AppRole[] = ["capocantiere","responsabile_commessa","ufficio_tecnico","amministratore", "amministrazione","proprietario"];
 
 async function ctx(context: any): Promise<{ organizationId: string; roles: AppRole[] }> {
   const [{ data: prof }, { data: rows }] = await Promise.all([
@@ -50,7 +50,7 @@ async function fetchCantiere(context: any, id: string, orgId: string) {
 }
 
 function assertCanManageCantieri(commessa: any, roles: AppRole[], userId: string) {
-  if (hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"])) return;
+  if (hasAny(roles, ["proprietario","amministratore", "amministrazione","ufficio_tecnico"])) return;
   if (hasAny(roles, ["responsabile_commessa"]) && commessa.responsabile_id === userId) return;
   throw new Error("Non autorizzato a gestire i cantieri di questa commessa");
 }
@@ -212,7 +212,7 @@ export const updateCantiere = createServerFn({ method: "POST" })
     const cantiere = await fetchCantiere(context, data.id, organizationId);
     const commessa = await fetchCommessa(context, cantiere.commessa_id, organizationId);
 
-    const isAdmin = hasAny(roles, ["proprietario","amministratore","ufficio_tecnico"]);
+    const isAdmin = hasAny(roles, ["proprietario","amministratore", "amministrazione","ufficio_tecnico"]);
     const isResp = hasAny(roles, ["responsabile_commessa"]) && commessa.responsabile_id === context.userId;
     const isCapo = hasAny(roles, ["capocantiere"]) && cantiere.capocantiere_id === context.userId;
 

@@ -48,7 +48,7 @@ export const ASSIGNABLE_MEMBER_ROLES: AppRole[] = [
 ];
 
 /** Ruoli che possono gestire l'anagrafica membri. */
-export const MEMBER_MANAGER_ROLES: AppRole[] = ["proprietario", "amministratore"];
+export const MEMBER_MANAGER_ROLES: AppRole[] = ["proprietario", "amministratore", "amministrazione"];
 
 export function canManageMembers(roles: readonly AppRole[]): boolean {
   return roles.some((r) => MEMBER_MANAGER_ROLES.includes(r));

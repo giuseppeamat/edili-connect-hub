@@ -356,7 +356,7 @@ export const VISIBILITA = ["privato", "organizzazione"] as const;
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Solo ruoli tecnici/amministrativi possono usare gli strumenti di cleanup. */
-export const DOC_CLEANUP_ROLES = ["proprietario", "amministratore"];
+export const DOC_CLEANUP_ROLES = ["proprietario", "amministratore", "amministrazione"];
 
 /** Età minima di un oggetto Storage prima di poter essere rimosso (24 ore). */
 export const ORPHAN_MIN_AGE_MS = 24 * 60 * 60 * 1000;

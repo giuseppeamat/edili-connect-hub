@@ -15,7 +15,7 @@ type AppRole =
   | "responsabile_commessa" | "capocantiere" | "operaio" | "cliente" | "fornitore";
 
 const MANAGE_ROLES: AppRole[] = ["proprietario", "amministratore", "ufficio_tecnico", "amministrazione"];
-const ARCHIVE_ROLES: AppRole[] = ["proprietario", "amministratore"];
+const ARCHIVE_ROLES: AppRole[] = ["proprietario", "amministratore", "amministrazione"];
 
 function normPiva(v?: string | null) {
   return (v ?? "").replace(/\s+/g, "").toLowerCase() || null;

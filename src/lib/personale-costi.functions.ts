@@ -425,7 +425,7 @@ export const ricalcolaCostoStoricoRapportino = createServerFn({ method: "POST" }
   .handler(async ({ data, context }) => {
     try {
       const { roles } = await currentOrgAndRole(context);
-      if (!roles.some((r: string) => ["proprietario", "amministratore"].includes(r))) {
+      if (!roles.some((r: string) => ["proprietario", "amministratore", "amministrazione"].includes(r))) {
         throw new Error("Non sei autorizzato a ricalcolare un costo storico");
       }
       const { data: res, error } = await context.supabase.rpc(
