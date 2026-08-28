@@ -214,6 +214,20 @@ export const createCommessa = createServerFn({ method: "POST" })
     }).select("id").single();
     if (error) throw error;
 
+    // Il creatore operativo (capocantiere / responsabile commessa) resta membro
+    // della commessa, altrimenti perderebbe l'accesso a quanto ha appena creato.
+    const isAdminLike = hasAny(roles, ["proprietario", "amministratore", "amministrazione", "ufficio_tecnico"]);
+    if (!isAdminLike && data.responsabile_id !== context.userId) {
+      await supabaseAdmin.from("commessa_membri").insert({
+        organization_id: organizationId,
+        commessa_id: inserted.id,
+        user_id: context.userId,
+        ruolo_operativo: roles.includes("capocantiere") ? "capocantiere" : "collaboratore",
+        is_active: true,
+        created_by: context.userId,
+      });
+    }
+
     // Sync commessa_membri per il responsabile iniziale
     if (data.responsabile_id) {
       await supabaseAdmin.from("commessa_membri").insert({
