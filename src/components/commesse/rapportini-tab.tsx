@@ -461,7 +461,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
                   </div>
                   <div className="col-span-4">
                     <Input
-                      type="number" step="0.25" min={0.25} max={24} value={p.ore}
+                      type="number" step="0.5" min={0.5} max={24} value={p.ore}
                       onChange={(e) => setPersonale((arr) => arr.map((x, j) => (j === i ? { ...x, ore: e.target.value } : x)))}
                     />
                   </div>
@@ -482,20 +482,24 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
             </div>
           )}
         </div>
+        )}
         <div>
           <Label>Ore totali *</Label>
           <Input
-            type="number" step="0.25" min={0.25} max={24} required
+            type="number" step="0.5" min={0.5} max={240} required
             value={personale.length ? String(orePersonale) : oreValue}
             readOnly={personale.length > 0}
             onChange={(e) => setOreValue(e.target.value)}
           />
           {personale.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">Somma delle ore del personale impiegato.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Somma delle ore del personale impiegato ({personale.length} persone).
+            </p>
           )}
           {needsOverride && (
             <div className="mt-2 space-y-2 rounded border border-amber-400 bg-amber-50 p-3 text-sm">
-              <div className="font-medium text-amber-800">Ore oltre 16h/giorno</div>
+              <div className="font-medium text-amber-800">Una persona supera le 16h/giorno</div>
+
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={overrideOre} onChange={(e) => setOverrideOre(e.target.checked)} />
                 <span>Richiedo override (solo proprietario/amministratore)</span>
