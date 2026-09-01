@@ -25,8 +25,17 @@ import {
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { listAssignableMembers } from "@/lib/organization-members.functions";
 import { saveRapportinoPersonale } from "@/lib/rapportini-personale.functions";
-import { validaRighe } from "@/lib/rapportini-personale";
+import { validaRighe, oreAnomale, LIMITE_ORE_PERSONA } from "@/lib/rapportini-personale";
+import { TimeSlotSelect, PausaSlotSelect } from "@/components/rapportini/time-slot-select";
 import { Trash2 } from "lucide-react";
+
+export type TipoManodopera = "operai" | "subappaltatori" | "misto";
+
+export const TIPO_MANODOPERA_LABEL: Record<TipoManodopera, string> = {
+  operai: "Operai interni",
+  subappaltatori: "Solo subappaltatori",
+  misto: "Operai interni e subappaltatori",
+};
 
 function fullName(r: any) {
   if (!r) return "—";
