@@ -34,7 +34,7 @@ async function enrichRapportini(context: any, rows: any[]) {
   const cantIds = Array.from(new Set(rows.map((r) => r.cantiere_id).filter(Boolean)));
   const faseIds = Array.from(new Set(rows.map((r) => r.fase_id).filter(Boolean)));
   const rapIds = rows.map((r) => r.id).filter(Boolean);
-  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }, { data: pers }] = await Promise.all([
+  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }] = await Promise.all([
     userIds.length
       ? context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
       : Promise.resolve({ data: [] as any[] }),
