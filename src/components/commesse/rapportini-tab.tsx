@@ -260,7 +260,11 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
 
   const oreEffettive = personale.length ? orePersonale : Number(oreValue.replace(",", "."));
   const oreNum = oreEffettive;
-  const needsOverride = !isNaN(oreNum) && oreNum > 16;
+  // Anomalia valutata per singola persona: con più operai il totale è naturalmente alto
+  const oreMaxPersona = personale.length
+    ? Math.max(...personale.map((p) => Number(p.ore) || 0))
+    : oreNum;
+  const needsOverride = !isNaN(oreMaxPersona) && oreMaxPersona > LIMITE_ORE_PERSONA;
 
   const create = useMutation({
     mutationFn: async (payload: any) => {
