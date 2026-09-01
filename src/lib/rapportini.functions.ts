@@ -33,7 +33,8 @@ async function enrichRapportini(context: any, rows: any[]) {
   const commIds = Array.from(new Set(rows.map((r) => r.commessa_id).filter(Boolean)));
   const cantIds = Array.from(new Set(rows.map((r) => r.cantiere_id).filter(Boolean)));
   const faseIds = Array.from(new Set(rows.map((r) => r.fase_id).filter(Boolean)));
-  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }] = await Promise.all([
+  const rapIds = rows.map((r) => r.id).filter(Boolean);
+  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }, { data: pers }] = await Promise.all([
     userIds.length
       ? context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -46,19 +47,37 @@ async function enrichRapportini(context: any, rows: any[]) {
     faseIds.length
       ? context.supabase.from("commessa_fasi").select("id, titolo").in("id", faseIds)
       : Promise.resolve({ data: [] as any[] }),
+    rapIds.length
+      ? context.supabase
+          .from("rapportini_personale")
+          .select("rapportino_id, ore")
+          .in("rapportino_id", rapIds)
+          .is("annullato_at", null)
+      : Promise.resolve({ data: [] as any[] }),
   ]);
   const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
   const cm = new Map((comms ?? []).map((c: any) => [c.id, c]));
   const km = new Map((cants ?? []).map((k: any) => [k.id, k]));
   const fm = new Map((fasi ?? []).map((f: any) => [f.id, f]));
+  // Aggregato personale: serve per valutare le ore per singola persona (anomalie)
+  const perRap = new Map<string, { persone: number; ore_max: number }>();
+  for (const p of (pers ?? []) as any[]) {
+    const cur = perRap.get(p.rapportino_id) ?? { persone: 0, ore_max: 0 };
+    cur.persone += 1;
+    cur.ore_max = Math.max(cur.ore_max, Number(p.ore ?? 0));
+    perRap.set(p.rapportino_id, cur);
+  }
   return rows.map((r) => ({
     ...r,
     user: r.user_id ? pm.get(r.user_id) ?? null : null,
     commessa: r.commessa_id ? cm.get(r.commessa_id) ?? null : null,
     cantiere: r.cantiere_id ? km.get(r.cantiere_id) ?? null : null,
     fase: r.fase_id ? fm.get(r.fase_id) ?? null : null,
+    persone: perRap.get(r.id)?.persone ?? 0,
+    ore_max_persona: perRap.get(r.id)?.ore_max ?? null,
   }));
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST (RLS: filtro applicato dal DB)
