@@ -285,12 +285,12 @@ function RapportinoDetailPage() {
                     </Button>
                   )}
                 </div>
-                {activeCost ? (
+                {costiAttivi.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <Field label="Costo orario">€ {Number(activeCost.costo_orario_applicato ?? 0).toFixed(2)}</Field>
-                    <Field label="Ore">{Number(activeCost.ore ?? 0).toFixed(2)}</Field>
-                    <Field label="Costo totale">€ {Number(activeCost.costo_totale ?? 0).toFixed(2)}</Field>
-                    <Field label="Periodo">{activeCost.periodo_riferimento ?? "—"}</Field>
+                    <Field label="Persone contabilizzate">{costiAttivi.length}</Field>
+                    <Field label="Ore contabilizzate">{oreContabilizzate.toFixed(2)}</Field>
+                    <Field label="Costo totale manodopera">€ {costoTotaleManodopera.toFixed(2)}</Field>
+                    <Field label="Periodo">{costiAttivi[0]?.periodo_riferimento ?? "—"}</Field>
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground">
@@ -299,6 +299,13 @@ function RapportinoDetailPage() {
                       : "La contabilizzazione avviene alla prima approvazione."}
                   </div>
                 )}
+                {costiAttivi.length > 1 && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Il costo è calcolato per ogni singola persona impiegata: il dettaglio per persona è
+                    nell'elenco “Personale impiegato” qui sopra.
+                  </p>
+                )}
+
               </CardContent>
             </Card>
           )}
