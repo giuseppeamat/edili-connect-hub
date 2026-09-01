@@ -218,12 +218,14 @@ export const listRapportinoAssignableFasi = createServerFn({ method: "POST" })
 // MUTAZIONI (RPC SECURITY DEFINER)
 // ─────────────────────────────────────────────────────────────────────────────
 const OPERATIONAL_HOUR_LIMIT = 16;
+/** Le ore di testata sono la somma delle persone impiegate: il limite per persona resta 16h. */
+const MAX_ORE_TESTATA = 240;
 
 const createSchema = z.object({
   commessa_id: uuid,
   user_id: uuid,
   data: z.string().min(10),
-  ore: z.number().positive().max(24),
+  ore: z.number().positive().max(MAX_ORE_TESTATA),
   descrizione_lavori: z.string().trim().min(1, "Descrizione lavori obbligatoria").max(2000),
   cantiere_id: uuid.nullable().optional(),
   fase_id: uuid.nullable().optional(),
@@ -234,15 +236,18 @@ const createSchema = z.object({
   foto_urls: z.array(z.string()).nullable().optional(),
   override_ore: z.boolean().optional(),
   override_motivo: z.string().nullable().optional(),
+  /** Numero di persone impiegate: usato solo per validare le ore medie per persona. */
+  persone: z.number().int().positive().optional(),
 }).superRefine((v, ctx) => {
   if (v.ora_inizio && v.ora_fine && v.ora_fine < v.ora_inizio) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ora fine antecedente all'ora inizio", path: ["ora_fine"] });
   }
-  // limite operativo: massimo 16h; oltre serve override esplicito
-  if (v.ore > OPERATIONAL_HOUR_LIMIT && !v.override_ore) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ore oltre il limite operativo di ${OPERATIONAL_HOUR_LIMIT}: richiedi un override amministratore.`, path: ["ore"] });
+  // limite operativo per persona: massimo 16h; oltre serve override esplicito
+  const orePersona = v.ore / Math.max(1, v.persone ?? 1);
+  if (orePersona > OPERATIONAL_HOUR_LIMIT && !v.override_ore) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ore oltre il limite operativo di ${OPERATIONAL_HOUR_LIMIT} per persona: richiedi un override amministratore.`, path: ["ore"] });
   }
-  if (v.ore > OPERATIONAL_HOUR_LIMIT && v.override_ore && !v.override_motivo?.trim()) {
+  if (orePersona > OPERATIONAL_HOUR_LIMIT && v.override_ore && !v.override_motivo?.trim()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Motivazione override obbligatoria", path: ["override_motivo"] });
   }
   // data futura: max domani (data server-side ricontrollata dalla RPC)
@@ -253,6 +258,7 @@ const createSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data futura oltre il limite consentito (max domani)", path: ["data"] });
   }
 });
+
 
 export const createRapportino = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
