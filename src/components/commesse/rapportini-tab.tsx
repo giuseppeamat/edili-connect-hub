@@ -384,11 +384,42 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
             <Input type="date" required max={tomorrowIso} value={dataValue} onChange={(e) => { setDataValue(e.target.value); setDataError(null); }} aria-invalid={!!dataError} />
             {dataError && <p className="text-xs text-destructive mt-1">{dataError}</p>}
           </div>
-          <div><Label>Ora inizio</Label><Input type="time" value={oraInizio} onChange={(e) => setOraInizio(e.target.value)} /></div>
-          <div><Label>Ora fine</Label><Input type="time" value={oraFine} onChange={(e) => setOraFine(e.target.value)} /></div>
-          <div><Label>Pausa (min)</Label><Input type="number" min={0} value={pausaMin} onChange={(e) => setPausaMin(e.target.value)} /></div>
+          <div>
+            <Label>Ora inizio</Label>
+            <TimeSlotSelect value={oraInizio} onChange={setOraInizio} ariaLabel="Ora inizio" />
+          </div>
+          <div>
+            <Label>Ora fine</Label>
+            <TimeSlotSelect value={oraFine} onChange={setOraFine} ariaLabel="Ora fine" />
+          </div>
+          <div>
+            <Label>Pausa</Label>
+            <PausaSlotSelect value={Number(pausaMin || 0)} onChange={(v) => setPausaMin(String(v))} />
+          </div>
         </div>
         <div className="rounded border p-3">
+          <Label>Tipo di manodopera *</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Indica chi ha svolto il lavoro: personale interno, ditte in subappalto o entrambi.
+          </p>
+          <Select value={tipoManodopera} onValueChange={(v) => setTipoManodopera(v as TipoManodopera)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(TIPO_MANODOPERA_LABEL).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {tipoManodopera !== "operai" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Le lavorazioni in subappalto si registrano nella scheda “Subappaltatori” del rapportino,
+              subito dopo il salvataggio.
+            </p>
+          )}
+        </div>
+        {tipoManodopera !== "subappaltatori" && (
+        <div className="rounded border p-3">
+
           <div className="flex items-center justify-between mb-2">
             <div>
               <Label>Personale impiegato</Label>
