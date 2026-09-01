@@ -10,6 +10,11 @@ import {
   aggregaCosti,
   righeAttive,
   STATO_PERSONALE_LABEL,
+  oreAnomale,
+  slotOrari,
+  slotPause,
+  arrotondaSlot,
+  oreDaSlot,
   type RigaPersonale,
 } from "@/lib/rapportini-personale";
 
@@ -201,5 +206,46 @@ describe("aggregati", () => {
   });
   it("per fase", () => {
     expect(aggregaCosti(costi, (r) => r.fase_id, (r) => r.costo)).toEqual({ f1: 332, f2: 100, f3: 50 });
+  });
+});
+
+describe("ore anomale per persona", () => {
+  it("multi-operaio: 24h totali su 3 persone non è anomalo", () => {
+    expect(oreAnomale({ ore: 24, persone: 3, ore_max_persona: 8 })).toBe(false);
+  });
+  it("una persona oltre 16h è anomala anche in un rapportino multiplo", () => {
+    expect(oreAnomale({ ore: 30, persone: 3, ore_max_persona: 18 })).toBe(true);
+  });
+  it("senza righe personale vale il totale di testata", () => {
+    expect(oreAnomale({ ore: 18, persone: 0 })).toBe(true);
+    expect(oreAnomale({ ore: 8, persone: 0 })).toBe(false);
+  });
+  it("senza ore massime usa la media per persona", () => {
+    expect(oreAnomale({ ore: 24, persone: 3 })).toBe(false);
+    expect(oreAnomale({ ore: 51, persone: 3 })).toBe(true);
+  });
+});
+
+describe("slot da 30 minuti", () => {
+  it("genera 48 slot giornalieri", () => {
+    const s = slotOrari(30);
+    expect(s).toHaveLength(48);
+    expect(s[0]).toBe("00:00");
+    expect(s[1]).toBe("00:30");
+    expect(s[47]).toBe("23:30");
+  });
+  it("arrotonda allo slot più vicino", () => {
+    expect(arrotondaSlot("08:10")).toBe("08:00");
+    expect(arrotondaSlot("08:20")).toBe("08:30");
+    expect(arrotondaSlot("23:59")).toBe("23:30");
+  });
+  it("pause solo a multipli di 30", () => {
+    expect(slotPause(120, 30)).toEqual([0, 30, 60, 90, 120]);
+  });
+  it("calcola le ore nette al netto della pausa", () => {
+    expect(oreDaSlot("08:00", "17:00", 60)).toBe(8);
+    expect(oreDaSlot("08:00", "12:30", 30)).toBe(4);
+    expect(oreDaSlot("08:00", "08:00", 0)).toBeNull();
+    expect(oreDaSlot(null, "12:00", 0)).toBeNull();
   });
 });
