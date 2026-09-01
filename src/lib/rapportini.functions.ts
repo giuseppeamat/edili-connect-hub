@@ -47,7 +47,6 @@ async function enrichRapportini(context: any, rows: any[]) {
     faseIds.length
       ? context.supabase.from("commessa_fasi").select("id, titolo").in("id", faseIds)
       : Promise.resolve({ data: [] as any[] }),
-    Promise.resolve({ data: [] as any[] }),
   ]);
   // Le righe personale non sono leggibili in SELECT diretto (policy `false`):
   // l'aggregato serve solo a contare persone e ore massime sui rapportini
