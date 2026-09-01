@@ -116,7 +116,7 @@ function RowActions({ row, onDone }: any) {
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const archFn = useServerFn(archiveRapportino);
-  const isAnomaly = Number(row.ore ?? 0) > 16;
+  const isAnomaly = oreAnomale(row);
   const arch = useMutation({
     mutationFn: async () => await archFn({ data: { id: row.id, expected_updated_at: row.updated_at, motivazione: motivo.trim() } }),
     onSuccess: () => { toast.success("Rapportino archiviato"); setArchOpen(false); setMotivo(""); qc.invalidateQueries({ queryKey: rapportiniKeys.all }); onDone?.(); },
