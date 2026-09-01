@@ -325,6 +325,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
       ora_fine: oraFine || null,
       pausa_minuti: Number(pausaMin || 0),
       note: noteVal || null,
+      persone: personale.length || 1,
       override_ore: needsOverride ? overrideOre : false,
       override_motivo: needsOverride && overrideOre ? overrideMotivo : null,
     };
