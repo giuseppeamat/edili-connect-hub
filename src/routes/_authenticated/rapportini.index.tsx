@@ -20,6 +20,7 @@ import { listRapportini, listRapportinoAssignableCommesse, archiveRapportino } f
 import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
+import { oreAnomale, LIMITE_ORE_PERSONA } from "@/lib/rapportini-personale";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
