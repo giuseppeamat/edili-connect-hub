@@ -25,8 +25,17 @@ import {
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { listAssignableMembers } from "@/lib/organization-members.functions";
 import { saveRapportinoPersonale } from "@/lib/rapportini-personale.functions";
-import { validaRighe } from "@/lib/rapportini-personale";
+import { validaRighe, oreAnomale, LIMITE_ORE_PERSONA } from "@/lib/rapportini-personale";
+import { TimeSlotSelect, PausaSlotSelect } from "@/components/rapportini/time-slot-select";
 import { Trash2 } from "lucide-react";
+
+export type TipoManodopera = "operai" | "subappaltatori" | "misto";
+
+export const TIPO_MANODOPERA_LABEL: Record<TipoManodopera, string> = {
+  operai: "Operai interni",
+  subappaltatori: "Solo subappaltatori",
+  misto: "Operai interni e subappaltatori",
+};
 
 function fullName(r: any) {
   if (!r) return "—";
@@ -107,7 +116,7 @@ function RowActions({ row, onDone }: any) {
   const [archOpen, setArchOpen] = useState(false);
   const [motivo, setMotivo] = useState("");
   const archFn = useServerFn(archiveRapportino);
-  const isAnomaly = Number(row.ore ?? 0) > 16;
+  const isAnomaly = oreAnomale(row);
   const arch = useMutation({
     mutationFn: async () => await archFn({ data: { id: row.id, expected_updated_at: row.updated_at, motivazione: motivo.trim() } }),
     onSuccess: () => { toast.success("Rapportino archiviato"); setArchOpen(false); setMotivo(""); qc.invalidateQueries({ queryKey: rapportiniKeys.all }); onDone?.(); },
@@ -139,7 +148,12 @@ function RowActions({ row, onDone }: any) {
       <td className="p-3 text-xs">{row.fase?.titolo ?? "—"}</td>
       <td className="p-3 text-right">
         {Number(row.ore ?? 0).toFixed(2)}
-        {isAnomaly && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
+        {Number(row.persone ?? 0) > 1 && (
+          <span className="ml-2 text-xs text-muted-foreground">({row.persone} persone)</span>
+        )}
+        {isAnomaly && (
+          <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400" title={`Una persona supera ${LIMITE_ORE_PERSONA}h`}>Anomala</Badge>
+        )}
       </td>
       <td className="p-3 text-muted-foreground truncate max-w-xs">
         <Link
@@ -203,6 +217,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
   const [descrizione, setDescrizione] = useState<string>("");
   const [noteVal, setNoteVal] = useState<string>("");
   const [personale, setPersonale] = useState<{ membro_id: string; ore: string }[]>([]);
+  const [tipoManodopera, setTipoManodopera] = useState<TipoManodopera>("operai");
   const [dataError, setDataError] = useState<string | null>(null);
   const [descError, setDescError] = useState<string | null>(null);
   const [commessaError, setCommessaError] = useState<string | null>(null);
@@ -222,6 +237,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
     setDescrizione("");
     setNoteVal("");
     setPersonale([]);
+    setTipoManodopera("operai");
     setDataError(null);
     setDescError(null);
     setCommessaError(null);
@@ -258,7 +274,11 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
 
   const oreEffettive = personale.length ? orePersonale : Number(oreValue.replace(",", "."));
   const oreNum = oreEffettive;
-  const needsOverride = !isNaN(oreNum) && oreNum > 16;
+  // Anomalia valutata per singola persona: con più operai il totale è naturalmente alto
+  const oreMaxPersona = personale.length
+    ? Math.max(...personale.map((p) => Number(p.ore) || 0))
+    : oreNum;
+  const needsOverride = !isNaN(oreMaxPersona) && oreMaxPersona > LIMITE_ORE_PERSONA;
 
   const create = useMutation({
     mutationFn: async (payload: any) => {
@@ -319,6 +339,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
       ora_fine: oraFine || null,
       pausa_minuti: Number(pausaMin || 0),
       note: noteVal || null,
+      persone: personale.length || 1,
       override_ore: needsOverride ? overrideOre : false,
       override_motivo: needsOverride && overrideOre ? overrideMotivo : null,
     };
@@ -377,11 +398,42 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
             <Input type="date" required max={tomorrowIso} value={dataValue} onChange={(e) => { setDataValue(e.target.value); setDataError(null); }} aria-invalid={!!dataError} />
             {dataError && <p className="text-xs text-destructive mt-1">{dataError}</p>}
           </div>
-          <div><Label>Ora inizio</Label><Input type="time" value={oraInizio} onChange={(e) => setOraInizio(e.target.value)} /></div>
-          <div><Label>Ora fine</Label><Input type="time" value={oraFine} onChange={(e) => setOraFine(e.target.value)} /></div>
-          <div><Label>Pausa (min)</Label><Input type="number" min={0} value={pausaMin} onChange={(e) => setPausaMin(e.target.value)} /></div>
+          <div>
+            <Label>Ora inizio</Label>
+            <TimeSlotSelect value={oraInizio} onChange={setOraInizio} ariaLabel="Ora inizio" />
+          </div>
+          <div>
+            <Label>Ora fine</Label>
+            <TimeSlotSelect value={oraFine} onChange={setOraFine} ariaLabel="Ora fine" />
+          </div>
+          <div>
+            <Label>Pausa</Label>
+            <PausaSlotSelect value={Number(pausaMin || 0)} onChange={(v) => setPausaMin(String(v))} />
+          </div>
         </div>
         <div className="rounded border p-3">
+          <Label>Tipo di manodopera *</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Indica chi ha svolto il lavoro: personale interno, ditte in subappalto o entrambi.
+          </p>
+          <Select value={tipoManodopera} onValueChange={(v) => setTipoManodopera(v as TipoManodopera)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {Object.entries(TIPO_MANODOPERA_LABEL).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {tipoManodopera !== "operai" && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Le lavorazioni in subappalto si registrano nella scheda “Subappaltatori” del rapportino,
+              subito dopo il salvataggio.
+            </p>
+          )}
+        </div>
+        {tipoManodopera !== "subappaltatori" && (
+        <div className="rounded border p-3">
+
           <div className="flex items-center justify-between mb-2">
             <div>
               <Label>Personale impiegato</Label>
@@ -423,7 +475,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
                   </div>
                   <div className="col-span-4">
                     <Input
-                      type="number" step="0.25" min={0.25} max={24} value={p.ore}
+                      type="number" step="0.5" min={0.5} max={24} value={p.ore}
                       onChange={(e) => setPersonale((arr) => arr.map((x, j) => (j === i ? { ...x, ore: e.target.value } : x)))}
                     />
                   </div>
@@ -444,20 +496,24 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
             </div>
           )}
         </div>
+        )}
         <div>
           <Label>Ore totali *</Label>
           <Input
-            type="number" step="0.25" min={0.25} max={24} required
+            type="number" step="0.5" min={0.5} max={240} required
             value={personale.length ? String(orePersonale) : oreValue}
             readOnly={personale.length > 0}
             onChange={(e) => setOreValue(e.target.value)}
           />
           {personale.length > 0 && (
-            <p className="text-xs text-muted-foreground mt-1">Somma delle ore del personale impiegato.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Somma delle ore del personale impiegato ({personale.length} persone).
+            </p>
           )}
           {needsOverride && (
             <div className="mt-2 space-y-2 rounded border border-amber-400 bg-amber-50 p-3 text-sm">
-              <div className="font-medium text-amber-800">Ore oltre 16h/giorno</div>
+              <div className="font-medium text-amber-800">Una persona supera le 16h/giorno</div>
+
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={overrideOre} onChange={(e) => setOverrideOre(e.target.checked)} />
                 <span>Richiedo override (solo proprietario/amministratore)</span>

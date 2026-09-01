@@ -33,7 +33,8 @@ async function enrichRapportini(context: any, rows: any[]) {
   const commIds = Array.from(new Set(rows.map((r) => r.commessa_id).filter(Boolean)));
   const cantIds = Array.from(new Set(rows.map((r) => r.cantiere_id).filter(Boolean)));
   const faseIds = Array.from(new Set(rows.map((r) => r.fase_id).filter(Boolean)));
-  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }] = await Promise.all([
+  const rapIds = rows.map((r) => r.id).filter(Boolean);
+  const [{ data: profs }, { data: comms }, { data: cants }, { data: fasi }, { data: pers }] = await Promise.all([
     userIds.length
       ? context.supabase.from("profiles").select("id, nome, cognome, email").in("id", userIds)
       : Promise.resolve({ data: [] as any[] }),
@@ -46,19 +47,37 @@ async function enrichRapportini(context: any, rows: any[]) {
     faseIds.length
       ? context.supabase.from("commessa_fasi").select("id, titolo").in("id", faseIds)
       : Promise.resolve({ data: [] as any[] }),
+    rapIds.length
+      ? context.supabase
+          .from("rapportini_personale")
+          .select("rapportino_id, ore")
+          .in("rapportino_id", rapIds)
+          .is("annullato_at", null)
+      : Promise.resolve({ data: [] as any[] }),
   ]);
   const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
   const cm = new Map((comms ?? []).map((c: any) => [c.id, c]));
   const km = new Map((cants ?? []).map((k: any) => [k.id, k]));
   const fm = new Map((fasi ?? []).map((f: any) => [f.id, f]));
+  // Aggregato personale: serve per valutare le ore per singola persona (anomalie)
+  const perRap = new Map<string, { persone: number; ore_max: number }>();
+  for (const p of (pers ?? []) as any[]) {
+    const cur = perRap.get(p.rapportino_id) ?? { persone: 0, ore_max: 0 };
+    cur.persone += 1;
+    cur.ore_max = Math.max(cur.ore_max, Number(p.ore ?? 0));
+    perRap.set(p.rapportino_id, cur);
+  }
   return rows.map((r) => ({
     ...r,
     user: r.user_id ? pm.get(r.user_id) ?? null : null,
     commessa: r.commessa_id ? cm.get(r.commessa_id) ?? null : null,
     cantiere: r.cantiere_id ? km.get(r.cantiere_id) ?? null : null,
     fase: r.fase_id ? fm.get(r.fase_id) ?? null : null,
+    persone: perRap.get(r.id)?.persone ?? 0,
+    ore_max_persona: perRap.get(r.id)?.ore_max ?? null,
   }));
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LIST (RLS: filtro applicato dal DB)
@@ -218,12 +237,14 @@ export const listRapportinoAssignableFasi = createServerFn({ method: "POST" })
 // MUTAZIONI (RPC SECURITY DEFINER)
 // ─────────────────────────────────────────────────────────────────────────────
 const OPERATIONAL_HOUR_LIMIT = 16;
+/** Le ore di testata sono la somma delle persone impiegate: il limite per persona resta 16h. */
+const MAX_ORE_TESTATA = 240;
 
 const createSchema = z.object({
   commessa_id: uuid,
   user_id: uuid,
   data: z.string().min(10),
-  ore: z.number().positive().max(24),
+  ore: z.number().positive().max(MAX_ORE_TESTATA),
   descrizione_lavori: z.string().trim().min(1, "Descrizione lavori obbligatoria").max(2000),
   cantiere_id: uuid.nullable().optional(),
   fase_id: uuid.nullable().optional(),
@@ -234,15 +255,18 @@ const createSchema = z.object({
   foto_urls: z.array(z.string()).nullable().optional(),
   override_ore: z.boolean().optional(),
   override_motivo: z.string().nullable().optional(),
+  /** Numero di persone impiegate: usato solo per validare le ore medie per persona. */
+  persone: z.number().int().positive().optional(),
 }).superRefine((v, ctx) => {
   if (v.ora_inizio && v.ora_fine && v.ora_fine < v.ora_inizio) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ora fine antecedente all'ora inizio", path: ["ora_fine"] });
   }
-  // limite operativo: massimo 16h; oltre serve override esplicito
-  if (v.ore > OPERATIONAL_HOUR_LIMIT && !v.override_ore) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ore oltre il limite operativo di ${OPERATIONAL_HOUR_LIMIT}: richiedi un override amministratore.`, path: ["ore"] });
+  // limite operativo per persona: massimo 16h; oltre serve override esplicito
+  const orePersona = v.ore / Math.max(1, v.persone ?? 1);
+  if (orePersona > OPERATIONAL_HOUR_LIMIT && !v.override_ore) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Ore oltre il limite operativo di ${OPERATIONAL_HOUR_LIMIT} per persona: richiedi un override amministratore.`, path: ["ore"] });
   }
-  if (v.ore > OPERATIONAL_HOUR_LIMIT && v.override_ore && !v.override_motivo?.trim()) {
+  if (orePersona > OPERATIONAL_HOUR_LIMIT && v.override_ore && !v.override_motivo?.trim()) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Motivazione override obbligatoria", path: ["override_motivo"] });
   }
   // data futura: max domani (data server-side ricontrollata dalla RPC)
@@ -253,6 +277,7 @@ const createSchema = z.object({
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Data futura oltre il limite consentito (max domani)", path: ["data"] });
   }
 });
+
 
 export const createRapportino = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -299,7 +324,7 @@ const updateSchema = z.object({
   ora_fine: z.string().nullable().optional(),
   clear_ora_fine: z.boolean().optional(),
   pausa_minuti: z.number().int().min(0).max(24 * 60).nullable().optional(),
-  ore: z.number().positive().max(24).nullable().optional(),
+  ore: z.number().positive().max(MAX_ORE_TESTATA).nullable().optional(),
   descrizione_lavori: z.string().max(2000).nullable().optional(),
   note: z.string().max(4000).nullable().optional(),
   clear_note: z.boolean().optional(),

@@ -20,6 +20,7 @@ import { listRapportini, listRapportinoAssignableCommesse, archiveRapportino } f
 import { NewRapportinoDialog } from "@/components/commesse/rapportini-tab";
 import { RapportinoActionsMenu, StatoBadge } from "@/components/rapportini/actions-menu";
 import { STATO_LABEL } from "@/lib/rapportini.permissions";
+import { oreAnomale, LIMITE_ORE_PERSONA } from "@/lib/rapportini-personale";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 
@@ -194,7 +195,12 @@ function RapportiniPage() {
                 <TableCell className="text-xs">{r.fase?.titolo ?? "—"}</TableCell>
                 <TableCell className="text-right font-medium">
                   {Number(r.ore ?? 0).toFixed(2)}
-                  {Number(r.ore ?? 0) > 16 && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
+                  {Number(r.persone ?? 0) > 1 && (
+                    <span className="ml-2 text-xs text-muted-foreground">({r.persone} pers.)</span>
+                  )}
+                  {oreAnomale(r) && (
+                    <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400" title={`Una persona supera ${LIMITE_ORE_PERSONA}h`}>Anomala</Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground max-w-md">
                   <Link

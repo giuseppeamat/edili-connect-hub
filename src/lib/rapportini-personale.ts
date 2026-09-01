@@ -149,3 +149,68 @@ export function aggregaCosti<T extends Record<string, any>>(
   }
   return out;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ore anomale (per persona, non sul totale del rapportino)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Soglia operativa giornaliera per singola persona. */
+export const LIMITE_ORE_PERSONA = 16;
+
+export type OreRapportino = {
+  ore?: number | null;
+  persone?: number | null;
+  ore_max_persona?: number | null;
+};
+
+/**
+ * Un rapportino è anomalo solo se una singola persona supera le 16 ore.
+ * Con più operai il totale di testata (es. 24h per 3 persone) è normale.
+ */
+export function oreAnomale(r: OreRapportino): boolean {
+  const persone = Number(r.persone ?? 0);
+  if (persone > 0) {
+    const max = r.ore_max_persona != null ? Number(r.ore_max_persona) : Number(r.ore ?? 0) / persone;
+    return max > LIMITE_ORE_PERSONA;
+  }
+  return Number(r.ore ?? 0) > LIMITE_ORE_PERSONA;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slot temporali da 30 minuti
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Elenco degli orari selezionabili (00:00 → 23:30) a passi di 30 minuti. */
+export function slotOrari(stepMinuti = 30): string[] {
+  const out: string[] = [];
+  for (let m = 0; m < 24 * 60; m += stepMinuti) {
+    out.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+  }
+  return out;
+}
+
+/** Pause selezionabili, in minuti, a passi di 30. */
+export function slotPause(maxMinuti = 240, stepMinuti = 30): number[] {
+  const out: number[] = [];
+  for (let m = 0; m <= maxMinuti; m += stepMinuti) out.push(m);
+  return out;
+}
+
+/** Arrotonda un orario "HH:MM" allo slot da 30 minuti più vicino. */
+export function arrotondaSlot(hhmm: string, stepMinuti = 30): string {
+  const [h, m] = hhmm.split(":").map((x) => Number(x));
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const tot = Math.min(24 * 60 - stepMinuti, Math.round((h * 60 + m) / stepMinuti) * stepMinuti);
+  return `${String(Math.floor(tot / 60)).padStart(2, "0")}:${String(tot % 60).padStart(2, "0")}`;
+}
+
+/** Ore nette fra due slot, al netto della pausa; null se non calcolabile. */
+export function oreDaSlot(inizio?: string | null, fine?: string | null, pausaMinuti = 0): number | null {
+  if (!inizio || !fine) return null;
+  const [hi, mi] = inizio.split(":").map(Number);
+  const [hf, mf] = fine.split(":").map(Number);
+  if ([hi, mi, hf, mf].some((n) => Number.isNaN(n))) return null;
+  const diff = hf * 60 + mf - (hi * 60 + mi) - Math.max(0, pausaMinuti);
+  if (diff <= 0) return null;
+  return Math.round((diff / 60) * 100) / 100;
+}
