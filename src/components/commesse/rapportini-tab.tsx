@@ -223,6 +223,7 @@ export function NewRapportinoDialog({ commessaId, onCreated, onClose, allowComme
     setDescrizione("");
     setNoteVal("");
     setPersonale([]);
+    setTipoManodopera("operai");
     setDataError(null);
     setDescError(null);
     setCommessaError(null);
