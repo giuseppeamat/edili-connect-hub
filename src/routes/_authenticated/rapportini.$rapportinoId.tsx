@@ -129,7 +129,12 @@ function RapportinoDetailPage() {
     );
   }
 
-  const activeCost = (costi as any[]).find((c) => c.stato === "contabilizzato" && !c.stornato_at);
+  // Con più operai esistono più righe costo attive: si aggregano tutte
+  const costiAttivi = (costi as any[]).filter((c) => c.stato === "contabilizzato" && !c.stornato_at);
+  const activeCost = costiAttivi[0];
+  const oreContabilizzate = costiAttivi.reduce((s, c) => s + Number(c.ore ?? 0), 0);
+  const costoTotaleManodopera =
+    Math.round(costiAttivi.reduce((s, c) => s + Number(c.costo_totale ?? 0), 0) * 100) / 100;
   const readOnly = !!r.archived_at || r.stato === "annullato";
   const readOnlyBolle = !bolleModificabili(r as any, user.roles);
   const readOnlySubappalti = !rapportinoModificabile(r as any);
