@@ -148,7 +148,12 @@ function RowActions({ row, onDone }: any) {
       <td className="p-3 text-xs">{row.fase?.titolo ?? "—"}</td>
       <td className="p-3 text-right">
         {Number(row.ore ?? 0).toFixed(2)}
-        {isAnomaly && <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400">Anomala</Badge>}
+        {Number(row.persone ?? 0) > 1 && (
+          <span className="ml-2 text-xs text-muted-foreground">({row.persone} persone)</span>
+        )}
+        {isAnomaly && (
+          <Badge variant="outline" className="ml-2 text-amber-600 border-amber-400" title={`Una persona supera ${LIMITE_ORE_PERSONA}h`}>Anomala</Badge>
+        )}
       </td>
       <td className="p-3 text-muted-foreground truncate max-w-xs">
         <Link
