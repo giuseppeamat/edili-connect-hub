@@ -246,7 +246,7 @@ export function PersonaleSection({
                   <div className="md:col-span-2">
                     <Label className="text-xs">Ore</Label>
                     <Input
-                      type="number" min="0.25" max="24" step="0.25" value={d.ore} disabled={readOnly}
+                      type="number" min="0.5" max="24" step="0.5" value={d.ore} disabled={readOnly}
                       onChange={(e) => {
                         setDirty(true);
                         setDrafts((arr) => arr.map((x, j) => (j === i ? { ...x, ore: e.target.value } : x)));
