@@ -305,7 +305,7 @@ const updateSchema = z.object({
   ora_fine: z.string().nullable().optional(),
   clear_ora_fine: z.boolean().optional(),
   pausa_minuti: z.number().int().min(0).max(24 * 60).nullable().optional(),
-  ore: z.number().positive().max(24).nullable().optional(),
+  ore: z.number().positive().max(MAX_ORE_TESTATA).nullable().optional(),
   descrizione_lavori: z.string().max(2000).nullable().optional(),
   note: z.string().max(4000).nullable().optional(),
   clear_note: z.boolean().optional(),
