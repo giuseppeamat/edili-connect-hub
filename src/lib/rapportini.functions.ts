@@ -47,14 +47,21 @@ async function enrichRapportini(context: any, rows: any[]) {
     faseIds.length
       ? context.supabase.from("commessa_fasi").select("id, titolo").in("id", faseIds)
       : Promise.resolve({ data: [] as any[] }),
-    rapIds.length
-      ? context.supabase
-          .from("rapportini_personale")
-          .select("rapportino_id, ore")
-          .in("rapportino_id", rapIds)
-          .is("annullato_at", null)
-      : Promise.resolve({ data: [] as any[] }),
+    Promise.resolve({ data: [] as any[] }),
   ]);
+  // Le righe personale non sono leggibili in SELECT diretto (policy `false`):
+  // l'aggregato serve solo a contare persone e ore massime sui rapportini
+  // già filtrati da RLS, quindi si legge con il client server privilegiato.
+  let pers: any[] = [];
+  if (rapIds.length) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("rapportini_personale")
+      .select("rapportino_id, ore")
+      .in("rapportino_id", rapIds)
+      .is("annullato_at", null);
+    pers = (data ?? []) as any[];
+  }
   const pm = new Map((profs ?? []).map((p: any) => [p.id, p]));
   const cm = new Map((comms ?? []).map((c: any) => [c.id, c]));
   const km = new Map((cants ?? []).map((k: any) => [k.id, k]));
