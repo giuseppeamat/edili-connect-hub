@@ -125,10 +125,11 @@ export function MembriTab({ isProprietario }: { isProprietario: boolean }) {
       editing
         ? updateFn({ data: { ...v, id: editing.id, expected_updated_at: editing.updated_at } })
         : createFn({ data: v }),
-    onSuccess: () => {
+    onSuccess: (_data: any, variables: any) => {
       const wasEditing = Boolean(editing);
       const changedRole =
-        wasEditing && editing?.ruolo_organizzativo !== (save.variables as any)?.ruolo_organizzativo;
+        wasEditing && editing?.ruolo_organizzativo !== variables?.ruolo_organizzativo;
+
       invalidate();
       setDialogOpen(false);
       setEditing(null);
