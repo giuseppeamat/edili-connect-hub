@@ -56,8 +56,12 @@ const INTERNAL: AppRole[] = [
 export function useCurrentUser() {
   const q = useQuery<CurrentUserData | null>({
     queryKey: ["current-user"],
-    staleTime: 60_000,
+    // I permessi devono propagarsi a una sessione già aperta senza rifare l'accesso.
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
     queryFn: async () => {
+
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
 
