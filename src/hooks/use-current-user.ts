@@ -138,6 +138,28 @@ export function useCurrentUser() {
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
   const has = (...allowed: AppRole[]) => allowed.some((r) => roles.includes(r));
 
+  // Se i ruoli effettivi cambiano mentre la sessione è aperta, avvisa e proponi il ricarico.
+  const knownRoles = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    const signature = [...roles].sort().join(",");
+    if (knownRoles.current === null) {
+      knownRoles.current = signature;
+      return;
+    }
+    if (knownRoles.current !== signature) {
+      knownRoles.current = signature;
+      toast.info("I tuoi permessi sono stati aggiornati.", {
+        duration: Infinity,
+        action: {
+          label: "Ricarica",
+          onClick: () => window.location.reload(),
+        },
+      });
+    }
+  }, [data, roles]);
+
+
   return {
     isLoading: q.isLoading,
     error: q.error as Error | null,
