@@ -1,7 +1,10 @@
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { isAccessAllowed } from "@/lib/access-guard";
+
 
 
 export type AppRole = Database["public"]["Enums"]["app_role"];
@@ -56,8 +59,12 @@ const INTERNAL: AppRole[] = [
 export function useCurrentUser() {
   const q = useQuery<CurrentUserData | null>({
     queryKey: ["current-user"],
-    staleTime: 60_000,
+    // I permessi devono propagarsi a una sessione già aperta senza rifare l'accesso.
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
     queryFn: async () => {
+
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return null;
 
@@ -133,6 +140,28 @@ export function useCurrentUser() {
   const roles = data?.roles ?? [];
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
   const has = (...allowed: AppRole[]) => allowed.some((r) => roles.includes(r));
+
+  // Se i ruoli effettivi cambiano mentre la sessione è aperta, avvisa e proponi il ricarico.
+  const knownRoles = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    const signature = [...roles].sort().join(",");
+    if (knownRoles.current === null) {
+      knownRoles.current = signature;
+      return;
+    }
+    if (knownRoles.current !== signature) {
+      knownRoles.current = signature;
+      toast.info("I tuoi permessi sono stati aggiornati.", {
+        duration: Infinity,
+        action: {
+          label: "Ricarica",
+          onClick: () => window.location.reload(),
+        },
+      });
+    }
+  }, [data, roles]);
+
 
   return {
     isLoading: q.isLoading,

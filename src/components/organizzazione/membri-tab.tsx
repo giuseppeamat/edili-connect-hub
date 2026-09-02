@@ -125,13 +125,23 @@ export function MembriTab({ isProprietario }: { isProprietario: boolean }) {
       editing
         ? updateFn({ data: { ...v, id: editing.id, expected_updated_at: editing.updated_at } })
         : createFn({ data: v }),
-    onSuccess: () => {
+    onSuccess: (_data: any, variables: any) => {
+      const wasEditing = Boolean(editing);
+      const changedRole =
+        wasEditing && editing?.ruolo_organizzativo !== variables?.ruolo_organizzativo;
+
       invalidate();
       setDialogOpen(false);
       setEditing(null);
-      toast.success(editing ? "Membro aggiornato" : "Membro creato senza accesso");
+      toast.success(wasEditing ? "Membro aggiornato" : "Membro creato senza accesso");
+      if (changedRole) {
+        toast.info(
+          "Ruolo aggiornato: il membro vedrà i nuovi permessi entro pochi istanti o al prossimo aggiornamento della pagina.",
+        );
+      }
     },
     onError: (e: any) => toast.error(e.message),
+
   });
 
   const archive = useMutation({
