@@ -71,7 +71,7 @@ export function mapServerError(err: ServerErrorLike): string {
   } catch { /* noop */ }
 
   if (code && MAP_BY_CODE[code]) return MAP_BY_CODE[code];
-  for (const p of PATTERNS) if (p.re.test(message)) return p.msg;
+  for (const p of PATTERNS) if (p.re.test(message)) return p.msg || message.trim();
   // Non esporre dettagli tecnici: se sembra un messaggio Postgres grezzo, restituisci fallback.
   if (/^ERROR:|constraint|relation ".*" does not exist|permission denied for/i.test(message)) return FALLBACK;
   // I messaggi che le RPC costruiscono in italiano sono già user-friendly.
