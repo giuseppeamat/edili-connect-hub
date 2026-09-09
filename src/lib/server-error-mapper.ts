@@ -15,7 +15,6 @@ const MAP_BY_CODE: Record<string, string> = {
   "42501": "Non sei autorizzato a completare questa operazione.",
   "23505": "Esiste già un record con questi dati.",
   "23503": "Riferimento non valido: il record collegato non esiste.",
-  "22023": "Dati non validi per completare l'operazione.",
 };
 
 const PATTERNS: Array<{ re: RegExp; msg: string }> = [
@@ -42,6 +41,13 @@ const PATTERNS: Array<{ re: RegExp; msg: string }> = [
   { re: /NOTIFICA_NON_TROVATA|notifica non trovata/i, msg: "La notifica è già stata aggiornata." },
   { re: /fase non trovata/i, msg: "La fase richiesta non è più disponibile." },
   { re: /commessa non trovata/i, msg: "La commessa richiesta non è più disponibile." },
+
+  // Rapportini: messaggi di validazione già in italiano lato RPC
+  { re: /ore non valide/i, msg: "" },
+  { re: /descrizione lavori obbligatoria/i, msg: "Inserisci la descrizione dei lavori prima di inviare." },
+  { re: /data obbligatoria/i, msg: "Inserisci la data del rapportino prima di inviare." },
+  { re: /rapportino archiviato/i, msg: "Il rapportino è archiviato: ripristinalo prima di inviarlo." },
+  { re: /non è disponibile nello stato attuale del rapportino/i, msg: "Questa operazione non è disponibile nello stato attuale del rapportino." },
 ];
 
 const FALLBACK = "Impossibile completare l'operazione. Riprova più tardi.";
@@ -65,7 +71,7 @@ export function mapServerError(err: ServerErrorLike): string {
   } catch { /* noop */ }
 
   if (code && MAP_BY_CODE[code]) return MAP_BY_CODE[code];
-  for (const p of PATTERNS) if (p.re.test(message)) return p.msg;
+  for (const p of PATTERNS) if (p.re.test(message)) return p.msg || message.trim();
   // Non esporre dettagli tecnici: se sembra un messaggio Postgres grezzo, restituisci fallback.
   if (/^ERROR:|constraint|relation ".*" does not exist|permission denied for/i.test(message)) return FALLBACK;
   // I messaggi che le RPC costruiscono in italiano sono già user-friendly.
