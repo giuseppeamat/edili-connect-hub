@@ -11,7 +11,25 @@ export const extraKeys = {
   fornitori: (tipo?: string | null) => ["fornitori", "scelta", tipo ?? "tutti"] as const,
   contratti: (f?: Record<string, unknown>) => ["subappalti", "contratti", f ?? {}] as const,
   costiExtraCommessa: (commessaId: string) => ["commessa-detail", commessaId, "costi-extra"] as const,
+  /** Archivio bolle (Documenti → Bolle). */
+  archivio: (f?: Record<string, unknown>) => ["bolle", "archivio", f ?? {}] as const,
+  bolla: (id: string) => ["bolle", "detail", id] as const,
+  opzioni: (commessaId?: string | null, cantiereId?: string | null) =>
+    ["bolle", "opzioni", commessaId ?? null, cantiereId ?? null] as const,
 };
+
+/** Dopo una mutazione nell'archivio bolle: lista, dettaglio e viste collegate. */
+export function invalidaArchivioBolle(
+  qc: { invalidateQueries: (o: { queryKey: readonly unknown[] }) => unknown },
+  opts: { id?: string | null; rapportinoId?: string | null } = {},
+) {
+  qc.invalidateQueries({ queryKey: ["bolle"] });
+  if (opts.id) qc.invalidateQueries({ queryKey: extraKeys.bolla(opts.id) });
+  if (opts.rapportinoId) invalidaCostiExtra(qc, opts.rapportinoId);
+  qc.invalidateQueries({ queryKey: ["documenti"] });
+  qc.invalidateQueries({ queryKey: ["materiali", "prezzi"] });
+  qc.invalidateQueries({ queryKey: ["audit"] });
+}
 
 /** Un costo extra tocca rapportino, commessa, budget e dashboard. */
 export function invalidaCostiExtra(
