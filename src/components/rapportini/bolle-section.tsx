@@ -57,10 +57,14 @@ export function BolleSection({
   rapportinoId,
   readOnlyBolle,
   stato,
+  commessaId,
+  cantiereId,
 }: {
   rapportinoId: string;
   readOnlyBolle?: boolean;
   stato?: string | null;
+  commessaId?: string | null;
+  cantiereId?: string | null;
 }) {
 
 
