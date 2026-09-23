@@ -36,6 +36,8 @@ import {
 import { extraKeys, invalidaArchivioBolle } from "@/lib/rapportini-extra.keys";
 import { totaliBolla, validaRigheBolla } from "@/lib/rapportini-extra";
 import { classificaDuplicati, MSG_DUPLICATO, validaTestataArchivio } from "@/lib/bolle-archivio";
+import type { EsitoEstrazione } from "@/lib/bolle-estrazione.functions";
+import { LABEL_CONFIDENZA, livelloConfidenza, rigaCoerente } from "@/lib/bolle-estrazione";
 import { dateIt, eur } from "@/lib/format";
 
 const NONE = "__none__";
@@ -67,11 +69,17 @@ export function BollaFormDialog({
   onOpenChange,
   bollaId,
   canSeeEcon,
+  estrazione,
+  preset,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   bollaId?: string | null;
   canSeeEcon: boolean;
+  /** Dati proposti dalla lettura automatica del PDF (schermata di verifica). */
+  estrazione?: { esito: EsitoEstrazione; file: File } | null;
+  /** Contesto già noto (es. apertura dal rapportino). */
+  preset?: { rapportino_id?: string | null; commessa_id?: string | null; cantiere_id?: string | null };
 }) {
   const qc = useQueryClient();
   const isEdit = !!bollaId;
