@@ -645,3 +645,79 @@ export function BollaFormDialog({
     </Dialog>
   );
 }
+
+const CONF_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  alta: "default",
+  media: "secondary",
+  bassa: "outline",
+};
+
+function CampoConfidenza({
+  etichetta,
+  campo,
+}: {
+  etichetta: string;
+  campo: { value: string | null; confidence: number };
+}) {
+  const lv = livelloConfidenza(campo.value, campo.confidence);
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">
+        {etichetta}: <span className="text-foreground">{campo.value ?? "—"}</span>
+      </span>
+      <Badge variant={CONF_VARIANT[lv]}>{LABEL_CONFIDENZA[lv]}</Badge>
+    </div>
+  );
+}
+
+/** Riepilogo della lettura automatica: cosa è stato riconosciuto e cosa va controllato. */
+function EstrazioneRiepilogo({ esito, file }: { esito: EsitoEstrazione; file: File }) {
+  const e = esito.estratto;
+  const righeIncoerenti = e.righe.filter((r) => !rigaCoerente(r)).length;
+  return (
+    <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="font-medium">Dati letti dal documento</span>
+        <Badge variant="outline">
+          {esito.metodo === "testo_digitale" ? "PDF con testo" : "Lettura OCR"}
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Allegato: {file.name}. Controlla e correggi i campi, poi conferma: niente viene salvato prima.
+      </p>
+      <div className="space-y-1">
+        <CampoConfidenza etichetta="Numero bolla" campo={e.numero_bolla} />
+        <CampoConfidenza etichetta="Data" campo={e.data_bolla} />
+        <CampoConfidenza etichetta="Fornitore" campo={e.fornitore_ragione_sociale} />
+        <CampoConfidenza etichetta="Partita IVA" campo={e.partita_iva} />
+      </div>
+      {!esito.fornitore.fornitore_id && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Fornitore non riconosciuto: selezionalo manualmente oppure registralo in anagrafica.
+        </p>
+      )}
+      {esito.fornitore.fornitore_id && (
+        <p className="text-xs text-muted-foreground">
+          Fornitore proposto: {esito.fornitore.suggerito_nome} (
+          {esito.fornitore.criterio.replace("_", " ")}).
+        </p>
+      )}
+      {esito.totali.avviso && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {esito.totali.avviso}: somma righe {eur(esito.totali.sommaRighe)}
+          {e.totale_imponibile != null ? `, imponibile indicato ${eur(e.totale_imponibile)}` : ""}.
+        </p>
+      )}
+      {righeIncoerenti > 0 && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {righeIncoerenti} riga/e con totale non corrispondente a quantità × prezzo.
+        </p>
+      )}
+      {e.righe.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          Nessuna riga materiale riconosciuta: puoi aggiungerle a mano.
+        </p>
+      )}
+    </div>
+  );
+}
