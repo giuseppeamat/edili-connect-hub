@@ -24,12 +24,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, MoreHorizontal, Plus } from "lucide-react";
+import { FileText, MoreHorizontal, Plus, ScanLine } from "lucide-react";
 import { listBolle, archiveBolla } from "@/lib/bolle.functions";
+import type { EsitoEstrazione } from "@/lib/bolle-estrazione.functions";
 import { listSoggetti } from "@/lib/subappaltatori.functions";
 import { extraKeys, invalidaArchivioBolle } from "@/lib/rapportini-extra.keys";
 import { collegamentoBadge, statoBadge, bollaModificabile } from "@/lib/bolle-archivio";
 import { BollaFormDialog } from "@/components/bolle/bolla-form-dialog";
+import { BollaImportDialog } from "@/components/bolle/bolla-import-dialog";
 import { CollegaBollaDialog } from "@/components/bolle/collega-bolla-dialog";
 import { dateIt, eur } from "@/lib/format";
 
