@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, CalendarClock } from "lucide-react";
+import { Upload, CalendarClock, FileText } from "lucide-react";
 import { listDocumenti } from "@/lib/documenti.functions";
 import { documentiKeys } from "@/lib/documenti.keys";
 import { CATEGORIA_FILTER_OPTIONS, categoriaLabel } from "@/lib/documenti-model";
@@ -84,6 +84,12 @@ function DocumentiPage() {
         description={data ? `${total} documenti` : "Archivio documentale"}
         actions={
           <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/documenti/bolle">
+                <FileText className="h-4 w-4 mr-1" />
+                Bolle
+              </Link>
+            </Button>
             <Button asChild variant="outline">
               <Link to="/scadenziario">
                 <CalendarClock className="h-4 w-4 mr-1" />

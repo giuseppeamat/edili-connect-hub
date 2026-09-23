@@ -2872,8 +2872,10 @@ export type Database = {
       }
       rapportini_bolle: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           cantiere_id: string | null
-          commessa_id: string
+          commessa_id: string | null
           created_at: string
           created_by: string | null
           data_bolla: string
@@ -2886,7 +2888,7 @@ export type Database = {
           note: string | null
           numero_bolla: string
           organization_id: string
-          rapportino_id: string
+          rapportino_id: string | null
           stato: string
           storage_path: string | null
           totale: number | null
@@ -2894,8 +2896,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
-          commessa_id: string
+          commessa_id?: string | null
           created_at?: string
           created_by?: string | null
           data_bolla: string
@@ -2908,7 +2912,7 @@ export type Database = {
           note?: string | null
           numero_bolla: string
           organization_id: string
-          rapportino_id: string
+          rapportino_id?: string | null
           stato?: string
           storage_path?: string | null
           totale?: number | null
@@ -2916,8 +2920,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           cantiere_id?: string | null
-          commessa_id?: string
+          commessa_id?: string | null
           created_at?: string
           created_by?: string | null
           data_bolla?: string
@@ -2930,7 +2936,7 @@ export type Database = {
           note?: string | null
           numero_bolla?: string
           organization_id?: string
-          rapportino_id?: string
+          rapportino_id?: string | null
           stato?: string
           storage_path?: string | null
           totale?: number | null
@@ -3863,6 +3869,10 @@ export type Database = {
         }[]
       }
       archive_all_read_notifiche: { Args: never; Returns: number }
+      archive_bolla: {
+        Args: { _archive: boolean; _id: string }
+        Returns: string
+      }
       archive_commessa_budget_voce: {
         Args: {
           _expected_updated_at: string
@@ -3985,6 +3995,19 @@ export type Database = {
           _preventivo_id: string
         }
         Returns: undefined
+      }
+      check_bolla_duplicati: {
+        Args: {
+          _data: string
+          _exclude?: string
+          _fornitore_id: string
+          _numero: string
+        }
+        Returns: Json
+      }
+      collega_bolla_rapportino: {
+        Args: { _id: string; _rapportino_id: string }
+        Returns: string
       }
       contabilizza_rapportini_pendenti: {
         Args: {
@@ -4234,6 +4257,7 @@ export type Database = {
         Args: { _org: string }
         Returns: undefined
       }
+      get_bolla: { Args: { _id: string }; Returns: Json }
       get_cantiere_costi_extra: {
         Args: { _cantiere_id: string }
         Returns: Json
@@ -4409,6 +4433,7 @@ export type Database = {
         Args: { _member_id: string; _org: string; _user_id: string }
         Returns: undefined
       }
+      list_bolle: { Args: { _filters?: Json }; Returns: Json }
       mark_all_notifiche_read: { Args: never; Returns: number }
       mark_expired_invites: { Args: never; Returns: undefined }
       mark_notifica_read: {
@@ -4578,6 +4603,7 @@ export type Database = {
           tariffa: number
         }[]
       }
+      save_bolla: { Args: { _bolla: Json; _righe: Json }; Returns: string }
       save_prezzo_materiale: {
         Args: {
           _data: string
