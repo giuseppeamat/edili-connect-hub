@@ -20,6 +20,9 @@ import {
   saveRapportinoBolla,
   annullaRapportinoBolla,
 } from "@/lib/bolle.functions";
+import type { EsitoEstrazione } from "@/lib/bolle-estrazione.functions";
+import { BollaImportDialog } from "@/components/bolle/bolla-import-dialog";
+import { BollaFormDialog } from "@/components/bolle/bolla-form-dialog";
 import {
   STATO_BOLLA_LABEL,
   totaliBolla,
@@ -57,10 +60,14 @@ export function BolleSection({
   rapportinoId,
   readOnlyBolle,
   stato,
+  commessaId,
+  cantiereId,
 }: {
   rapportinoId: string;
   readOnlyBolle?: boolean;
   stato?: string | null;
+  commessaId?: string | null;
+  cantiereId?: string | null;
 }) {
 
 
@@ -97,6 +104,8 @@ export function BolleSection({
   const [righe, setRighe] = useState<RigaDraft[]>([rigaVuota()]);
   const [annullaTarget, setAnnullaTarget] = useState<any | null>(null);
   const [annullaMotivo, setAnnullaMotivo] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [estrazione, setEstrazione] = useState<{ esito: EsitoEstrazione; file: File } | null>(null);
 
   const apriNuova = () => {
     setEditId(null);
@@ -204,10 +213,16 @@ export function BolleSection({
           </div>
 
           {!readOnlyBolle && (
-            <Button size="sm" onClick={apriNuova}>
-              <Plus className="h-4 w-4 mr-1" /> Nuova bolla
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                Carica PDF
+              </Button>
+              <Button size="sm" onClick={apriNuova}>
+                <Plus className="h-4 w-4 mr-1" /> Nuova bolla
+              </Button>
+            </div>
           )}
+
 
         </div>
 
@@ -437,6 +452,28 @@ export function BolleSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BollaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onEstratto={(payload) => setEstrazione(payload)}
+      />
+      <BollaFormDialog
+        open={!!estrazione}
+        onOpenChange={(v) => {
+          if (!v) {
+            setEstrazione(null);
+            invalidaCostiExtra(qc, rapportinoId);
+          }
+        }}
+        canSeeEcon={canSeeEcon}
+        estrazione={estrazione}
+        preset={{
+          rapportino_id: rapportinoId,
+          commessa_id: commessaId ?? null,
+          cantiere_id: cantiereId ?? null,
+        }}
+      />
     </Card>
   );
 }

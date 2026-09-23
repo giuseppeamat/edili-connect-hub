@@ -36,6 +36,8 @@ import {
 import { extraKeys, invalidaArchivioBolle } from "@/lib/rapportini-extra.keys";
 import { totaliBolla, validaRigheBolla } from "@/lib/rapportini-extra";
 import { classificaDuplicati, MSG_DUPLICATO, validaTestataArchivio } from "@/lib/bolle-archivio";
+import type { EsitoEstrazione } from "@/lib/bolle-estrazione.functions";
+import { LABEL_CONFIDENZA, livelloConfidenza, rigaCoerente } from "@/lib/bolle-estrazione";
 import { dateIt, eur } from "@/lib/format";
 
 const NONE = "__none__";
@@ -67,11 +69,17 @@ export function BollaFormDialog({
   onOpenChange,
   bollaId,
   canSeeEcon,
+  estrazione,
+  preset,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   bollaId?: string | null;
   canSeeEcon: boolean;
+  /** Dati proposti dalla lettura automatica del PDF (schermata di verifica). */
+  estrazione?: { esito: EsitoEstrazione; file: File } | null;
+  /** Contesto già noto (es. apertura dal rapportino). */
+  preset?: { rapportino_id?: string | null; commessa_id?: string | null; cantiere_id?: string | null };
 }) {
   const qc = useQueryClient();
   const isEdit = !!bollaId;
@@ -123,20 +131,32 @@ export function BollaFormDialog({
     queryFn: async () => (await detailFn({ data: { id: bollaId! } })) as any,
   });
 
-  // Precompila in modifica
+  // Precompila in modifica, da estrazione automatica o dal contesto (rapportino)
   useEffect(() => {
     if (!open) return;
     if (!isEdit) {
-      setFornitoreId("");
-      setNumero("");
-      setDataBolla(new Date().toISOString().slice(0, 10));
-      setDataConsegna("");
-      setCommessaId(NONE);
-      setCantiereId(NONE);
-      setRapportinoId(NONE);
-      setNote("");
-      setRighe([]);
-      setFile(null);
+      const e = estrazione?.esito;
+      setFornitoreId(e?.fornitore.fornitore_id ?? "");
+      setNumero(e?.estratto.numero_bolla.value ?? "");
+      setDataBolla(e?.estratto.data_bolla.value ?? new Date().toISOString().slice(0, 10));
+      setDataConsegna(e?.estratto.data_consegna.value ?? "");
+      setCommessaId(preset?.commessa_id ?? NONE);
+      setCantiereId(preset?.cantiere_id ?? NONE);
+      setRapportinoId(preset?.rapportino_id ?? NONE);
+      setNote(e?.estratto.note.value ?? "");
+      setRighe(
+        (e?.estratto.righe ?? []).map((r, i) => ({
+          materiale_id: e?.righe_match[i]?.materiale_id ?? NONE,
+          descrizione: r.descrizione ?? "",
+          codice_articolo: r.codice_articolo ?? "",
+          quantita: r.quantita != null ? String(r.quantita) : "",
+          unita_misura: r.unita_misura ?? "",
+          prezzo_unitario: r.prezzo_unitario != null ? String(r.prezzo_unitario) : "",
+          sconto_pct: r.sconto_pct != null ? String(r.sconto_pct) : "0",
+          iva_pct: r.iva_pct != null ? String(r.iva_pct) : "22",
+        })),
+      );
+      setFile(estrazione?.file ?? null);
       setDocumentoId(null);
       setForzaDuplicato(false);
       return;
@@ -163,7 +183,7 @@ export function BollaFormDialog({
         iva_pct: r.iva_pct != null ? String(r.iva_pct) : "",
       })),
     );
-  }, [open, isEdit, dettaglio]);
+  }, [open, isEdit, dettaglio, estrazione, preset]);
 
   // Se scelgo un rapportino, commessa e cantiere seguono il rapportino
   const rapportini: any[] = opzioni?.rapportini ?? [];
@@ -285,8 +305,13 @@ export function BollaFormDialog({
     <Dialog open={open} onOpenChange={(v) => (busy ? null : onOpenChange(v))}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Modifica bolla" : "Nuova bolla"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Modifica bolla" : estrazione ? "Verifica bolla" : "Nuova bolla"}
+          </DialogTitle>
         </DialogHeader>
+
+        {estrazione && <EstrazioneRiepilogo esito={estrazione.esito} file={estrazione.file} />}
+
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -436,6 +461,11 @@ export function BollaFormDialog({
                 accept="application/pdf,image/*"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
+              {file && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Allegato pronto: {file.name}. Scegli un altro file solo per sostituirlo.
+                </p>
+              )}
               {documentoId && !file && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Documento già allegato: caricando un file lo sostituisci.
@@ -618,5 +648,81 @@ export function BollaFormDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const CONF_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  alta: "default",
+  media: "secondary",
+  bassa: "outline",
+};
+
+function CampoConfidenza({
+  etichetta,
+  campo,
+}: {
+  etichetta: string;
+  campo: { value: string | null; confidence: number };
+}) {
+  const lv = livelloConfidenza(campo.value, campo.confidence);
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-muted-foreground">
+        {etichetta}: <span className="text-foreground">{campo.value ?? "—"}</span>
+      </span>
+      <Badge variant={CONF_VARIANT[lv]}>{LABEL_CONFIDENZA[lv]}</Badge>
+    </div>
+  );
+}
+
+/** Riepilogo della lettura automatica: cosa è stato riconosciuto e cosa va controllato. */
+function EstrazioneRiepilogo({ esito, file }: { esito: EsitoEstrazione; file: File }) {
+  const e = esito.estratto;
+  const righeIncoerenti = e.righe.filter((r) => !rigaCoerente(r)).length;
+  return (
+    <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="font-medium">Dati letti dal documento</span>
+        <Badge variant="outline">
+          {esito.metodo === "testo_digitale" ? "PDF con testo" : "Lettura OCR"}
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Allegato: {file.name}. Controlla e correggi i campi, poi conferma: niente viene salvato prima.
+      </p>
+      <div className="space-y-1">
+        <CampoConfidenza etichetta="Numero bolla" campo={e.numero_bolla} />
+        <CampoConfidenza etichetta="Data" campo={e.data_bolla} />
+        <CampoConfidenza etichetta="Fornitore" campo={e.fornitore_ragione_sociale} />
+        <CampoConfidenza etichetta="Partita IVA" campo={e.partita_iva} />
+      </div>
+      {!esito.fornitore.fornitore_id && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Fornitore non riconosciuto: selezionalo manualmente oppure registralo in anagrafica.
+        </p>
+      )}
+      {esito.fornitore.fornitore_id && (
+        <p className="text-xs text-muted-foreground">
+          Fornitore proposto: {esito.fornitore.suggerito_nome} (
+          {esito.fornitore.criterio.replace("_", " ")}).
+        </p>
+      )}
+      {esito.totali.avviso && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {esito.totali.avviso}: somma righe {eur(esito.totali.sommaRighe)}
+          {e.totale_imponibile != null ? `, imponibile indicato ${eur(e.totale_imponibile)}` : ""}.
+        </p>
+      )}
+      {righeIncoerenti > 0 && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          {righeIncoerenti} riga/e con totale non corrispondente a quantità × prezzo.
+        </p>
+      )}
+      {e.righe.length === 0 && (
+        <p className="text-xs text-muted-foreground">
+          Nessuna riga materiale riconosciuta: puoi aggiungerle a mano.
+        </p>
+      )}
+    </div>
   );
 }
