@@ -20,6 +20,9 @@ import {
   saveRapportinoBolla,
   annullaRapportinoBolla,
 } from "@/lib/bolle.functions";
+import type { EsitoEstrazione } from "@/lib/bolle-estrazione.functions";
+import { BollaImportDialog } from "@/components/bolle/bolla-import-dialog";
+import { BollaFormDialog } from "@/components/bolle/bolla-form-dialog";
 import {
   STATO_BOLLA_LABEL,
   totaliBolla,
