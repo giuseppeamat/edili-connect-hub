@@ -131,20 +131,32 @@ export function BollaFormDialog({
     queryFn: async () => (await detailFn({ data: { id: bollaId! } })) as any,
   });
 
-  // Precompila in modifica
+  // Precompila in modifica, da estrazione automatica o dal contesto (rapportino)
   useEffect(() => {
     if (!open) return;
     if (!isEdit) {
-      setFornitoreId("");
-      setNumero("");
-      setDataBolla(new Date().toISOString().slice(0, 10));
-      setDataConsegna("");
-      setCommessaId(NONE);
-      setCantiereId(NONE);
-      setRapportinoId(NONE);
-      setNote("");
-      setRighe([]);
-      setFile(null);
+      const e = estrazione?.esito;
+      setFornitoreId(e?.fornitore.fornitore_id ?? "");
+      setNumero(e?.estratto.numero_bolla.value ?? "");
+      setDataBolla(e?.estratto.data_bolla.value ?? new Date().toISOString().slice(0, 10));
+      setDataConsegna(e?.estratto.data_consegna.value ?? "");
+      setCommessaId(preset?.commessa_id ?? NONE);
+      setCantiereId(preset?.cantiere_id ?? NONE);
+      setRapportinoId(preset?.rapportino_id ?? NONE);
+      setNote(e?.estratto.note.value ?? "");
+      setRighe(
+        (e?.estratto.righe ?? []).map((r, i) => ({
+          materiale_id: e?.righe_match[i]?.materiale_id ?? NONE,
+          descrizione: r.descrizione ?? "",
+          codice_articolo: r.codice_articolo ?? "",
+          quantita: r.quantita != null ? String(r.quantita) : "",
+          unita_misura: r.unita_misura ?? "",
+          prezzo_unitario: r.prezzo_unitario != null ? String(r.prezzo_unitario) : "",
+          sconto_pct: r.sconto_pct != null ? String(r.sconto_pct) : "0",
+          iva_pct: r.iva_pct != null ? String(r.iva_pct) : "22",
+        })),
+      );
+      setFile(estrazione?.file ?? null);
       setDocumentoId(null);
       setForzaDuplicato(false);
       return;
