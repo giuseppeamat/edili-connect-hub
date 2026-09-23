@@ -461,6 +461,11 @@ export function BollaFormDialog({
                 accept="application/pdf,image/*"
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
+              {file && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Allegato pronto: {file.name}. Scegli un altro file solo per sostituirlo.
+                </p>
+              )}
               {documentoId && !file && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Documento già allegato: caricando un file lo sostituisci.
