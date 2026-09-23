@@ -101,6 +101,8 @@ export function BolleSection({
   const [righe, setRighe] = useState<RigaDraft[]>([rigaVuota()]);
   const [annullaTarget, setAnnullaTarget] = useState<any | null>(null);
   const [annullaMotivo, setAnnullaMotivo] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [estrazione, setEstrazione] = useState<{ esito: EsitoEstrazione; file: File } | null>(null);
 
   const apriNuova = () => {
     setEditId(null);
@@ -447,6 +449,28 @@ export function BolleSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BollaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onEstratto={(payload) => setEstrazione(payload)}
+      />
+      <BollaFormDialog
+        open={!!estrazione}
+        onOpenChange={(v) => {
+          if (!v) {
+            setEstrazione(null);
+            invalidaCostiExtra(qc, rapportinoId);
+          }
+        }}
+        canSeeEcon={canSeeEcon}
+        estrazione={estrazione}
+        preset={{
+          rapportino_id: rapportinoId,
+          commessa_id: commessaId ?? null,
+          cantiere_id: cantiereId ?? null,
+        }}
+      />
     </Card>
   );
 }
