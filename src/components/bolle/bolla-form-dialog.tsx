@@ -183,7 +183,7 @@ export function BollaFormDialog({
         iva_pct: r.iva_pct != null ? String(r.iva_pct) : "",
       })),
     );
-  }, [open, isEdit, dettaglio]);
+  }, [open, isEdit, dettaglio, estrazione, preset]);
 
   // Se scelgo un rapportino, commessa e cantiere seguono il rapportino
   const rapportini: any[] = opzioni?.rapportini ?? [];
@@ -305,8 +305,13 @@ export function BollaFormDialog({
     <Dialog open={open} onOpenChange={(v) => (busy ? null : onOpenChange(v))}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Modifica bolla" : "Nuova bolla"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Modifica bolla" : estrazione ? "Verifica bolla" : "Nuova bolla"}
+          </DialogTitle>
         </DialogHeader>
+
+        {estrazione && <EstrazioneRiepilogo esito={estrazione.esito} file={estrazione.file} />}
+
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
