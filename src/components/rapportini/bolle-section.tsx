@@ -208,10 +208,16 @@ export function BolleSection({
           </div>
 
           {!readOnlyBolle && (
-            <Button size="sm" onClick={apriNuova}>
-              <Plus className="h-4 w-4 mr-1" /> Nuova bolla
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                Carica PDF
+              </Button>
+              <Button size="sm" onClick={apriNuova}>
+                <Plus className="h-4 w-4 mr-1" /> Nuova bolla
+              </Button>
+            </div>
           )}
+
 
         </div>
 
