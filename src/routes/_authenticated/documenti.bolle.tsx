@@ -74,6 +74,8 @@ function BollePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [collegaTarget, setCollegaTarget] = useState<any | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [estrazione, setEstrazione] = useState<{ esito: EsitoEstrazione; file: File } | null>(null);
 
   const filters = {
     q: q.trim() || null,
@@ -119,9 +121,16 @@ function BollePage() {
               <Link to="/documenti">Documenti</Link>
             </Button>
             {canManage && (
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <ScanLine className="h-4 w-4 mr-1" />
+                Carica bolla PDF
+              </Button>
+            )}
+            {canManage && (
               <Button
                 onClick={() => {
                   setEditId(null);
+                  setEstrazione(null);
                   setFormOpen(true);
                 }}
               >
