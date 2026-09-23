@@ -381,11 +381,24 @@ function BollePage() {
         </div>
       )}
 
+      <BollaImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onEstratto={(payload) => {
+          setEditId(null);
+          setEstrazione(payload);
+          setFormOpen(true);
+        }}
+      />
       <BollaFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(v) => {
+          setFormOpen(v);
+          if (!v) setEstrazione(null);
+        }}
         bollaId={editId}
         canSeeEcon={canSeeEcon}
+        estrazione={estrazione}
       />
       <CollegaBollaDialog
         bolla={collegaTarget}
